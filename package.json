@@ -1,0 +1,5 @@
+   {
+     "name": "club-deportivo-deploy",
+     "private": true,
+     "workspaces": ["apps/*"]
+   }
