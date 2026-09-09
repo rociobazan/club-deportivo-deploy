@@ -1,0 +1,976 @@
+openapi: 3.0.3
+
+info:
+  title: API de Reservas - Club Deportivo
+  description: |
+    API para la gestión de reservas de canchas de un club deportivo.
+
+    Permite autenticarse, consultar disponibilidad, crear reservas de cancha con
+    equipamiento opcional, consultarlas y cancelarlas.
+
+    ## Autenticación
+
+    Los endpoints de catálogo y disponibilidad son públicos.
+    El resto requiere un JWT en el header `Authorization: Bearer <token>`.
+
+    Roles: `SOCIO` opera únicamente sobre sus propias reservas.
+    `ADMIN` opera sobre todas y no está sujeto a los límites de RN-04 ni RN-07.
+
+    Las reglas de negocio están documentadas en `docs/requisitos.md` y las
+    especificaciones vigentes en `openspec/specs/`.
+  version: 2.1.0
+  contact:
+    name: Equipo de desarrollo
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Entorno local de desarrollo
+
+tags:
+  - name: Autenticacion
+    description: Registro, login y perfil
+  - name: Catalogo
+    description: Disciplinas, canchas, tarifas y equipamiento
+  - name: Disponibilidad
+    description: Consulta de horarios libres
+  - name: Reservas
+    description: Creación, consulta y cancelación de reservas
+  - name: Institucional
+    description: Endpoints públicos del sitio institucional
+
+paths:
+
+  /auth/registro:
+    post:
+      tags: [Autenticacion]
+      summary: Registrar un usuario
+      description: Crea un usuario con rol SOCIO. La contraseña se persiste hasheada con bcrypt.
+      operationId: registrarUsuario
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistroRequest'
+      responses:
+        '201':
+          description: Usuario creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '409':
+          description: Ya existe un usuario con ese mail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      tags: [Autenticacion]
+      summary: Iniciar sesión
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Autenticación correcta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          description: |
+            Credenciales inválidas. El mensaje es genérico a propósito:
+            no debe revelar si el mail existe en el sistema.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/perfil:
+    get:
+      tags: [Autenticacion]
+      summary: Obtener el perfil del usuario autenticado
+      operationId: obtenerPerfil
+      responses:
+        '200':
+          description: Datos del usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+
+  /disciplinas:
+    get:
+      tags: [Catalogo]
+      summary: Listar disciplinas
+      description: Público. Devuelve las disciplinas activas con su duración de turno.
+      operationId: listarDisciplinas
+      security: []
+      responses:
+        '200':
+          description: Listado de disciplinas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Disciplina'
+
+  /canchas:
+    get:
+      tags: [Catalogo]
+      summary: Listar canchas
+      description: Público.
+      operationId: listarCanchas
+      security: []
+      parameters:
+        - name: disciplinaId
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: techada
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Listado de canchas. Puede ser vacío si ningún filtro coincide.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cancha'
+
+  /equipamiento:
+    get:
+      tags: [Catalogo]
+      summary: Listar equipamiento
+      description: |
+        Público. Sin parámetros de fecha devuelve el catálogo con el stock total.
+        Si se envían `fecha` y `horaInicio`, cada ítem incluye además el
+        `stockDisponible` real para ese slot (RN-05).
+      operationId: listarEquipamiento
+      security: []
+      parameters:
+        - name: disciplinaId
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: fecha
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          example: '2026-09-15'
+        - name: horaInicio
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+          example: '20:00'
+      responses:
+        '200':
+          description: Listado de equipamiento
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Equipamiento'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+
+  /disponibilidad:
+    get:
+      tags: [Disponibilidad]
+      summary: Consultar disponibilidad de canchas
+      description: |
+        Público. Devuelve los slots libres de cada cancha para la fecha indicada.
+
+        La disponibilidad es un cálculo, no un registro almacenado: se generan
+        los slots del horario de atención según la duración de turno de la
+        disciplina y se restan los ocupados por reservas activas.
+      operationId: consultarDisponibilidad
+      security: []
+      parameters:
+        - name: fecha
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          example: '2026-09-15'
+        - name: disciplinaId
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: canchaId
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Disponibilidad de la fecha consultada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisponibilidadResponse'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+
+  /reservas:
+    post:
+      tags: [Reservas]
+      summary: Crear una reserva
+      description: |
+        Requiere rol SOCIO o ADMIN.
+
+        El identificador del cliente **no** viaja en el body: se toma del `sub`
+        del JWT. El monto se calcula en el servidor a partir del precio de la
+        cancha y queda congelado en la reserva (RN-06).
+
+        Tras confirmar la transacción se dispara un mail de confirmación.
+        Un fallo en el envío no revierte la reserva (RN-14).
+      operationId: crearReserva
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearReservaRequest'
+      responses:
+        '201':
+          description: Reserva creada
+          headers:
+            Location:
+              description: URI del recurso creado
+              schema:
+                type: string
+              example: /api/v1/reservas/128
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reserva'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermisos'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          description: |
+            Conflicto de estado. El slot ya está reservado (RN-01)
+            o no hay stock suficiente de equipamiento en ese slot (RN-05).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                slotOcupado:
+                  value:
+                    tipo: SLOT_NO_DISPONIBLE
+                    titulo: El horario solicitado ya está reservado
+                    estado: 409
+                    detalle: La cancha 3 ya tiene una reserva activa el 2026-09-15 a las 19:00.
+                    instancia: /reservas
+                stockInsuficiente:
+                  value:
+                    tipo: STOCK_INSUFICIENTE
+                    titulo: No hay stock de equipamiento para ese horario
+                    estado: 409
+                    detalle: Se solicitaron 4 unidades de "Paleta de pádel" y hay 2 disponibles.
+                    instancia: /reservas
+        '422':
+          $ref: '#/components/responses/ReglaDeNegocioViolada'
+
+    get:
+      tags: [Reservas]
+      summary: Listar reservas
+      description: |
+        Requiere autenticación. Un SOCIO recibe únicamente sus propias reservas,
+        aunque envíe el parámetro `clienteId` de otro usuario. Solo un ADMIN
+        puede consultar reservas de terceros (RN-13).
+      operationId: listarReservas
+      parameters:
+        - name: clienteId
+          in: query
+          required: false
+          description: Solo tiene efecto para usuarios con rol ADMIN.
+          schema:
+            type: integer
+            minimum: 1
+        - name: fecha
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: estado
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/EstadoReserva'
+      responses:
+        '200':
+          description: Listado de reservas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Reserva'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+
+  /reservas/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+        description: Identificador interno de la reserva
+    get:
+      tags: [Reservas]
+      summary: Consultar el detalle de una reserva
+      description: |
+        Requiere autenticación. Si la reserva existe pero pertenece a otro
+        usuario, se devuelve 404 en lugar de 403, para no permitir la
+        enumeración de reservas ajenas (RN-13).
+      operationId: obtenerReserva
+      responses:
+        '200':
+          description: Detalle de la reserva, incluido el desglose de equipamiento
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reserva'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+
+  /reservas/{id}/cancelacion:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+    patch:
+      tags: [Reservas]
+      summary: Cancelar una reserva
+      description: |
+        Requiere autenticación. Marca la reserva como CANCELADA y libera el
+        slot (RN-10). El registro nunca se elimina físicamente.
+
+        Un SOCIO solo puede cancelar hasta 2 horas antes del inicio (RN-04);
+        un ADMIN no está sujeto a ese plazo.
+
+        Tras la cancelación se dispara el mail correspondiente (RN-14).
+      operationId: cancelarReserva
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelarReservaRequest'
+      responses:
+        '200':
+          description: Reserva cancelada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reserva'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          description: La reserva ya se encontraba cancelada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/ReglaDeNegocioViolada'
+
+  /contacto:
+    post:
+      tags: [Institucional]
+      summary: Enviar un mensaje de contacto
+      description: |
+        Público. Reenvía el mensaje por mail a la casilla del club.
+
+        Al ser un endpoint público que dispara envíos de mail, aplica rate
+        limiting por IP (5 solicitudes por minuto) y valida un campo trampa
+        anti-spam. Si ese campo viene completo, la respuesta es igualmente 202
+        pero no se envía nada, para no darle señal al bot.
+      operationId: enviarContacto
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactoRequest'
+      responses:
+        '202':
+          description: Mensaje aceptado para su envío
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactoResponse'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '429':
+          description: Demasiadas solicitudes desde la misma IP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                tipo: DEMASIADAS_SOLICITUDES
+                titulo: Superaste el límite de mensajes
+                estado: 429
+                detalle: Se admiten hasta 5 mensajes por minuto. Volvé a intentar en un rato.
+                instancia: /contacto
+
+security:
+  - bearerAuth: []
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT emitido por `POST /auth/login`. El payload incluye `sub`
+        (id del usuario) y `rol`.
+
+  responses:
+
+    SolicitudInvalida:
+      description: Parámetros ausentes o mal formados
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NoAutenticado:
+      description: Falta el token, está vencido o es inválido
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            tipo: NO_AUTENTICADO
+            titulo: Se requiere autenticación
+            estado: 401
+            detalle: El token no fue enviado o ya expiró.
+            instancia: /reservas
+
+    SinPermisos:
+      description: Autenticado pero sin permisos para la operación
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NoEncontrado:
+      description: |
+        El recurso no existe, o existe pero no pertenece al usuario autenticado (RN-13)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ReglaDeNegocioViolada:
+      description: |
+        La solicitud es sintácticamente válida pero incumple una regla de negocio
+        (fecha pasada, horizonte excedido, límite de reservas activas,
+        equipamiento de otra disciplina, plazo de cancelación vencido).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            fechaPasada:
+              value:
+                tipo: FECHA_EN_EL_PASADO
+                titulo: No se puede reservar un horario ya transcurrido
+                estado: 422
+                detalle: El slot 2026-08-01 10:00 es anterior a la fecha actual.
+                instancia: /reservas
+            plazoCancelacion:
+              value:
+                tipo: PLAZO_CANCELACION_VENCIDO
+                titulo: Ya no es posible cancelar esta reserva
+                estado: 422
+                detalle: La cancelación debe hacerse con al menos 2 horas de anticipación.
+                instancia: /reservas/128/cancelacion
+
+  schemas:
+
+    RolUsuario:
+      type: string
+      enum: [ADMIN, SOCIO]
+      example: SOCIO
+
+    RegistroRequest:
+      type: object
+      required: [nombre, apellido, email, password]
+      properties:
+        nombre:
+          type: string
+          maxLength: 60
+          example: Jeremías
+        apellido:
+          type: string
+          maxLength: 60
+          example: Gómez
+        email:
+          type: string
+          format: email
+          example: socio@club.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: unaClaveSegura123
+        telefono:
+          type: string
+          maxLength: 30
+          example: '+5493541000000'
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: socio@club.com
+        password:
+          type: string
+          format: password
+          example: unaClaveSegura123
+
+    LoginResponse:
+      type: object
+      required: [accessToken, expiraEn, usuario]
+      properties:
+        accessToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        expiraEn:
+          type: integer
+          description: Segundos de vigencia del token
+          example: 3600
+        usuario:
+          $ref: '#/components/schemas/Usuario'
+
+    Usuario:
+      type: object
+      description: La contraseña nunca se expone en ninguna respuesta.
+      required: [id, nombre, apellido, email, rol]
+      properties:
+        id:
+          type: integer
+          example: 42
+        nombre:
+          type: string
+          example: Jeremías
+        apellido:
+          type: string
+          example: Gómez
+        email:
+          type: string
+          format: email
+          example: socio@club.com
+        telefono:
+          type: string
+          nullable: true
+          example: '+5493541000000'
+        rol:
+          $ref: '#/components/schemas/RolUsuario'
+
+    Disciplina:
+      type: object
+      required: [id, nombre, duracionTurnoMin]
+      properties:
+        id:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: Pádel
+        duracionTurnoMin:
+          type: integer
+          description: Duración del turno en minutos
+          example: 90
+        activa:
+          type: boolean
+          example: true
+
+    Cancha:
+      type: object
+      required: [id, nombre, disciplinaId, precioPorTurno]
+      properties:
+        id:
+          type: integer
+          example: 3
+        nombre:
+          type: string
+          example: Cancha 3 - Pádel
+        disciplinaId:
+          type: integer
+          example: 1
+        disciplina:
+          type: string
+          description: Nombre desnormalizado para evitar una consulta extra
+          example: Pádel
+        superficie:
+          type: string
+          example: sintético
+        techada:
+          type: boolean
+          example: true
+        precioPorTurno:
+          type: number
+          format: double
+          description: Precio de un turno. No varía según la cantidad de jugadores.
+          example: 18000.00
+        activa:
+          type: boolean
+          example: true
+
+    Equipamiento:
+      type: object
+      required: [id, nombre, disciplinaId, stockTotal, precioPorTurno]
+      properties:
+        id:
+          type: integer
+          example: 7
+        nombre:
+          type: string
+          example: Paleta de pádel
+        disciplinaId:
+          type: integer
+          example: 1
+        stockTotal:
+          type: integer
+          example: 6
+        stockDisponible:
+          type: integer
+          nullable: true
+          description: |
+            Unidades libres en el slot consultado. Solo se incluye si la consulta
+            envió `fecha` y `horaInicio` (RN-05).
+          example: 4
+        precioPorTurno:
+          type: number
+          format: double
+          example: 2500.00
+
+    SlotDisponible:
+      type: object
+      required: [horaInicio, horaFin]
+      properties:
+        horaInicio:
+          type: string
+          example: '19:00'
+        horaFin:
+          type: string
+          example: '20:30'
+
+    DisponibilidadCancha:
+      type: object
+      required: [canchaId, nombre, precioPorTurno, slots]
+      properties:
+        canchaId:
+          type: integer
+          example: 3
+        nombre:
+          type: string
+          example: Cancha 3 - Pádel
+        disciplina:
+          type: string
+          example: Pádel
+        precioPorTurno:
+          type: number
+          format: double
+          example: 18000.00
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/SlotDisponible'
+
+    DisponibilidadResponse:
+      type: object
+      required: [fecha, canchas]
+      properties:
+        fecha:
+          type: string
+          format: date
+          example: '2026-09-15'
+        canchas:
+          type: array
+          items:
+            $ref: '#/components/schemas/DisponibilidadCancha'
+
+    ItemEquipamientoRequest:
+      type: object
+      required: [equipamientoId, cantidad]
+      properties:
+        equipamientoId:
+          type: integer
+          example: 7
+        cantidad:
+          type: integer
+          minimum: 1
+          example: 2
+
+    CrearReservaRequest:
+      type: object
+      description: |
+        El identificador del cliente no forma parte del body. Se resuelve
+        a partir del JWT, de modo que un usuario no pueda reservar a nombre de otro.
+      required: [canchaId, fecha, horaInicio]
+      properties:
+        canchaId:
+          type: integer
+          example: 3
+        fecha:
+          type: string
+          format: date
+          example: '2026-09-15'
+        horaInicio:
+          type: string
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+          description: |
+            Hora de inicio del slot. La hora de fin la calcula el servidor
+            a partir de la duración de turno de la disciplina.
+          example: '19:00'
+        cantidadJugadores:
+          type: integer
+          minimum: 1
+          description: |
+            Opcional. No afecta el precio: un turno cuesta lo mismo con 2 que
+            con 4 jugadores. Sirve para que el club sepa cuánta gente espera.
+          example: 4
+        equipamiento:
+          type: array
+          description: Ítems a alquilar. Opcional.
+          items:
+            $ref: '#/components/schemas/ItemEquipamientoRequest'
+
+    CancelarReservaRequest:
+      type: object
+      properties:
+        motivo:
+          type: string
+          maxLength: 200
+          example: Se suspendió por lluvia
+
+    ItemEquipamientoReserva:
+      type: object
+      required: [equipamientoId, nombre, cantidad, precioUnitario, subtotal]
+      properties:
+        equipamientoId:
+          type: integer
+          example: 7
+        nombre:
+          type: string
+          example: Paleta de pádel
+        cantidad:
+          type: integer
+          example: 2
+        precioUnitario:
+          type: number
+          format: double
+          description: Precio congelado al momento de crear la reserva (RN-06)
+          example: 2500.00
+        subtotal:
+          type: number
+          format: double
+          example: 5000.00
+
+    EstadoReserva:
+      type: string
+      enum: [CONFIRMADA, CANCELADA, COMPLETADA]
+      example: CONFIRMADA
+
+    Reserva:
+      type: object
+      required:
+        - id
+        - codigo
+        - clienteId
+        - canchaId
+        - fecha
+        - horaInicio
+        - horaFin
+        - estado
+        - montoTotal
+      properties:
+        id:
+          type: integer
+          example: 128
+        codigo:
+          type: string
+          description: Código legible para el cliente
+          example: RES-A7F3K2
+        clienteId:
+          type: integer
+          example: 42
+        canchaId:
+          type: integer
+          example: 3
+        cancha:
+          type: string
+          example: Cancha 3 - Pádel
+        fecha:
+          type: string
+          format: date
+          example: '2026-09-15'
+        horaInicio:
+          type: string
+          example: '19:00'
+        horaFin:
+          type: string
+          example: '20:30'
+        cantidadJugadores:
+          type: integer
+          nullable: true
+          example: 4
+        estado:
+          $ref: '#/components/schemas/EstadoReserva'
+        equipamiento:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemEquipamientoReserva'
+        montoCancha:
+          type: number
+          format: double
+          description: Precio de la cancha congelado al crear la reserva (RN-06)
+          example: 24000.00
+        montoEquipamiento:
+          type: number
+          format: double
+          example: 5000.00
+        montoTotal:
+          type: number
+          format: double
+          example: 29000.00
+        creadaEn:
+          type: string
+          format: date-time
+          example: '2026-09-01T14:32:10Z'
+        canceladaEn:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        motivoCancelacion:
+          type: string
+          nullable: true
+          example: null
+
+    ContactoRequest:
+      type: object
+      required: [nombre, email, mensaje]
+      properties:
+        nombre:
+          type: string
+          maxLength: 60
+          example: Ana Fernández
+        email:
+          type: string
+          format: email
+          example: ana@example.com
+        telefono:
+          type: string
+          maxLength: 30
+          nullable: true
+          example: '+5493541000000'
+        mensaje:
+          type: string
+          maxLength: 1000
+          example: Hola, quería consultar por el alquiler de canchas para un torneo interno.
+        sitioWeb:
+          type: string
+          description: |
+            Campo trampa anti-spam. No se muestra al usuario y debe llegar vacío.
+            Si viene completo, la solicitud se descarta en silencio.
+          example: ''
+
+    ContactoResponse:
+      type: object
+      required: [mensaje]
+      properties:
+        mensaje:
+          type: string
+          example: Recibimos tu consulta. Te respondemos dentro de las 48 horas.
+
+    Error:
+      type: object
+      required: [tipo, titulo, estado]
+      properties:
+        tipo:
+          type: string
+          description: Identificador legible del tipo de error
+          example: SLOT_NO_DISPONIBLE
+        titulo:
+          type: string
+          description: Descripción breve, apta para mostrar al usuario
+          example: El horario solicitado ya está reservado
+        estado:
+          type: integer
+          description: Código de estado HTTP
+          example: 409
+        detalle:
+          type: string
+          description: Explicación específica de esta ocurrencia
+          example: La cancha 3 ya tiene una reserva activa el 2026-09-15 a las 19:00.
+        instancia:
+          type: string
+          description: Ruta donde ocurrió el error
+          example: /reservas
