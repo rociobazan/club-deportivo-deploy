@@ -1,4 +1,4 @@
-# Sistema de Reservas — Club Deportivo
+l# Sistema de Reservas — Club Deportivo
 
 Especificación funcional y modelo de datos. Documento base para el contrato OpenAPI (`openapi.yaml`).
 
@@ -16,7 +16,7 @@ Especificación funcional y modelo de datos. Documento base para el contrato Ope
 - Catálogo de disciplinas, canchas, tarifas y equipamiento.
 - Consulta de disponibilidad por fecha y disciplina.
 - Creación de reservas de cancha con equipamiento opcional.
-- Tarifa diferenciada según cantidad de jugadores.
+- Precio plano por turno: cada cancha tiene un único precio, independiente de la cantidad de jugadores.
 - Consulta de reservas (listado filtrado y detalle), acotada según el rol.
 - Cancelación de reservas con política de anticipación mínima.
 - Cálculo automático de precio (cancha + equipamiento).
