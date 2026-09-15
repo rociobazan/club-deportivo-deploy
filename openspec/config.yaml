@@ -2,6 +2,15 @@ schema: spec-driven
 githubCopilot:
   cloudAgent: true
 
+context: |
+  Proyecto: sistema de reservas del club deportivo "Deploy" (TP grupal con OpenSpec y CI/CD).
+  Antes de redactar artefactos, leer docs/memoria-proyecto.md (decisiones vigentes, stack, estado)
+  y la consigna en docs/Consigna TP — Sistema de Reservas con OpenSpec y CI-CD.md.
+  Stack: Nest 12 + Prisma 6.19.3 + PostgreSQL 17 local sin Docker; Next.js 16 (proxy.ts, cookies async);
+  contrato de la API en contratos/openapi.yaml; diseño visual en docs/claude-design/Deploy Club.dc.html.
+  MVP: incluye todas las pantallas del prototipo, también panel de admin, ABM de canchas y equipamiento y reenvío de mail.
+  Idioma: castellano rioplatense. Encabezados estructurales de OpenSpec en inglés y MUST/SHALL literal en cada requisito.
+
 # Project context (optional)
 # This is shown to AI when creating artifacts.
 # Add your tech stack, conventions, style guides, domain knowledge, etc.
