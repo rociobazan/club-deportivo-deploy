@@ -70,7 +70,7 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
 
 ## Estado al 2026-09-14
 
-- **Cambio `especificacion-base-reservas`**: planificación completa (`proposal.md`, specs de las 7 capacidades, `design.md`, `tasks.md`), válida con `openspec validate --strict`. **Todavía no se implementó** ni se commiteó: los artefactos están sin commitear y deben ir a la rama `feature/spec-contrato-base`.
+- **Cambio `especificacion-base-reservas`**: planificación completa (`proposal.md`, specs de las 7 capacidades, `design.md`, `tasks.md`), válida con `openspec validate --strict`, commiteada y pusheada en la rama **`feature/spec-contrato-base`** junto con la consigna, el prototipo y esta memoria. **Todavía no se implementó** (ninguna tarea de `tasks.md` está hecha) y todavía no hay PR.
 - `openspec/specs/` sigue vacío hasta archivar ese cambio.
 - `apps/api` y `apps/web` son los proyectos recién generados, sin módulos ni páginas.
 - Todavía no existen `apps/api/prisma/`, `.github/workflows/ci.yml`, la protección de `main` ni el README.
@@ -80,7 +80,7 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
 ## Próximos pasos
 
 1. Revisar entre los cuatro los artefactos de `especificacion-base-reservas`.
-2. Crear `feature/spec-contrato-base` y llevar ahí los cambios sin commitear.
+2. Trabajar sobre la rama `feature/spec-contrato-base` (`git fetch` y `git switch feature/spec-contrato-base` en cada computadora).
 3. `/opsx:apply` sobre ese cambio: corregir y ampliar docs, ampliar el contrato a 2.2.0, crear rol y base en PostgreSQL 17, Prisma, migraciones, seed y verificaciones.
 4. PR base aprobado por los cuatro y merge.
 5. En su propia rama: `ci.yml` (validación de OpenSpec, lint del contrato y tests contra `postgres:17`) y protección de `main` con checks obligatorios y una aprobación, con captura para el README.
