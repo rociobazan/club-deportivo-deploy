@@ -2,7 +2,7 @@
 
 Memoria compartida para cualquier integrante y cualquier agente de IA (Claude Code, Copilot, Codex, Cursor, Gemini CLI u otro), en cualquier computadora. Resume qué pide la consigna, con qué se construye, qué se decidió, en qué estado está el trabajo y qué sigue.
 
-**Última actualización:** 2026-09-16
+**Última actualización:** 2026-09-17
 
 ## Cómo usar este documento
 
@@ -68,9 +68,9 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
 14. **Mails**: asuntos `Tu turno en Deploy está confirmado · {codigo}` y `Cancelamos tu turno en Deploy · {codigo}`; se envían después del commit y nunca revierten la operación (RN-14).
 15. **Capacidades de OpenSpec**: `autenticacion`, `catalogo`, `disponibilidad`, `reservas`, `notificaciones`, `institucional` y `administracion`.
 
-## Estado al 2026-09-16
+## Estado al 2026-09-17
 
-- **Cambio `especificacion-base-reservas`**: implementado en la rama **`feature/spec-contrato-base`** (32 de 35 tareas), commiteado y pusheado, todavía sin PR. El `/opsx:apply` se pausó a pedido el 2026-09-16. Ya está hecho:
+- **Cambio `especificacion-base-reservas`**: implementado en la rama **`feature/spec-contrato-base`** (34 de 35 tareas), commiteado y pusheado, todavía sin PR. Ya está hecho:
   - `docs/requisitos.md` corregido a precio plano y ampliado con RF-11 a RF-14, RN-15 y RN-16.
   - `contratos/openapi.yaml` en 2.2.0.
   - `docs/arquitectura.md` y `docs/identidad.md` actualizados, y `uploads/` en `.gitignore`.
@@ -78,12 +78,10 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
   - Prisma 6.19.3 y bcrypt instalados; `apps/api/.env.example`; scripts `db:*`.
   - `apps/api/prisma/` con el schema, las migraciones `init` y `slot_unico_activo`, y el seed.
   - Prueba de humo de RN-01, simulación del CI con `migrate deploy`, `spec:validate` y `contrato:lint` en verde.
-- **Faltan tres tareas**:
-  - 8.2, la parte que corre `prisma migrate reset --force`.
-  - 9.3, que corre `docker compose down -v`.
-  - 9.6, la revisión de `git status` antes del commit y la descripción del PR.
-
-  Las dos primeras borran la base local: no se corrieron y esperan la confirmación explícita del integrante que las corra.
+  - Seed idempotente (tarea 8.2): la segunda corrida informa "La base ya tiene datos; no se cargó nada", termina en 0 y deja los conteos iguales (3 disciplinas, 6 canchas activas, 5 ítems de equipamiento activos, 2 usuarios, 0 reservas).
+  - Migration Plan desde cero: sobre una base recién creada, `prisma migrate deploy` y `prisma db seed` dejan las 8 tablas, los tres índices (`ux_reserva_slot_activo` con su `WHERE`, `ix_reserva_usuario_estado`, `ix_reserva_fecha`) y los datos de la decisión 13, sin pasos manuales extra.
+  - Tarea 9.6: `git status` revisado contra la lista esperada (coincide, sin ningún `.env`) y descripción del PR redactada.
+- **Falta una tarea**: 9.3, el `docker compose down -v` que borra el contenedor y el volumen antes de rehacer `db:up`, `db:migrate` y `db:seed`. Lo corre el integrante que abra el PR, en su máquina; lo verificado arriba cubre las migraciones y el seed desde cero, pero no la recreación del volumen.
 - `openspec/specs/` sigue vacío hasta archivar ese cambio.
 - `apps/api` todavía no tiene módulos (solo `prisma/`) y `apps/web` no tiene páginas.
 - Todavía no existen `.github/workflows/ci.yml`, la protección de `main` ni el README.
@@ -93,21 +91,49 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
 - **Migración de verificación vacía**: `prisma migrate dev --create-only` crea una migración vacía aunque el schema esté sincronizado. No generó ningún `DROP INDEX` de `ux_reserva_slot_activo`; la carpeta vacía se borró.
 - **npm 11 y scripts de instalación**: con Node 24, npm 11 no ejecuta los scripts de instalación sin aprobarlos (`npm install-scripts`). Prisma y bcrypt funcionan igual, porque sus motores y binarios precompilados quedan instalados, así que no se aprobó ninguno. `.nvmrc` sigue pidiendo Node 20.
 - **Seed con TypeScript 6**: `ts-node` lo ejecuta sin `--transpile-only`. Prisma avisa que `package.json#prisma` queda obsoleto en Prisma 7; es esperable con la decisión 5.
-- **Prisma bloquea `migrate reset` ante agentes de IA**: Prisma 6.19 detecta cuando lo invoca un agente y exige el consentimiento explícito del usuario.
+- **`migrate reset` y `down -v` los corre una persona, no un agente**: Prisma 6.19 detecta cuando lo invoca un agente y exige el consentimiento explícito del usuario, y Claude Code además bloquea por su cuenta los comandos que destruyen datos locales de forma irreversible. La idempotencia del seed y el Migration Plan desde cero se verificaron sin borrar nada: se creó la base aparte `club_reservas_limpia`, se corrieron `prisma migrate deploy` y `prisma db seed` apuntando a ella con `DATABASE_URL` en línea, se compararon tablas, índices y conteos, y se la eliminó. Esa vía sirve para cualquier integrante que no quiera perder su base local.
 - **Agregados al contrato fuera de la tabla de la decisión 16**:
   - `GET /canchas` declara también la respuesta 400 que usa la spec de `autenticacion`.
   - El 409 de la cancelación describe los dos casos de la spec (ya cancelada o turno terminado).
   - `ReenvioMailResponse` lleva `mensaje`, `tipo` y `destinatario`.
 - **Los tests de la API fallan desde antes de este cambio**: `npm run test --workspace api` corta con `TS5011`, porque TypeScript 6 pide `rootDir` explícito en `apps/api/tsconfig.json`. No lo causó la instalación, pero bloquea el job de tests del CI (ver "Pendientes").
 
-## Próximos pasos
+## Reparto del trabajo restante
 
-1. Retomar `/opsx:apply especificacion-base-reservas` en `feature/spec-contrato-base` (`git pull`, `npm install`, `npm run db:up`, copiar `apps/api/.env.example` a `apps/api/.env`, `npm run db:migrate` y `npm run db:seed`). Quedan 8.2 y 9.3, con confirmación explícita porque borran la base local, y 9.6 al armar la descripción del PR.
-2. Revisar entre los cuatro el cambio completo (artefactos, docs, contrato 2.2.0, schema y seed) y abrir el PR base; lo aprueban los cuatro y se mergea.
-3. En su propia rama: `ci.yml` (validación de OpenSpec, lint del contrato y tests contra `postgres:17`) y protección de `main` con checks obligatorios y una aprobación, con captura para el README. Antes hay que resolver el `TS5011` de los tests.
-4. `openspec archive especificacion-base-reservas` en un PR propio.
-5. FASE 5, una rama y un `/opsx:propose` por feature: autenticación; catálogo y disponibilidad; creación de reservas; consulta, cancelación y notificaciones; administración (RF-11 a RF-14); landing y contacto.
-6. README con arquitectura e instrucciones con Docker Desktop y `npm run db:up`.
+Cada integrante se lleva su feature **completa**: spec, contrato si hace falta, endpoint en Nest,
+tests y la pantalla en Next que la consume (`requisitos.md` §8). Una rama por ítem, un PR por rama,
+al menos una aprobación de quien figura en "Revisa".
+
+**Los integrantes son A, B, C y D**: al tomar cada rama, reemplazar la letra por el nombre en esta
+tabla y en `requisitos.md` §8, en el mismo PR.
+
+### Hito 0 — desbloquear (antes de abrir ramas en paralelo)
+
+| # | Rama | Qué entra | Responsable | Revisa | Depende de |
+|---|---|---|---|---|---|
+| 0.1 | `feature/spec-contrato-base` | Correr la tarea 9.3 y abrir el PR base con la descripción ya redactada | Quien lo implementó | **Los cuatro** | — |
+| 0.2 | `fix/rootdir-tests-api` | `TS5011`: `rootDir` en `apps/api/tsconfig.json` (o ajustar `ts-jest`) para que `npm run test --workspace api` pase | A definir | Cualquiera | 0.1 mergeado |
+| 0.3 | `chore/ci-y-proteccion-main` | `.github/workflows/ci.yml` (`spec:validate`, `contrato:lint`, tests contra el service container `postgres:17`), protección de `main` con checks obligatorios y una aprobación, y captura para el README | A definir | Cualquiera | 0.2 |
+| 0.4 | `chore/archivar-especificacion-base` | `openspec archive especificacion-base-reservas`, que llena `openspec/specs/` | Quien lo implementó | Cualquiera | 0.1 mergeado; se archiva de a uno, avisando por el grupo |
+
+### Hito 1 — features en paralelo (FASE 5)
+
+Cada una arranca con su propio `/opsx:propose`, que las cuatro personas revisan antes del
+`/opsx:apply`.
+
+| # | Rama | Qué entra | Responsable | Revisa | Depende de |
+|---|---|---|---|---|---|
+| 1.1 | `feature/spec-autenticacion` | RF-00: registro, login, JWT, guards de rol, y las pantallas de registro e ingreso en Next | **A** | B | 0.1. **Camino crítico**: hasta que estén los guards, C y D testean con un mock del token |
+| 1.2 | `feature/spec-disponibilidad` | RF-01, RF-02, RF-03: disciplinas, canchas, equipamiento y consulta de disponibilidad, más la pantalla de disponibilidad | **B** | C | 0.1 |
+| 1.3 | `feature/spec-creacion-reserva` | RF-04 con RN-01, RN-05 y RN-06: creación de reservas y formulario | **C** | D | 1.1 y 1.2 |
+| 1.4 | `feature/spec-reservas-notificaciones` | RF-05 a RF-08: mis reservas, detalle, cancelación y mails de confirmación y cancelación, más la pantalla de mis reservas | **D** | A | 1.1 y 1.3 |
+| 1.5 | `feature/landing-institucional` | RF-09 y RF-10: Inicio, El club y Contacto, con el prototipo como referencia | **A + B** | C y D | 0.1 |
+| 1.6 | `feature/spec-administracion` | RF-11 a RF-14: panel del club, ABM de canchas y equipamiento, reenvío del mail y pantallas de admin | **C + D** (propuesto el 2026-09-17; confirmar) | A y B | 1.1 y 1.2 |
+| 1.7 | `docs/readme` | README con arquitectura, instrucciones con Docker Desktop y `npm run db:up`, usuarios de prueba y la captura de la protección de `main` | A definir | Cualquiera | 0.3 |
+
+Queda **RF-11 a RF-14 asignado a C y D** para equilibrar, porque A y B se llevan además la landing
+(1.5). Era la *Open Question* "quién implementa la administración" del `design.md`; cuando el equipo
+lo confirme, se cierra ahí y en `requisitos.md` §8.
 
 ## Pendientes y preguntas abiertas
 
@@ -122,3 +148,4 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
 - **2026-09-09**: estructura del monorepo (Nest y Next), plan de trabajo, relevamiento y contrato 2.1.0 con precio plano.
 - **2026-09-14**: `openspec init` y propuesta del cambio base. Se generaron specs, diseño y tareas. Se incorporaron la consigna, el prototipo de Claude Design (club Deploy), PostgreSQL 17 local sin Docker y Next.js 16. Se decidió que todo el prototipo, incluida la administración, entra al MVP. Se creó esta memoria.
 - **2026-09-16**: el equipo confirmó Docker para la base: PostgreSQL 17 en `docker-compose.yml`, puerto 5434. Se actualizaron `proposal.md`, `design.md` (decisión 13, riesgos y Migration Plan) y `tasks.md` (secciones 4 a 6 y 9). Se implementó el cambio base salvo 8.2, 9.3 y 9.6, se pausó a pedido y se subió a GitHub (ver "Estado").
+- **2026-09-17**: se cerraron las tareas 8.2 y 9.6 y se redactó la descripción del PR base. Queda 9.3, que la corre una persona. Se reemplazaron los "Próximos pasos" por el "Reparto del trabajo restante", con una rama y un responsable por ítem, y se propuso asignar la administración (RF-11 a RF-14) a C y D.
