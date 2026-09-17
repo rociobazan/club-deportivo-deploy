@@ -4,7 +4,7 @@ Motivación y alcance en `proposal.md`. Lo que condiciona el enfoque:
 
 - **Consigna** (`docs/Consigna TP — Sistema de Reservas con OpenSpec y CI-CD.md`): MVP con specs válidas que cubran disponibilidad, creación, consulta y cancelación; `main` protegida con una rama y un PR aprobado por cambio; `.github/workflows/ci.yml` que valide OpenSpec, corra tests y bloquee el merge; README con arquitectura e instrucciones.
 - **Repo**: `apps/api` es un Nest 12 recién generado (TypeScript 6.0, `module: nodenext`, Jest 30, `ts-node` 10.9.2 ya instalado). `apps/web` es **Next.js 16.3.4** con React 19.2 y Tailwind 4, sin páginas. No existen `apps/api/prisma/` ni `apps/api/.env.example`. El `package.json` raíz define `db:up`/`db:down` con Docker y `db:migrate`, `db:seed` y `db:studio` con `npx prisma ... --schema apps/api/prisma/schema.prisma`.
-- **Base de datos**: el equipo decidió trabajar con PostgreSQL instalado, sin Docker. En esta máquina corren PostgreSQL 17 (puerto 5432) y 18 (puerto 5433) como servicios de Windows.
+- **Base de datos**: el equipo decidió levantar PostgreSQL con Docker (2026-09-16), como el plan, pero con `postgres:17`. Todavía no existe `docker-compose.yml`. En esta máquina están Docker 29.4 y Compose 5.1, y además corren PostgreSQL 17 (puerto 5432) y 18 (puerto 5433) como servicios de Windows, así que esos dos puertos están ocupados.
 - **Fuentes**: `contratos/openapi.yaml` (v2.1.0) define la forma de la API con precio plano. `docs/plan-de-trabajo.md` (pasos 3.6 a 3.9) trae el `schema.prisma` y el `seed.ts` para ese modelo. `docs/requisitos.md` sigue describiendo tarifas por cantidad de jugadores.
 - **Diseño visual**: el prototipo `docs/claude-design/Deploy Club.dc.html` define el nombre (**Deploy**), las pantallas por rol (visitante, socio y admin), el contenido institucional y los datos de ejemplo. Su sistema visual (fondo `#060807`, acento `#00E58F`, Outfit y DM Sans) reemplaza la paleta y la tipografía de `docs/identidad.md`.
 - **Alcance**: el equipo decidió que todas las pantallas del prototipo entran al MVP, incluidas las de administración (panel, canchas, equipamiento) y "Reenviar el mail", que el contrato v2.1.0 no cubre.
@@ -160,20 +160,43 @@ Usuarios: `admin@club.test` (ADMIN) y `socio@club.test` (SOCIO), con `clave1234`
 - **Mails (RN-14)**: el envío se hace después del commit, con `await` dentro de un `try/catch` y un timeout acotado, y luego se persiste la `notificacion`. En `NODE_ENV=test` el cliente de Resend se reemplaza por un doble. El remitente del prototipo es `turnos@clubdeploy.com.ar`, que se configura en `MAIL_FROM`.
 - **Convención de specs**: encabezados estructurales en inglés, contenido en castellano y el verbo normativo como `MUST` / `MUST NOT` literal, porque el validador estricto no reconoce "DEBE".
 
-### 13. PostgreSQL 17 instalado, sin Docker
+### 13. PostgreSQL 17 en Docker, publicado en el puerto 5434
 
-Cada integrante usa un servidor PostgreSQL 17 local. En él crea, con el superusuario `postgres`:
+Cada integrante levanta la base con el `docker-compose.yml` de la raíz, el mismo para los cuatro:
 
-```sql
-CREATE ROLE club WITH LOGIN PASSWORD 'club' CREATEDB;
-CREATE DATABASE club_reservas OWNER club;
+```yaml
+services:
+  db:
+    image: postgres:17
+    container_name: club-db
+    environment:
+      POSTGRES_USER: club
+      POSTGRES_PASSWORD: club
+      POSTGRES_DB: club_reservas
+    ports:
+      - "5434:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U club -d club_reservas"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db-data:
 ```
 
-`DATABASE_URL` queda `postgresql://club:club@localhost:5432/club_reservas`; quien tenga el servidor en otro puerto lo cambia solo en su `apps/api/.env`, que no se versiona. El CI usa un service container `postgres:17`, y `docs/arquitectura.md` se actualiza para no seguir mostrando `docker-compose.yml` ni `postgres:16`. Se quitan `db:up` y `db:down` del `package.json` raíz.
+`DATABASE_URL` queda `postgresql://club:club@localhost:5434/club_reservas`, igual en todas las máquinas. En el `package.json` raíz, `db:up` pasa a `docker compose up -d --wait`, que espera a que el healthcheck dé `healthy` antes de devolver el control, y `db:down` sigue como `docker compose down`, que conserva el volumen. Para entrar a la base no hace falta `psql` instalado: `docker compose exec db psql -U club -d club_reservas`. El CI usa un service container `postgres:17`, la misma imagen. `docs/arquitectura.md` conserva `docker-compose.yml` y cambia `postgres:16` por `postgres:17` y el puerto de `DATABASE_URL` por 5434.
 
-- **Por qué 17**: en esta máquina ya escucha en el puerto por defecto, así que la URL del plan no cambia, y es una versión con soporte establecido en Prisma 6.19. No verificamos Prisma 6.19 contra PostgreSQL 18.
-- **Por qué `CREATEDB`**: `prisma migrate dev` crea y borra una base sombra en cada ejecución; sin ese permiso falla con `P3014`.
-- **Alternativas descartadas**: Docker, que el equipo dejó de lado y además choca con el 17 local en el 5432; PostgreSQL 18, que en esta máquina está en 5433 y queda sin verificar.
+- **Por qué Docker**: la misma versión y la misma configuración en las cuatro máquinas con un solo comando, sin instalar PostgreSQL ni pedir la clave de un superusuario. Además, la base local usa la misma imagen que el CI.
+- **Por qué 17**: es la misma imagen del service container del CI y tiene soporte establecido en Prisma 6.19. No verificamos Prisma 6.19 contra PostgreSQL 18.
+- **Por qué 5434**: en esta máquina, 5432 y 5433 están ocupados por los servidores instalados. Publicar en 5434 evita el choque sin detenerlos, y usar el mismo puerto en las cuatro máquinas deja una sola `DATABASE_URL` en `.env.example`, el README y las tareas.
+- **Por qué no hace falta `CREATEDB`**: `prisma migrate dev` crea y borra una base sombra en cada ejecución (sin permiso falla con `P3014`). La imagen oficial crea `POSTGRES_USER` como superusuario, así que `club` ya puede hacerlo.
+- **Alternativas descartadas**:
+  - PostgreSQL 17 instalado en cada máquina: cada integrante lo instala, crea el rol y la base con la clave de su superusuario, y las versiones pueden divergir sin que nadie lo note hasta el CI.
+  - Mapear `5432:5432` como el plan: choca con los servidores instalados.
+  - PostgreSQL 18: sin verificar con Prisma 6.19.
 
 ### 14. El prototipo como referencia del front: qué endpoint usa cada pantalla
 
@@ -228,8 +251,9 @@ El contrato se amplía en este cambio, antes de que FASE 5 implemente, porque es
 ## Risks / Trade-offs
 
 - **Prisma no conoce el índice parcial** → un `prisma migrate dev` posterior puede generar un `DROP INDEX "ux_reserva_slot_activo"`. Mitigación: tras aplicar las migraciones se corre `prisma migrate dev --create-only --name verificacion` y se confirma que no genera nada; cada migración futura se revisa en el PR buscando ese `DROP`; el test de concurrencia de FASE 5 falla si el índice desaparece.
-- **Integrantes con otra versión o puerto de PostgreSQL** → las diferencias aparecen recién en CI. Mitigación: el README pide PostgreSQL 17 y el script de creación del rol; el puerto va en el `.env` de cada uno; el CI con `postgres:17` es el árbitro.
-- **Crear el rol requiere la clave del superusuario `postgres`** → no se puede automatizar desde el repo. Mitigación: cada integrante corre los dos comandos SQL de la decisión 13 con `psql -U postgres` y su propia clave.
+- **Docker Desktop cerrado o sin instalar** → `npm run db:up` falla con "Cannot connect to the Docker daemon" y, en Windows, Docker Desktop necesita WSL2. Mitigación: el README pide instalar Docker Desktop y dejarlo abierto (paso 1.5 del plan) y lista ese error con su solución.
+- **Un PostgreSQL instalado en la máquina** → si `DATABASE_URL` queda con el puerto 5432, Prisma se conecta a ese servidor y no al contenedor. Mitigación: `.env.example` trae la URL con 5434, y la tarea 7.2 verifica que Prisma se conectó a `localhost:5434`. Un servidor instalado no tiene el rol `club`, así que el error salta enseguida.
+- **El 5434 ocupado en alguna máquina** → `db:up` falla con "port is already allocated". Mitigación: se elige otro puerto libre para los cuatro y se cambia en `docker-compose.yml` y `.env.example` con un PR.
 - **`ts-node` 10.9 con TypeScript 6.0** → `ts-node` no se actualiza desde 2023 y podría no ejecutar `seed.ts`. Mitigación: probar `ts-node prisma/seed.ts` y después `ts-node --transpile-only`; si ninguno funciona, actualizar la propuesta para sumar `tsx`.
 - **`bcrypt` es un módulo nativo** → puede fallar la instalación en algún equipo o en CI. Mitigación: verificarlo en los cuatro equipos y en el primer run de CI; si no se resuelve, discutir `bcryptjs` en la propuesta.
 - **Credenciales de prueba conocidas** (`clave1234`) → Mitigación: el seed solo corre en desarrollo y CI; el README lo aclara.
@@ -245,11 +269,11 @@ El contrato se amplía en este cambio, antes de que FASE 5 implemente, porque es
 Proyecto nuevo, sin datos productivos.
 
 1. Trabajar en la rama `feature/spec-contrato-base` y abrir el PR con specs, documentación, prototipo, schema, migraciones y seed; lo aprueban los cuatro.
-2. Cada integrante: `git pull`, `npm install`, crear rol y base en su PostgreSQL 17 (decisión 13), copiar `apps/api/.env.example` a `apps/api/.env` y completarlo, `npm run db:migrate`, `npm run db:seed`.
+2. Cada integrante, con Docker Desktop abierto: `git pull`, `npm install`, `npm run db:up` (decisión 13), copiar `apps/api/.env.example` a `apps/api/.env` y completarlo, `npm run db:migrate`, `npm run db:seed`.
 3. CI (paso 3.11): `prisma migrate deploy` contra el service container `postgres:17`.
 4. Después del merge, `openspec archive especificacion-base-reservas` en un PR propio, avisando por el grupo.
 
-**Rollback**: revertir el PR. En local, `npm exec --workspace api -- prisma migrate reset --force` deja la base vacía y vuelve a sembrarla, o `DROP DATABASE club_reservas;` la elimina.
+**Rollback**: revertir el PR. En local, `npm exec --workspace api -- prisma migrate reset --force` deja la base vacía y vuelve a sembrarla, o `docker compose down -v` elimina el contenedor y el volumen con la base.
 
 ## Open Questions
 

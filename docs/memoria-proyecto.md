@@ -2,7 +2,7 @@
 
 Memoria compartida para cualquier integrante y cualquier agente de IA (Claude Code, Copilot, Codex, Cursor, Gemini CLI u otro), en cualquier computadora. Resume qué pide la consigna, con qué se construye, qué se decidió, en qué estado está el trabajo y qué sigue.
 
-**Última actualización:** 2026-09-14
+**Última actualización:** 2026-09-16
 
 ## Cómo usar este documento
 
@@ -18,7 +18,7 @@ Memoria compartida para cualquier integrante y cualquier agente de IA (Claude Co
 | Decisiones técnicas del cambio base | `openspec/changes/especificacion-base-reservas/design.md` |
 | Aspecto y contenido del front | `docs/claude-design/Deploy Club.dc.html` |
 | Relevamiento original | `docs/requisitos.md` (se está corrigiendo; ver "Estado") |
-| Guía paso a paso | `docs/plan-de-trabajo.md` (partes con Docker y tarifas quedaron desactualizadas) |
+| Guía paso a paso | `docs/plan-de-trabajo.md` (las partes de tarifas quedaron desactualizadas; su `docker-compose.yml` usa `postgres:16` y el puerto 5432: vale la decisión 4 de acá) |
 
 ## La consigna, en corto
 
@@ -43,7 +43,7 @@ Memoria compartida para cualquier integrante y cualquier agente de IA (Claude Co
 |---|---|---|
 | API | Nest 12, TypeScript 6.0, Jest 30 | Auth con JWT emitido y validado en Nest; errores con el formato `Error` del contrato |
 | Front | **Next.js 16.3.4**, React 19.2, Tailwind 4 | Antes de programar, leer `node_modules/next/dist/docs/` (lo exige `apps/web/AGENTS.md`). `middleware` pasó a `proxy.ts`; `cookies()` es asíncrona. Token en cookie `httpOnly` |
-| Base | **PostgreSQL 17 instalado localmente, sin Docker** | Rol `club` / clave `club` con `CREATEDB`; base `club_reservas`; puerto 5432. En CI, service container `postgres:17` |
+| Base | **PostgreSQL 17 en Docker** (`docker-compose.yml`) | Usuario `club` / clave `club`; base `club_reservas`; **puerto 5434** en el host; `npm run db:up` y `npm run db:down` con Docker Desktop abierto. En CI, service container `postgres:17` |
 | ORM | **Prisma 6.19.3, versión exacta** | `npm install prisma` sin versión hoy trae 8.0 RC; Prisma 7 cambia la configuración |
 | Otros | bcrypt, Resend, `@nestjs/throttler`, `openapi-typescript` | Tipos del front generados desde el contrato |
 | Herramientas | Node 20.19 (`.nvmrc`), OpenSpec CLI, schema `spec-driven` | `npm run spec:validate` y `npm run contrato:lint` |
@@ -55,7 +55,7 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
 1. **Precio plano por turno** (antes del 2026-09-14). Sin tabla `tarifa`; el precio vive en `cancha.precio_por_turno`. RN-11 y RN-12 se dieron de baja **sin renumerar** las demás reglas.
 2. **Se elimina `disciplina.jugadores_permitidos`** (2026-09-14). `cantidadJugadores` es opcional, entero ≥ 1, informativo y no cambia el precio.
 3. **Todo el prototipo entra al MVP** (2026-09-14): panel del club (RF-11), administración de canchas (RF-12), administración de equipamiento (RF-13) y reenvío del mail (RF-14). Reglas nuevas: RN-15 (dar de baja cancha o equipamiento no toca reservas existentes) y RN-16 (máximo 3 reenvíos por reserva por hora). El contrato pasa a **2.2.0** con esos endpoints, `Reserva.cliente` y `Equipamiento.activo`.
-4. **PostgreSQL 17 local sin Docker** (2026-09-14). Así se interpretó "ahora lo vamos a hacer con postgres"; ver "Pendientes".
+4. **PostgreSQL 17 en Docker, publicado en el puerto 5434** (2026-09-16; reemplaza la interpretación del 2026-09-14 de PostgreSQL instalado sin Docker). Misma imagen que el CI y una sola `DATABASE_URL` (`postgresql://club:club@localhost:5434/club_reservas`) para los cuatro. Se usa 5434 porque 5432 y 5433 pueden estar ocupados por servidores PostgreSQL instalados en la máquina.
 5. **Prisma 6.19.3 fijo**, y los scripts `db:*` del `package.json` raíz corren Prisma dentro del workspace `api`, para que lea `apps/api/.env` y `prisma.seed`.
 6. **RN-01 en la base**: índice único parcial `ux_reserva_slot_activo` sobre `(cancha_id, fecha, hora_inicio) WHERE estado <> 'CANCELADA'`, en una migración manual. Toda migración futura se revisa buscando un `DROP INDEX` de ese índice.
 7. **Hora local del club**: `ZONA_HORARIA_CLUB=America/Argentina/Cordoba` y un reloj inyectable para tests.
@@ -68,12 +68,12 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
 14. **Mails**: asuntos `Tu turno en Deploy está confirmado · {codigo}` y `Cancelamos tu turno en Deploy · {codigo}`; se envían después del commit y nunca revierten la operación (RN-14).
 15. **Capacidades de OpenSpec**: `autenticacion`, `catalogo`, `disponibilidad`, `reservas`, `notificaciones`, `institucional` y `administracion`.
 
-## Estado al 2026-09-14
+## Estado al 2026-09-16
 
 - **Cambio `especificacion-base-reservas`**: planificación completa (`proposal.md`, specs de las 7 capacidades, `design.md`, `tasks.md`), válida con `openspec validate --strict`, commiteada y pusheada en la rama **`feature/spec-contrato-base`** junto con la consigna, el prototipo y esta memoria. **Todavía no se implementó** (ninguna tarea de `tasks.md` está hecha) y todavía no hay PR.
 - `openspec/specs/` sigue vacío hasta archivar ese cambio.
 - `apps/api` y `apps/web` son los proyectos recién generados, sin módulos ni páginas.
-- Todavía no existen `apps/api/prisma/`, `.github/workflows/ci.yml`, la protección de `main` ni el README.
+- Todavía no existen `docker-compose.yml`, `apps/api/prisma/`, `.github/workflows/ci.yml`, la protección de `main` ni el README.
 - `docs/requisitos.md`, `docs/arquitectura.md`, `docs/identidad.md` y el contrato se actualizan como parte de las tareas del cambio base.
 - `docs/claude-design/uploads/` no se versiona: son copias de `assets/` y una imagen sin usar.
 
@@ -81,16 +81,15 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
 
 1. Revisar entre los cuatro los artefactos de `especificacion-base-reservas`.
 2. Trabajar sobre la rama `feature/spec-contrato-base` (`git fetch` y `git switch feature/spec-contrato-base` en cada computadora).
-3. `/opsx:apply` sobre ese cambio: corregir y ampliar docs, ampliar el contrato a 2.2.0, crear rol y base en PostgreSQL 17, Prisma, migraciones, seed y verificaciones.
+3. `/opsx:apply` sobre ese cambio: corregir y ampliar docs, ampliar el contrato a 2.2.0, `docker-compose.yml` con PostgreSQL 17, Prisma, migraciones, seed y verificaciones.
 4. PR base aprobado por los cuatro y merge.
 5. En su propia rama: `ci.yml` (validación de OpenSpec, lint del contrato y tests contra `postgres:17`) y protección de `main` con checks obligatorios y una aprobación, con captura para el README.
 6. `openspec archive especificacion-base-reservas` en un PR propio.
 7. FASE 5, una rama y un `/opsx:propose` por feature: autenticación; catálogo y disponibilidad; creación de reservas; consulta, cancelación y notificaciones; administración (RF-11 a RF-14); landing y contacto.
-8. README con arquitectura e instrucciones con PostgreSQL 17 local.
+8. README con arquitectura e instrucciones con Docker Desktop y `npm run db:up`.
 
 ## Pendientes y preguntas abiertas
 
-- **Confirmar la base de datos**: la interpretación "PostgreSQL 17 local, sin Docker, con Prisma" no fue confirmada explícitamente.
 - **Asignar RF-11 a RF-14** a uno o dos integrantes; el reparto de `requisitos.md` §8 no los incluía.
 - **Casilla de contacto**: variable de entorno para el destino de `POST /contacto` y respuesta si falla el proveedor; lo define el cambio de la landing.
 - **Usuarios inactivos**: si pueden iniciar sesión lo define el cambio de autenticación.
@@ -100,3 +99,4 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
 
 - **2026-09-09**: estructura del monorepo (Nest y Next), plan de trabajo, relevamiento y contrato 2.1.0 con precio plano.
 - **2026-09-14**: `openspec init` y propuesta del cambio base. Se generaron specs, diseño y tareas. Se incorporaron la consigna, el prototipo de Claude Design (club Deploy), PostgreSQL 17 local sin Docker y Next.js 16. Se decidió que todo el prototipo, incluida la administración, entra al MVP. Se creó esta memoria.
+- **2026-09-16**: el equipo confirmó Docker para la base: PostgreSQL 17 en `docker-compose.yml`, puerto 5434. Se actualizaron `proposal.md`, `design.md` (decisión 13, riesgos y Migration Plan) y `tasks.md` (secciones 4 a 6 y 9).
