@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Rol {
+  ADMIN
+  SOCIO
+}
+
+// Solo se persisten CONFIRMADA y CANCELADA; COMPLETADA se deriva al leer.
+enum EstadoReserva {
+  CONFIRMADA
+  CANCELADA
+  COMPLETADA
+}
+
+enum TipoNotificacion {
+  CONFIRMACION
+  CANCELACION
+}
+
+enum EstadoNotificacion {
+  ENVIADA
+  FALLIDA
+}
+
+model Usuario {
+  id           Int      @id @default(autoincrement())
+  nombre       String   @db.VarChar(60)
+  apellido     String   @db.VarChar(60)
+  email        String   @unique @db.VarChar(120)
+  passwordHash String   @map("password_hash") @db.VarChar(120)
+  telefono     String?  @db.VarChar(30)
+  rol          Rol      @default(SOCIO)
+  activo       Boolean  @default(true)
+  creadoEn     DateTime @default(now()) @map("creado_en")
+
+  reservas      Reserva[] @relation("ReservasDelUsuario")
+  cancelaciones Reserva[] @relation("CanceladasPor")
+
+  @@map("usuario")
+}
+
+model Disciplina {
+  id               Int     @id @default(autoincrement())
+  nombre           String  @unique @db.VarChar(50)
+  duracionTurnoMin Int     @map("duracion_turno_min")
+  activa           Boolean @default(true)
+
+  canchas      Cancha[]
+  equipamiento Equipamiento[]
+
+  @@map("disciplina")
+}
+
+model Cancha {
+  id             Int     @id @default(autoincrement())
+  disciplinaId   Int     @map("disciplina_id")
+  nombre         String  @db.VarChar(50)
+  superficie     String? @db.VarChar(30)
+  techada        Boolean @default(false)
+  precioPorTurno Decimal @map("precio_por_turno") @db.Decimal(10, 2)
+  activa         Boolean @default(true)
+
+  disciplina Disciplina @relation(fields: [disciplinaId], references: [id])
+  reservas   Reserva[]
+
+  @@map("cancha")
+}
+
+model Equipamiento {
+  id             Int     @id @default(autoincrement())
+  disciplinaId   Int     @map("disciplina_id")
+  nombre         String  @db.VarChar(60)
+  stockTotal     Int     @map("stock_total")
+  precioPorTurno Decimal @map("precio_por_turno") @db.Decimal(10, 2)
+  activo         Boolean @default(true)
+
+  disciplina Disciplina            @relation(fields: [disciplinaId], references: [id])
+  reservas   ReservaEquipamiento[]
+
+  @@map("equipamiento")
+}
+
+// RN-01 vive en la migración manual slot_unico_activo: índice único parcial
+// ux_reserva_slot_activo sobre (cancha_id, fecha, hora_inicio) WHERE estado <> 'CANCELADA'.
+// Prisma no lo conoce; revisar que ninguna migración nueva lo borre.
+model Reserva {
+  id                Int           @id @default(autoincrement())
+  codigo            String        @unique @db.VarChar(12)
+  usuarioId         Int           @map("usuario_id")
+  canchaId          Int           @map("cancha_id")
+  fecha             DateTime      @db.Date
+  horaInicio        String        @map("hora_inicio") @db.VarChar(5)
+  horaFin           String        @map("hora_fin") @db.VarChar(5)
+  cantidadJugadores Int?          @map("cantidad_jugadores")
+  estado            EstadoReserva @default(CONFIRMADA)
+  montoCancha       Decimal       @map("monto_cancha") @db.Decimal(10, 2)
+  montoEquipamiento Decimal       @default(0) @map("monto_equipamiento") @db.Decimal(10, 2)
+  montoTotal        Decimal       @map("monto_total") @db.Decimal(10, 2)
+  creadaEn          DateTime      @default(now()) @map("creada_en")
+  canceladaEn       DateTime?     @map("cancelada_en")
+  canceladaPorId    Int?          @map("cancelada_por")
+  motivoCancelacion String?       @map("motivo_cancelacion") @db.VarChar(200)
+
+  usuario        Usuario               @relation("ReservasDelUsuario", fields: [usuarioId], references: [id])
+  canceladaPor   Usuario?              @relation("CanceladasPor", fields: [canceladaPorId], references: [id])
+  cancha         Cancha                @relation(fields: [canchaId], references: [id])
+  equipamiento   ReservaEquipamiento[]
+  notificaciones Notificacion[]
+
+  @@index([usuarioId, estado], map: "ix_reserva_usuario_estado")
+  @@index([fecha], map: "ix_reserva_fecha")
+  @@map("reserva")
+}
+
+model ReservaEquipamiento {
+  id             Int     @id @default(autoincrement())
+  reservaId      Int     @map("reserva_id")
+  equipamientoId Int     @map("equipamiento_id")
+  cantidad       Int
+  precioUnitario Decimal @map("precio_unitario") @db.Decimal(10, 2)
+
+  reserva      Reserva      @relation(fields: [reservaId], references: [id], onDelete: Cascade)
+  equipamiento Equipamiento @relation(fields: [equipamientoId], references: [id])
+
+  @@unique([reservaId, equipamientoId])
+  @@map("reserva_equipamiento")
+}
+
+model Notificacion {
+  id           Int                @id @default(autoincrement())
+  reservaId    Int                @map("reserva_id")
+  tipo         TipoNotificacion
+  destinatario String             @db.VarChar(120)
+  estado       EstadoNotificacion
+  proveedorId  String?            @map("proveedor_id") @db.VarChar(80)
+  error        String?
+  reenvio      Boolean            @default(false)
+  enviadaEn    DateTime           @default(now()) @map("enviada_en")
+
+  reserva Reserva @relation(fields: [reservaId], references: [id], onDelete: Cascade)
+
+  @@map("notificacion")
+}
