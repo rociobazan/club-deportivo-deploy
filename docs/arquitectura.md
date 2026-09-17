@@ -15,10 +15,11 @@ club-reservas/
 │   ├── api/                    # Nest.js
 │   │   ├── src/
 │   │   │   ├── auth/           # RF-00: JWT, guards, decorador @Roles
-│   │   │   ├── catalogo/       # RF-01, RF-02, RF-07
+│   │   │   ├── catalogo/       # RF-01, RF-02, RF-07, RF-12, RF-13
 │   │   │   ├── disponibilidad/ # RF-03
 │   │   │   ├── reservas/       # RF-04, RF-05, RF-06
-│   │   │   ├── notificaciones/ # RF-08 (Resend)
+│   │   │   ├── notificaciones/ # RF-08, RF-14 (Resend)
+│   │   │   ├── administracion/ # RF-11 (panel del club)
 │   │   │   └── comun/          # filtro de excepciones, DTOs base
 │   │   ├── prisma/
 │   │   │   ├── schema.prisma
@@ -28,18 +29,21 @@ club-reservas/
 │   └── web/                    # Next.js (App Router)
 │       ├── app/
 │       │   ├── (institucional)/   # RF-09: landing, el club, contacto
-│       │   └── (app)/             # disponibilidad, reservar, mis reservas
+│       │   ├── (app)/             # disponibilidad, reservar, mis reservas
+│       │   └── (admin)/           # panel, reservas, canchas y equipamiento
 │       ├── components/
-│       ├── styles/globals.css     # tokens de identidad.md
+│       ├── styles/globals.css     # tokens del prototipo de Claude Design
 │       └── lib/api/            # cliente GENERADO desde openapi.yaml
 ├── contratos/
 │   └── openapi.yaml            # fuente de verdad del contrato
 ├── docs/
+│   ├── claude-design/          # prototipo de Claude Design (referencia visual)
+│   ├── memoria-proyecto.md     # memoria compartida del equipo y de los agentes
 │   ├── requisitos.md
 │   ├── arquitectura.md
 │   └── identidad.md
 ├── .github/workflows/ci.yml
-├── docker-compose.yml          # PostgreSQL local
+├── docker-compose.yml          # PostgreSQL 17 local (puerto 5434)
 └── package.json                # workspaces
 ```
 
@@ -127,7 +131,8 @@ Traducciones obligatorias:
 
 ```env
 # apps/api/.env
-DATABASE_URL=postgresql://club:club@localhost:5432/club_reservas
+# Apunta al contenedor de docker-compose.yml (npm run db:up)
+DATABASE_URL=postgresql://club:club@localhost:5434/club_reservas
 JWT_SECRET=
 JWT_EXPIRES_IN=1h
 RESEND_API_KEY=
@@ -138,12 +143,14 @@ HORIZONTE_RESERVA_DIAS=30
 MAX_RESERVAS_ACTIVAS_SOCIO=3
 HORA_APERTURA=08:00
 HORA_CIERRE=23:00
+PREFIJO_CODIGO_RESERVA=RES
+ZONA_HORARIA_CLUB=America/Argentina/Cordoba
 
 # apps/web/.env.local
 API_URL=http://localhost:3000/api/v1
 ```
 
-Se versiona un `.env.example` con las claves vacías. El `.env` real va en `.gitignore`. Una clave de Resend commiteada por accidente es un problema real, no una formalidad.
+Se versiona un `.env.example` con las claves vacías, salvo `DATABASE_URL`, que es la misma en todas las máquinas y no es secreta. El `.env` real va en `.gitignore`. Una clave de Resend commiteada por accidente es un problema real, no una formalidad.
 
 ---
 
@@ -178,7 +185,7 @@ jobs:
     needs: contrato
     services:
       postgres:
-        image: postgres:16
+        image: postgres:17
         env:
           POSTGRES_USER: club
           POSTGRES_PASSWORD: club
@@ -299,7 +306,8 @@ Cierra #<issue>. Implementa RF-XX.
 | 2 | `ci.yml` + branch protection | Un integrante, antes de abrir ramas en paralelo |
 | 3 | RF-00 autenticación | A (camino crítico) |
 | 4 | RF-01 a RF-08 en ramas paralelas | B, C, D |
-| 5 | RF-09 landing + RF-10 contacto, con los tokens de `identidad.md` | A y B |
-| 6 | README con arquitectura, instrucciones y capturas | Compartido |
+| 5 | RF-11 a RF-14, administración y reenvío, cuando autenticación y catálogo estén mergeados | A asignar |
+| 6 | RF-09 sitio institucional + RF-10 contacto, con el prototipo de Claude Design | A y B |
+| 7 | README con arquitectura, instrucciones y capturas | Compartido |
 
 La etapa 2 va antes que las features a propósito. Si el CI se configura al final, los PRs anteriores se mergean sin validación y el historial de ejecuciones verdes queda vacío justo donde se lo va a mirar.

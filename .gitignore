@@ -18,6 +18,9 @@ build/
 out/
 next-env.d.ts
 
+# Prototipo de Claude Design: uploads/ son copias de assets/ que el canvas no usa
+docs/claude-design/uploads/
+
 # Prisma
 apps/api/prisma/*.db
 apps/api/prisma/*.db-journal

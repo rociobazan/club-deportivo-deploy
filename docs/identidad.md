@@ -1,5 +1,7 @@
 # Identidad y dirección de diseño
 
+> **Nota:** el club se llama **Deploy**. La referencia visual vigente (colores, tipografías y pantallas) es el prototipo `docs/claude-design/Deploy Club.dc.html`: fondo `#060807`, acento `#00E58F`, Outfit y DM Sans. Lo que sigue queda como antecedente.
+
 Complemento de `requisitos.md` (RF-09, RF-10). Define quiénes somos, cómo hablamos y cómo se ve el sistema.
 
 ---

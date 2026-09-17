@@ -17,7 +17,7 @@ Este es el PR base que aprueban los cuatro antes de abrir cualquier rama de feat
 - **BREAKING (respecto del relevamiento previo, no de código en producción): se adopta precio plano por turno.** Desaparece la tabla `tarifa`; el precio pasa a `cancha.precio_por_turno`. Se eliminan **RN-11** y **RN-12**, y la numeración del resto **no se recorre**: las reglas siguen siendo RN-01 a RN-10, RN-13 y RN-14, con el hueco a la vista para que las referencias cruzadas existentes sigan siendo válidas. `cantidadJugadores` queda como dato opcional e informativo que no interviene en el cálculo del monto.
 - Se alinea `docs/requisitos.md` con el contrato, que es la fuente de verdad ya corregida, y se le suman **RF-11** (panel del club), **RF-12** (administración de canchas), **RF-13** (administración de equipamiento) y **RF-14** (reenvío del mail), con dos reglas nuevas: **RN-15** (dar de baja una cancha o un equipamiento no altera las reservas existentes) y **RN-16** (máximo 3 reenvíos de mail por reserva por hora).
 - Como el enfoque es API-first, **se amplía `contratos/openapi.yaml`** (versión 2.2.0) antes de implementar: `GET /admin/panel`, `POST /canchas`, `PATCH /canchas/{id}`, `POST /equipamiento`, `PATCH /equipamiento/{id}`, `POST /reservas/{id}/reenvio-mail`, los parámetros `incluirInactivas` e `incluirInactivos`, y los campos `Reserva.cliente` y `Equipamiento.activo`.
-- Se levanta la fundación de datos compartida sobre **PostgreSQL 17 instalado en cada máquina, sin Docker**: un rol y una base locales, `apps/api/prisma/schema.prisma`, la migración manual del índice único parcial de RN-01, los dos índices de apoyo y el seed con las disciplinas, canchas, precios y equipamiento del prototipo, más usuarios de prueba.
+- Se levanta la fundación de datos compartida sobre **PostgreSQL 17 en Docker** (`docker-compose.yml`, publicado en el puerto 5434): la base `club_reservas`, `apps/api/prisma/schema.prisma`, la migración manual del índice único parcial de RN-01, los dos índices de apoyo y el seed con las disciplinas, canchas, precios y equipamiento del prototipo, más usuarios de prueba.
 - Se adopta el prototipo de Claude Design como referencia visual y de contenido del front. Las specs de `institucional` y `notificaciones` se alinean con él (secciones del sitio, asuntos de los mails) y `docs/identidad.md` queda como antecedente, con una nota que remite al prototipo.
 - El prefijo del código de reserva sale a la configuración como `PREFIJO_CODIGO_RESERVA` (default `RES`, que es el que ejemplifica el contrato). Así el código legible no queda atado al branding y el prefijo puede cambiarse sin tocar specs, seed ni tests.
 - Se deja `npm run spec:validate` (`openspec validate --all --strict`) y `npm run contrato:lint` pasando en verde, que es lo que después consume el CI que exige la consigna.
@@ -53,18 +53,18 @@ Ninguna. `openspec/specs/` está vacío: las siete capacidades son nuevas.
 - `contratos/openapi.yaml` — ampliado a la versión 2.2.0 con los endpoints, parámetros y campos de administración y reenvío (ver `design.md`, decisión 16).
 - `docs/requisitos.md` — corregido a precio plano (se elimina la tabla `tarifa`, `precio_por_turno` vuelve a `cancha`, se dan de baja RN-11 y RN-12 sin renumerar y se ajustan RF-01, RF-02 y RF-04) y ampliado con RF-11 a RF-14, RN-15 y RN-16.
 - `docs/memoria-proyecto.md` — nuevo: memoria compartida del proyecto para cualquier agente de IA y cualquier integrante, referenciada desde `AGENTS.md` y desde el `context` de `openspec/config.yaml`, que OpenSpec inyecta al redactar artefactos.
-- `docs/arquitectura.md` — sin `docker-compose.yml` en la estructura, con PostgreSQL 17 local y `postgres:17` como service container del CI.
+- `docs/arquitectura.md` — con `postgres:17` en `docker-compose.yml` y en el service container del CI, y `DATABASE_URL` en el puerto 5434.
 - `docs/identidad.md` — nota al inicio: el nombre es Deploy y la referencia visual vigente es `docs/claude-design/`.
 - `docs/claude-design/` — se versiona el prototipo (`Deploy Club.dc.html`, `support.js`, `assets/`) sin `uploads/`, que contiene copias de `assets/` y una imagen que el canvas no usa; `.gitignore` suma `docs/claude-design/uploads/`.
 - `docs/Consigna TP — Sistema de Reservas con OpenSpec y CI-CD.md` — se versiona junto al resto de la documentación.
 - A partir del archivado, la fuente de verdad del comportamiento pasa a ser `openspec/specs/`; la forma de la API sigue siendo `contratos/openapi.yaml`; la referencia visual, `docs/claude-design/`.
 
 **Código y configuración**
-- Base local (fuera del repo) — cada integrante crea en su PostgreSQL 17 el rol `club`, con permiso para crear bases (Prisma lo necesita para la base sombra), y la base `club_reservas`.
+- `docker-compose.yml` — nuevo: PostgreSQL 17 con el usuario `club`, que puede crear la base sombra de Prisma, y la base `club_reservas`, publicado en el puerto 5434 para no chocar con servidores PostgreSQL instalados en la máquina (ver `design.md`, decisión 13).
 - `apps/api/prisma/schema.prisma`, `apps/api/prisma/migrations/`, `apps/api/prisma/seed.ts` — nuevos. Respecto del schema del plan se suman `equipamiento.activo` y `notificacion.reenvio`.
 - `apps/api/package.json` — se suman las dependencias de abajo y la clave `prisma.seed`.
 - `apps/api/.env.example` — nuevo, con las claves del entorno vacías, incluidas `PREFIJO_CODIGO_RESERVA` y `ZONA_HORARIA_CLUB`. Los `.env` reales no se versionan.
-- `package.json` (raíz) — `db:migrate`, `db:seed` y `db:studio` pasan a ejecutar Prisma dentro del workspace `api`, para que lean `apps/api/.env` y la clave `prisma.seed`; se quitan `db:up` y `db:down`, que dependían de Docker (ver `design.md`, decisiones 10 y 13).
+- `package.json` (raíz) — `db:migrate`, `db:seed` y `db:studio` pasan a ejecutar Prisma dentro del workspace `api`, para que lean `apps/api/.env` y la clave `prisma.seed`; `db:up` pasa a esperar a que la base esté lista y `db:down` se mantiene (ver `design.md`, decisiones 10 y 13).
 
 **Dependencias**
 - `prisma` y `@prisma/client` — el ORM y su cliente generado, fijados en `6.19.3` (ver `design.md`, decisión 9).

@@ -10,15 +10,17 @@ info:
 
     ## Autenticación
 
-    Los endpoints de catálogo y disponibilidad son públicos.
+    Las consultas de catálogo y disponibilidad son públicas, salvo los
+    parámetros `incluirInactivas` e `incluirInactivos`, que exigen rol `ADMIN`.
     El resto requiere un JWT en el header `Authorization: Bearer <token>`.
 
     Roles: `SOCIO` opera únicamente sobre sus propias reservas.
-    `ADMIN` opera sobre todas y no está sujeto a los límites de RN-04 ni RN-07.
+    `ADMIN` opera sobre todas y no está sujeto a los límites de RN-04 ni RN-07;
+    además administra canchas y equipamiento y ve el panel del club.
 
     Las reglas de negocio están documentadas en `docs/requisitos.md` y las
     especificaciones vigentes en `openspec/specs/`.
-  version: 2.1.0
+  version: 2.2.0
   contact:
     name: Equipo de desarrollo
   license:
@@ -32,13 +34,15 @@ tags:
   - name: Autenticacion
     description: Registro, login y perfil
   - name: Catalogo
-    description: Disciplinas, canchas, tarifas y equipamiento
+    description: Disciplinas, canchas y equipamiento, con su administración
   - name: Disponibilidad
     description: Consulta de horarios libres
   - name: Reservas
     description: Creación, consulta y cancelación de reservas
   - name: Institucional
     description: Endpoints públicos del sitio institucional
+  - name: Administracion
+    description: Panel del club para el administrador
 
 paths:
 
@@ -137,9 +141,13 @@ paths:
     get:
       tags: [Catalogo]
       summary: Listar canchas
-      description: Público.
+      description: |
+        Público. Devuelve las canchas activas. Con `incluirInactivas=true`
+        devuelve también las dadas de baja y exige un token con rol ADMIN.
       operationId: listarCanchas
-      security: []
+      security:
+        - {}
+        - bearerAuth: []
       parameters:
         - name: disciplinaId
           in: query
@@ -152,6 +160,13 @@ paths:
           required: false
           schema:
             type: boolean
+        - name: incluirInactivas
+          in: query
+          required: false
+          description: Solo ADMIN. Incluye las canchas dadas de baja.
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           description: Listado de canchas. Puede ser vacío si ningún filtro coincide.
@@ -161,17 +176,103 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Cancha'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermisos'
+
+    post:
+      tags: [Catalogo]
+      summary: Dar de alta una cancha
+      description: Requiere rol ADMIN. La cancha se crea activa.
+      operationId: crearCancha
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearCanchaRequest'
+      responses:
+        '201':
+          description: Cancha creada
+          headers:
+            Location:
+              description: URI del recurso creado
+              schema:
+                type: string
+              example: /api/v1/canchas/7
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cancha'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermisos'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+
+  /canchas/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+        description: Identificador de la cancha
+    patch:
+      tags: [Catalogo]
+      summary: Modificar una cancha
+      description: |
+        Requiere rol ADMIN. Solo se modifican los campos enviados.
+
+        `activa: false` da de baja la cancha: sale del catálogo y de la
+        disponibilidad y no admite reservas nuevas, pero sus reservas
+        existentes no cambian (RN-15). Un cambio de precio no modifica los
+        montos de reservas ya creadas (RN-06).
+      operationId: actualizarCancha
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarCanchaRequest'
+      responses:
+        '200':
+          description: Cancha modificada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cancha'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermisos'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
 
   /equipamiento:
     get:
       tags: [Catalogo]
       summary: Listar equipamiento
       description: |
-        Público. Sin parámetros de fecha devuelve el catálogo con el stock total.
-        Si se envían `fecha` y `horaInicio`, cada ítem incluye además el
-        `stockDisponible` real para ese slot (RN-05).
+        Público. Sin parámetros de fecha devuelve el catálogo activo con el
+        stock total. Si se envían `fecha` y `horaInicio`, que van juntos, cada
+        ítem incluye además el `stockDisponible` real para ese slot (RN-05).
+
+        Con `incluirInactivos=true` devuelve también los ítems dados de baja
+        y exige un token con rol ADMIN.
       operationId: listarEquipamiento
-      security: []
+      security:
+        - {}
+        - bearerAuth: []
       parameters:
         - name: disciplinaId
           in: query
@@ -193,6 +294,13 @@ paths:
             type: string
             pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
           example: '20:00'
+        - name: incluirInactivos
+          in: query
+          required: false
+          description: Solo ADMIN. Incluye los ítems dados de baja.
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           description: Listado de equipamiento
@@ -204,6 +312,85 @@ paths:
                   $ref: '#/components/schemas/Equipamiento'
         '400':
           $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermisos'
+
+    post:
+      tags: [Catalogo]
+      summary: Dar de alta un ítem de equipamiento
+      description: Requiere rol ADMIN. El ítem se crea activo.
+      operationId: crearEquipamiento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearEquipamientoRequest'
+      responses:
+        '201':
+          description: Ítem creado
+          headers:
+            Location:
+              description: URI del recurso creado
+              schema:
+                type: string
+              example: /api/v1/equipamiento/8
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Equipamiento'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermisos'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+
+  /equipamiento/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+        description: Identificador del ítem de equipamiento
+    patch:
+      tags: [Catalogo]
+      summary: Modificar un ítem de equipamiento
+      description: |
+        Requiere rol ADMIN. Solo se modifican los campos enviados.
+
+        `activo: false` da de baja el ítem: sale del catálogo y no se puede
+        alquilar en reservas nuevas, pero las reservas que ya lo incluyen no
+        cambian (RN-15). Reducir `stockTotal` tampoco modifica reservas
+        existentes, y un cambio de precio no altera su `precioUnitario` (RN-06).
+      operationId: actualizarEquipamiento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarEquipamientoRequest'
+      responses:
+        '200':
+          description: Ítem modificado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Equipamiento'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermisos'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
 
   /disponibilidad:
     get:
@@ -422,13 +609,111 @@ paths:
         '404':
           $ref: '#/components/responses/NoEncontrado'
         '409':
-          description: La reserva ya se encontraba cancelada
+          description: La reserva no se puede cancelar porque ya está cancelada o su turno ya terminó
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                tipo: RESERVA_NO_CANCELABLE
+                titulo: Esta reserva ya no se puede cancelar
+                estado: 409
+                detalle: La reserva RES-A7F3K2 ya está cancelada.
+                instancia: /reservas/128/cancelacion
         '422':
           $ref: '#/components/responses/ReglaDeNegocioViolada'
+
+  /reservas/{id}/reenvio-mail:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+    post:
+      tags: [Reservas]
+      summary: Reenviar el mail de una reserva
+      description: |
+        Requiere autenticación: lo pide el titular de la reserva o un ADMIN.
+        Reenvía el mail que corresponde al estado actual: el de confirmación
+        si la reserva está activa, o el de cancelación si está CANCELADA. El
+        destinatario es siempre el titular.
+
+        Una reserva admite como máximo 3 reenvíos por hora (RN-16). Una falla
+        del proveedor de mail no cambia la respuesta: queda registrada (RN-14).
+      operationId: reenviarMailReserva
+      responses:
+        '202':
+          description: Reenvío aceptado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReenvioMailResponse'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          description: La reserva ya se jugó y no admite reenvío
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                tipo: REENVIO_NO_DISPONIBLE
+                titulo: No hay mail para reenviar
+                estado: 409
+                detalle: El turno de la reserva RES-A7F3K2 ya terminó.
+                instancia: /reservas/128/reenvio-mail
+        '429':
+          description: Se alcanzó el límite de reenvíos de la reserva
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                tipo: DEMASIADAS_SOLICITUDES
+                titulo: Ya reenviamos este mail varias veces
+                estado: 429
+                detalle: Se admiten hasta 3 reenvíos por hora. Volvé a intentar más tarde.
+                instancia: /reservas/128/reenvio-mail
+
+  /admin/panel:
+    get:
+      tags: [Administracion]
+      summary: Consultar el panel del club
+      description: |
+        Requiere rol ADMIN. Resume la actividad de un día: reservas no
+        canceladas del día y del anterior, facturación prevista, cancelaciones,
+        ocupación y próximos turnos. Se calcula en cada consulta.
+
+        La ocupación es la cantidad de turnos con reserva no cancelada sobre
+        los turnos que ofrecen las canchas activas según el horario de
+        atención, como porcentaje entero redondeado.
+      operationId: obtenerPanelAdmin
+      parameters:
+        - name: fecha
+          in: query
+          required: false
+          description: Día a consultar. Por defecto, hoy en la hora local del club.
+          schema:
+            type: string
+            format: date
+          example: '2026-09-15'
+      responses:
+        '200':
+          description: Panel del día consultado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PanelAdmin'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermisos'
 
   /contacto:
     post:
@@ -525,8 +810,9 @@ components:
     ReglaDeNegocioViolada:
       description: |
         La solicitud es sintácticamente válida pero incumple una regla de negocio
-        (fecha pasada, horizonte excedido, límite de reservas activas,
-        equipamiento de otra disciplina, plazo de cancelación vencido).
+        (fecha pasada, horizonte excedido, horario fuera de la grilla de turnos,
+        límite de reservas activas, equipamiento de otra disciplina, plazo de
+        cancelación vencido).
       content:
         application/json:
           schema:
@@ -709,6 +995,109 @@ components:
           type: number
           format: double
           example: 2500.00
+        activo:
+          type: boolean
+          example: true
+
+    CrearCanchaRequest:
+      type: object
+      required: [disciplinaId, nombre, precioPorTurno]
+      properties:
+        disciplinaId:
+          type: integer
+          minimum: 1
+          example: 2
+        nombre:
+          type: string
+          maxLength: 50
+          example: Pádel 4
+        superficie:
+          type: string
+          maxLength: 30
+          example: sintético
+        techada:
+          type: boolean
+          default: false
+          example: false
+        precioPorTurno:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+          example: 15000.00
+
+    ActualizarCanchaRequest:
+      type: object
+      description: Todos los campos son opcionales; solo se modifican los enviados.
+      properties:
+        nombre:
+          type: string
+          maxLength: 50
+          example: Pádel 4
+        superficie:
+          type: string
+          maxLength: 30
+          nullable: true
+          example: sintético
+        techada:
+          type: boolean
+          example: true
+        precioPorTurno:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+          example: 16000.00
+        activa:
+          type: boolean
+          description: '`false` da de baja la cancha sin tocar sus reservas (RN-15).'
+          example: false
+
+    CrearEquipamientoRequest:
+      type: object
+      required: [disciplinaId, nombre, stockTotal, precioPorTurno]
+      properties:
+        disciplinaId:
+          type: integer
+          minimum: 1
+          example: 1
+        nombre:
+          type: string
+          maxLength: 60
+          example: Visera
+        stockTotal:
+          type: integer
+          minimum: 0
+          example: 8
+        precioPorTurno:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+          example: 1000.00
+
+    ActualizarEquipamientoRequest:
+      type: object
+      description: Todos los campos son opcionales; solo se modifican los enviados.
+      properties:
+        nombre:
+          type: string
+          maxLength: 60
+          example: Paleta de pádel
+        stockTotal:
+          type: integer
+          minimum: 0
+          example: 8
+        precioPorTurno:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+          example: 3000.00
+        activo:
+          type: boolean
+          description: '`false` da de baja el ítem sin tocar las reservas que lo incluyen (RN-15).'
+          example: false
 
     SlotDisponible:
       type: object
@@ -861,6 +1250,10 @@ components:
         clienteId:
           type: integer
           example: 42
+        cliente:
+          type: string
+          description: Nombre y apellido del titular de la reserva
+          example: Jeremías Gómez
         canchaId:
           type: integer
           example: 3
@@ -913,6 +1306,135 @@ components:
           type: string
           nullable: true
           example: null
+
+    TipoNotificacion:
+      type: string
+      enum: [CONFIRMACION, CANCELACION]
+      example: CONFIRMACION
+
+    ReenvioMailResponse:
+      type: object
+      required: [mensaje, tipo, destinatario]
+      properties:
+        mensaje:
+          type: string
+          example: Te reenviamos el mail de tu reserva.
+        tipo:
+          $ref: '#/components/schemas/TipoNotificacion'
+        destinatario:
+          type: string
+          format: email
+          description: Mail del titular, que recibe el reenvío aunque lo pida un ADMIN
+          example: socio@club.com
+
+    OcupacionCancha:
+      type: object
+      required: [canchaId, nombre, disciplina, porcentaje]
+      properties:
+        canchaId:
+          type: integer
+          example: 3
+        nombre:
+          type: string
+          example: Pádel 1
+        disciplina:
+          type: string
+          example: Pádel
+        porcentaje:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Ocupación de la cancha en los 7 días que terminan en la fecha consultada
+          example: 82
+
+    ProximoTurno:
+      type: object
+      required: [reservaId, horaInicio, cancha, disciplina, cliente]
+      properties:
+        reservaId:
+          type: integer
+          example: 128
+        horaInicio:
+          type: string
+          example: '20:00'
+        cancha:
+          type: string
+          example: Pádel 1
+        disciplina:
+          type: string
+          example: Pádel
+        cliente:
+          type: string
+          description: Nombre y apellido del titular
+          example: Jeremías Gómez
+        cantidadJugadores:
+          type: integer
+          nullable: true
+          example: 4
+
+    PanelAdmin:
+      type: object
+      required:
+        - fecha
+        - reservasDelDia
+        - reservasDiaAnterior
+        - facturacionPrevista
+        - cancelacionesDelDia
+        - cancelacionesDentroDelPlazo
+        - ocupacionDelDia
+        - ocupacionPromedioSemanal
+        - ocupacionPorCancha
+        - proximosTurnos
+      properties:
+        fecha:
+          type: string
+          format: date
+          example: '2026-09-15'
+        reservasDelDia:
+          type: integer
+          description: Reservas no canceladas cuyo turno es en la fecha consultada
+          example: 14
+        reservasDiaAnterior:
+          type: integer
+          description: Lo mismo para el día anterior
+          example: 11
+        facturacionPrevista:
+          type: number
+          format: double
+          description: Suma de `montoTotal` de las reservas no canceladas del día, a cobrar en el club
+          example: 186000.00
+        cancelacionesDelDia:
+          type: integer
+          description: Reservas canceladas ese día, según la fecha local de la cancelación
+          example: 2
+        cancelacionesDentroDelPlazo:
+          type: integer
+          description: Cuántas de esas cancelaciones se hicieron con la anticipación mínima (RN-04)
+          example: 2
+        ocupacionDelDia:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Porcentaje entero de turnos ocupados en la fecha consultada
+          example: 68
+        ocupacionPromedioSemanal:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Porcentaje entero de turnos ocupados en los 7 días que terminan en la fecha consultada
+          example: 61
+        ocupacionPorCancha:
+          type: array
+          description: Una entrada por cancha activa
+          items:
+            $ref: '#/components/schemas/OcupacionCancha'
+        proximosTurnos:
+          type: array
+          description: |
+            Reservas no canceladas de la fecha, ordenadas por hora de inicio.
+            Si la fecha es hoy, solo las que todavía no empezaron.
+          items:
+            $ref: '#/components/schemas/ProximoTurno'
 
     ContactoRequest:
       type: object
