@@ -70,7 +70,7 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
 
 ## Estado al 2026-09-17
 
-- **Cambio `especificacion-base-reservas`**: implementado en la rama **`feature/spec-contrato-base`** (34 de 35 tareas), commiteado y pusheado, todavía sin PR. Ya está hecho:
+- **Cambio `especificacion-base-reservas`**: implementado y verificado por completo (**35 de 35 tareas**) en la rama **`feature/spec-contrato-base`**, commiteado y pusheado. Falta solo abrir el PR, con el texto ya redactado en `openspec/changes/especificacion-base-reservas/descripcion-pr.md`. Ya está hecho:
   - `docs/requisitos.md` corregido a precio plano y ampliado con RF-11 a RF-14, RN-15 y RN-16.
   - `contratos/openapi.yaml` en 2.2.0.
   - `docs/arquitectura.md` y `docs/identidad.md` actualizados, y `uploads/` en `.gitignore`.
@@ -79,9 +79,8 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
   - `apps/api/prisma/` con el schema, las migraciones `init` y `slot_unico_activo`, y el seed.
   - Prueba de humo de RN-01, simulación del CI con `migrate deploy`, `spec:validate` y `contrato:lint` en verde.
   - Seed idempotente (tarea 8.2): la segunda corrida informa "La base ya tiene datos; no se cargó nada", termina en 0 y deja los conteos iguales (3 disciplinas, 6 canchas activas, 5 ítems de equipamiento activos, 2 usuarios, 0 reservas).
-  - Migration Plan desde cero: sobre una base recién creada, `prisma migrate deploy` y `prisma db seed` dejan las 8 tablas, los tres índices (`ux_reserva_slot_activo` con su `WHERE`, `ix_reserva_usuario_estado`, `ix_reserva_fecha`) y los datos de la decisión 13, sin pasos manuales extra.
-  - Tarea 9.6: `git status` revisado contra la lista esperada (coincide, sin ningún `.env`) y descripción del PR redactada.
-- **Falta una tarea**: 9.3, el `docker compose down -v` que borra el contenedor y el volumen antes de rehacer `db:up`, `db:migrate` y `db:seed`. Lo corre el integrante que abra el PR, en su máquina; lo verificado arriba cubre las migraciones y el seed desde cero, pero no la recreación del volumen.
+  - Migration Plan en limpio (tarea 9.3): con `docker compose down -v` se borraron el contenedor y el volumen, y `npm run db:up`, `npm run db:migrate` y `npm run db:seed` dejaron las 8 tablas, los tres índices (`ux_reserva_slot_activo` con su `WHERE`, `ix_reserva_usuario_estado`, `ix_reserva_fecha`) y los datos de la decisión 13, sin ningún paso manual extra.
+  - Tarea 9.6: `git status` revisado contra la lista esperada (coincide, sin ningún `.env`) y descripción del PR redactada en `openspec/changes/especificacion-base-reservas/descripcion-pr.md`.
 - `openspec/specs/` sigue vacío hasta archivar ese cambio.
 - `apps/api` todavía no tiene módulos (solo `prisma/`) y `apps/web` no tiene páginas.
 - Todavía no existen `.github/workflows/ci.yml`, la protección de `main` ni el README.
@@ -111,7 +110,7 @@ tabla y en `requisitos.md` §8, en el mismo PR.
 
 | # | Rama | Qué entra | Responsable | Revisa | Depende de |
 |---|---|---|---|---|---|
-| 0.1 | `feature/spec-contrato-base` | Correr la tarea 9.3 y abrir el PR base con la descripción ya redactada | Quien lo implementó | **Los cuatro** | — |
+| 0.1 | `feature/spec-contrato-base` | Abrir el PR base con el texto de `descripcion-pr.md` | Quien lo implementó | **Los cuatro** | — |
 | 0.2 | `fix/rootdir-tests-api` | `TS5011`: `rootDir` en `apps/api/tsconfig.json` (o ajustar `ts-jest`) para que `npm run test --workspace api` pase | A definir | Cualquiera | 0.1 mergeado |
 | 0.3 | `chore/ci-y-proteccion-main` | `.github/workflows/ci.yml` (`spec:validate`, `contrato:lint`, tests contra el service container `postgres:17`), protección de `main` con checks obligatorios y una aprobación, y captura para el README | A definir | Cualquiera | 0.2 |
 | 0.4 | `chore/archivar-especificacion-base` | `openspec archive especificacion-base-reservas`, que llena `openspec/specs/` | Quien lo implementó | Cualquiera | 0.1 mergeado; se archiva de a uno, avisando por el grupo |
@@ -148,4 +147,4 @@ lo confirme, se cierra ahí y en `requisitos.md` §8.
 - **2026-09-09**: estructura del monorepo (Nest y Next), plan de trabajo, relevamiento y contrato 2.1.0 con precio plano.
 - **2026-09-14**: `openspec init` y propuesta del cambio base. Se generaron specs, diseño y tareas. Se incorporaron la consigna, el prototipo de Claude Design (club Deploy), PostgreSQL 17 local sin Docker y Next.js 16. Se decidió que todo el prototipo, incluida la administración, entra al MVP. Se creó esta memoria.
 - **2026-09-16**: el equipo confirmó Docker para la base: PostgreSQL 17 en `docker-compose.yml`, puerto 5434. Se actualizaron `proposal.md`, `design.md` (decisión 13, riesgos y Migration Plan) y `tasks.md` (secciones 4 a 6 y 9). Se implementó el cambio base salvo 8.2, 9.3 y 9.6, se pausó a pedido y se subió a GitHub (ver "Estado").
-- **2026-09-17**: se cerraron las tareas 8.2 y 9.6 y se redactó la descripción del PR base. Queda 9.3, que la corre una persona. Se reemplazaron los "Próximos pasos" por el "Reparto del trabajo restante", con una rama y un responsable por ítem, y se propuso asignar la administración (RF-11 a RF-14) a C y D.
+- **2026-09-17**: se cerraron las tres tareas que faltaban (8.2, 9.3 y 9.6), así que el cambio base queda verificado de punta a punta y listo para el PR, con su descripción en `descripcion-pr.md`. Se reemplazaron los "Próximos pasos" por el "Reparto del trabajo restante", con una rama y un responsable por ítem, y se propuso asignar la administración (RF-11 a RF-14) a C y D.
