@@ -93,9 +93,10 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
   - Seed idempotente (tarea 8.2): la segunda corrida informa "La base ya tiene datos; no se cargó nada", termina en 0 y deja los conteos iguales (3 disciplinas, 6 canchas activas, 5 ítems de equipamiento activos, 2 usuarios, 0 reservas).
   - Migration Plan en limpio (tarea 9.3): con `docker compose down -v` se borraron el contenedor y el volumen, y `npm run db:up`, `npm run db:migrate` y `npm run db:seed` dejaron las 8 tablas, los tres índices (`ux_reserva_slot_activo` con su `WHERE`, `ix_reserva_usuario_estado`, `ix_reserva_fecha`) y los datos de la decisión 13, sin ningún paso manual extra.
   - Tarea 9.6: `git status` revisado contra la lista esperada (coincide, sin ningún `.env`) y descripción del PR redactada en `openspec/changes/especificacion-base-reservas/descripcion-pr.md`.
-- **PR #4 (`chore/audit-fix`)**: `npm audit fix` sin `--force` (de 10 a 8 vulnerabilidades); las restantes solo se corrigen bajando Prisma, así que quedan. Se actualizó con `main` el 2026-09-21 y pasó el CI; espera aprobación.
-- **Ítems 0.2 y 0.3 hechos**: el PR #5 (tests de la API con Node 24, decisión 16) y el PR #6 (`ci.yml` con los checks `specs` y `api`, decisión 17) se mergearon el 2026-09-21, y el CI ya corrió en verde en `main`. Ninguno tuvo una aprobación registrada en GitHub, porque la protección de `main` todavía no está activa.
-- **Ítem 1.7 en `docs/readme`**: `README.md` con arquitectura, instrucciones de ejecución verificadas de punta a punta, usuarios de prueba, flujos de trabajo, CI y equipo. La captura de la protección se suma cuando esté activa.
+- **PR #4 (`chore/audit-fix`)**: `npm audit fix` sin `--force` (de 10 a 8 vulnerabilidades); las restantes solo se corrigen bajando Prisma, así que quedan. Mergeado el 2026-09-21.
+- **Ítems 0.2 y 0.3 hechos**: el PR #5 (tests de la API con Node 24, decisión 16) y el PR #6 (`ci.yml` con los checks `specs` y `api`, decisión 17) se mergearon el 2026-09-21, y el CI ya corrió en verde en `main`.
+- **Ítem 1.7 hecho**: el `README.md` (arquitectura, instrucciones de ejecución verificadas de punta a punta, usuarios de prueba, flujos de trabajo, CI y equipo) entró con el PR #7 el 2026-09-21. Falta la captura de la protección, que se suma cuando esté activa.
+- **#4, #5, #6 y #7 se mergearon sin ninguna aprobación registrada en GitHub**, porque la protección de `main` todavía no está activa.
 - `openspec/specs/` sigue vacío hasta archivar ese cambio.
 - `apps/api` todavía no tiene módulos (solo `prisma/`) y `apps/web` no tiene páginas.
 - Todavía no existe la protección de `main`.
@@ -143,7 +144,7 @@ Cada una arranca con su propio `/opsx:propose`, que las cuatro personas revisan 
 | 1.4 | `feature/spec-reservas-notificaciones` | RF-05 a RF-08: mis reservas, detalle, cancelación y mails de confirmación y cancelación, más la pantalla de mis reservas | **D** | A | 1.1 y 1.3 |
 | 1.5 | `feature/landing-institucional` | RF-09 y RF-10: Inicio, El club y Contacto, con el prototipo como referencia | **A + B** | C y D | 0.1 |
 | 1.6 | `feature/spec-administracion` | RF-11 a RF-14: panel del club, ABM de canchas y equipamiento, reenvío del mail y pantallas de admin | **C + D** (propuesto el 2026-09-17; confirmar) | A y B | 1.1 y 1.2 |
-| 1.7 | `docs/readme` | **En curso**: README con arquitectura, instrucciones con Docker Desktop y `npm run db:up`, usuarios de prueba y, cuando esté activa, la captura de la protección de `main` | JereDev | Cualquiera | 0.3 |
+| 1.7 | `docs/readme` | **Hecho**: PR #7, mergeado el 2026-09-21 (README con arquitectura, instrucciones con Docker Desktop y `npm run db:up` y usuarios de prueba). **Falta** la captura de la protección de `main`, cuando esté activa | JereDev | Cualquiera | 0.3 |
 
 Queda **RF-11 a RF-14 asignado a C y D** para equilibrar, porque A y B se llevan además la landing
 (1.5). Era la *Open Question* "quién implementa la administración" del `design.md`; cuando el equipo
@@ -153,9 +154,8 @@ lo confirme, se cierra ahí y en `requisitos.md` §8.
 
 - **Cada integrante pasa a Node 24.21** (`nvm install 24.21.0`): con Node 20, los tests de la API no corren (decisión 16).
 - **Protección de `main`**: 0.3 ya está mergeado; falta que `rociobazan` la configure con los pasos de `docs/arquitectura.md` §7. Después, la captura va al README.
-- **Aprobar cada PR en GitHub antes de mergear**: #5 y #6 entraron sin aprobación registrada, y la consigna evalúa al menos una por PR. Con la protección activa, GitHub lo exige solo.
+- **Aprobar cada PR en GitHub antes de mergear**: #4 a #7 entraron sin aprobación registrada, y la consigna evalúa al menos una por PR. Con la protección activa, GitHub lo exige solo.
 - **El cuarto integrante, Renzo Bazán, no figura como colaborador del repo** y no tiene commits; lo agrega `rociobazan` en *Settings → Collaborators*.
-- **`LEEME.md`** (los "materiales iniciales" para armar el repo) quedó obsoleto con el README. Hay que decidir si se borra; es de `rociobazan`.
 - **`prisma generate` en el CI**: npm 11 no ejecuta el `postinstall` de `@prisma/client`. Cuando la API importe `PrismaClient`, hay que sumar `prisma generate` al job `api`.
 - **`test:debug` de `apps/api`** apunta a `node_modules/.bin/jest`, que no existe dentro del workspace porque Jest se instala en la raíz; quedó como estaba.
 - **Asignar RF-11 a RF-14** a uno o dos integrantes; `requisitos.md` §8 ya los lista como "A asignar".
@@ -169,4 +169,4 @@ lo confirme, se cierra ahí y en `requisitos.md` §8.
 - **2026-09-14**: `openspec init` y propuesta del cambio base. Se generaron specs, diseño y tareas. Se incorporaron la consigna, el prototipo de Claude Design (club Deploy), PostgreSQL 17 local sin Docker y Next.js 16. Se decidió que todo el prototipo, incluida la administración, entra al MVP. Se creó esta memoria.
 - **2026-09-16**: el equipo confirmó Docker para la base: PostgreSQL 17 en `docker-compose.yml`, puerto 5434. Se actualizaron `proposal.md`, `design.md` (decisión 13, riesgos y Migration Plan) y `tasks.md` (secciones 4 a 6 y 9). Se implementó el cambio base salvo 8.2, 9.3 y 9.6, se pausó a pedido y se subió a GitHub (ver "Estado").
 - **2026-09-17**: se cerraron las tres tareas que faltaban (8.2, 9.3 y 9.6), así que el cambio base queda verificado de punta a punta y listo para el PR, con su descripción en `descripcion-pr.md`. Se reemplazaron los "Próximos pasos" por el "Reparto del trabajo restante", con una rama y un responsable por ítem, y se propuso asignar la administración (RF-11 a RF-14) a C y D.
-- **2026-09-21**: el PR base (#3) ya estaba mergeado desde el 2026-09-17 y quedó abierto el #4 (`npm audit fix`). En el ítem 0.2, fijar `rootDir` dejó ver que Jest no carga Nest 12, que es solo ESM. Se pasó a **Node 24.21** y a correr Jest con `--experimental-vm-modules` (decisión 16), y el CI de ejemplo de `docs/arquitectura.md` toma la versión de `.nvmrc`. En el ítem 0.3 se escribió `ci.yml` con los checks `specs` y `api`, y OpenSpec y Redocly pasaron a devDependencies de la raíz (decisión 17). Rocío mergeó #5 y #6, el #4 se actualizó con `main` y pasó el CI, y se escribió el README (1.7) en `docs/readme`.
+- **2026-09-21**: el PR base (#3) ya estaba mergeado desde el 2026-09-17 y quedó abierto el #4 (`npm audit fix`). En el ítem 0.2, fijar `rootDir` dejó ver que Jest no carga Nest 12, que es solo ESM. Se pasó a **Node 24.21** y a correr Jest con `--experimental-vm-modules` (decisión 16), y el CI de ejemplo de `docs/arquitectura.md` toma la versión de `.nvmrc`. En el ítem 0.3 se escribió `ci.yml` con los checks `specs` y `api`, y OpenSpec y Redocly pasaron a devDependencies de la raíz (decisión 17). Rocío mergeó #5 y #6; el #4 se actualizó con `main`, pasó el CI y se mergeó; y entró el README (1.7) con el #7. Todos sin aprobación registrada, porque la protección todavía no está activa. Se borró `LEEME.md` (los "materiales iniciales" para armar el repo), que quedó obsoleto con el README.
