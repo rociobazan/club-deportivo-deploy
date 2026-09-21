@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  # Los ids `specs` y `api` son los checks obligatorios de la protección de main:
+  # si se renombran, hay que actualizar la regla.
+  specs:
+    name: specs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Validar OpenSpec
+        run: npm run spec:validate
+      - name: Validar el contrato OpenAPI
+        run: npm run contrato:lint
+
+  api:
+    name: api
+    runs-on: ubuntu-latest
+    needs: specs
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: club
+          POSTGRES_PASSWORD: club
+          POSTGRES_DB: club_reservas_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://club:club@localhost:5432/club_reservas_test
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Aplicar las migraciones en una base vacía
+        run: npm exec --workspace api -- prisma migrate deploy
+      - name: Lint
+        run: npm run lint --workspace api
+      - name: Build
+        run: npm run build --workspace api
+      - name: Tests unitarios
+        run: npm run test --workspace api
+      - name: Tests e2e
+        run: npm run test:e2e --workspace api
