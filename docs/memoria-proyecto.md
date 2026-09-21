@@ -2,7 +2,7 @@
 
 Memoria compartida para cualquier integrante y cualquier agente de IA (Claude Code, Copilot, Codex, Cursor, Gemini CLI u otro), en cualquier computadora. Resume qué pide la consigna, con qué se construye, qué se decidió, en qué estado está el trabajo y qué sigue.
 
-**Última actualización:** 2026-09-17
+**Última actualización:** 2026-09-21
 
 ## Cómo usar este documento
 
@@ -18,7 +18,7 @@ Memoria compartida para cualquier integrante y cualquier agente de IA (Claude Co
 | Decisiones técnicas del cambio base | `openspec/changes/especificacion-base-reservas/design.md` |
 | Aspecto y contenido del front | `docs/claude-design/Deploy Club.dc.html` |
 | Relevamiento original | `docs/requisitos.md` (se está corrigiendo; ver "Estado") |
-| Guía paso a paso | `docs/plan-de-trabajo.md` (las partes de tarifas quedaron desactualizadas; su `docker-compose.yml` usa `postgres:16` y el puerto 5432: vale la decisión 4 de acá) |
+| Guía paso a paso | `docs/plan-de-trabajo.md` (las partes de tarifas quedaron desactualizadas; su `docker-compose.yml` usa `postgres:16` y el puerto 5432: vale la decisión 4 de acá; pide Node 20: vale la decisión 16) |
 
 ## La consigna, en corto
 
@@ -41,12 +41,12 @@ Memoria compartida para cualquier integrante y cualquier agente de IA (Claude Co
 
 | Parte | Tecnología | Notas que importan |
 |---|---|---|
-| API | Nest 12, TypeScript 6.0, Jest 30 | Auth con JWT emitido y validado en Nest; errores con el formato `Error` del contrato |
+| API | Nest 12, TypeScript 6.0, Jest 30 | Auth con JWT emitido y validado en Nest; errores con el formato `Error` del contrato. Nest 12 es solo ESM: Jest corre con `--experimental-vm-modules` (decisión 16) |
 | Front | **Next.js 16.3.4**, React 19.2, Tailwind 4 | Antes de programar, leer `node_modules/next/dist/docs/` (lo exige `apps/web/AGENTS.md`). `middleware` pasó a `proxy.ts`; `cookies()` es asíncrona. Token en cookie `httpOnly` |
 | Base | **PostgreSQL 17 en Docker** (`docker-compose.yml`) | Usuario `club` / clave `club`; base `club_reservas`; **puerto 5434** en el host; `npm run db:up` y `npm run db:down` con Docker Desktop abierto. En CI, service container `postgres:17` |
 | ORM | **Prisma 6.19.3, versión exacta** | `npm install prisma` sin versión hoy trae 8.0 RC; Prisma 7 cambia la configuración |
 | Otros | bcrypt, Resend, `@nestjs/throttler`, `openapi-typescript` | Tipos del front generados desde el contrato |
-| Herramientas | Node 20.19 (`.nvmrc`), OpenSpec CLI, schema `spec-driven` | `npm run spec:validate` y `npm run contrato:lint` |
+| Herramientas | **Node 24.21** (`.nvmrc`), OpenSpec CLI, schema `spec-driven` | `npm run spec:validate` y `npm run contrato:lint` |
 
 ## Decisiones vigentes
 
@@ -67,10 +67,17 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
 13. **Seed con los datos del prototipo**: Tenis 60 min (Cancha 1 $9000, Cancha 2 $8000), Pádel 90 min (Pádel 1 y 2 techadas $14000, Pádel 3 $12000), Fútbol 5 60 min (Cancha Sur $20000). Equipamiento: paleta de pádel, raqueta de tenis, **tubo de pelotas separado para tenis y para pádel** (para respetar RN-08) y juego de pecheras. Usuarios `admin@club.test` y `socio@club.test` con clave `clave1234`.
 14. **Mails**: asuntos `Tu turno en Deploy está confirmado · {codigo}` y `Cancelamos tu turno en Deploy · {codigo}`; se envían después del commit y nunca revierten la operación (RN-14).
 15. **Capacidades de OpenSpec**: `autenticacion`, `catalogo`, `disponibilidad`, `reservas`, `notificaciones`, `institucional` y `administracion`.
+16. **Node 24 LTS y Jest con `--experimental-vm-modules`** (2026-09-21; reemplaza Node 20.19). Nest 12 se publica solo como ESM, y Jest 30 solo lo carga con `require` si Node expone `vm.SourceTextModule` con `hasAsyncGraph`: eso existe desde Node 24.9 y solo con ese flag. Por eso:
+    - `.nvmrc` pide `24.21.0`.
+    - `test`, `test:watch`, `test:cov` y `test:e2e` de `apps/api` corren `node --experimental-vm-modules ../../node_modules/jest/bin/jest.js`. La ruta depende de que npm instale Jest en la raíz del monorepo.
+    - El CI toma la versión de `.nvmrc` con `node-version-file`.
+    - El aviso `ExperimentalWarning: VM Modules` es esperable.
 
-## Estado al 2026-09-17
+    Alternativas descartadas: transformar `@nestjs` a CommonJS dentro de Jest (lento, frágil y atado a Node 20, que ya no tiene soporte) y migrar la API a ESM con Vitest, como el template `ts-esm` de Nest (más limpio, pero es un cambio estructural y sale del stack acordado).
 
-- **Cambio `especificacion-base-reservas`**: implementado y verificado por completo (**35 de 35 tareas**) en la rama **`feature/spec-contrato-base`**, commiteado y pusheado. Falta solo abrir el PR, con el texto ya redactado en `openspec/changes/especificacion-base-reservas/descripcion-pr.md`. Ya está hecho:
+## Estado al 2026-09-21
+
+- **Cambio `especificacion-base-reservas`**: implementado y verificado por completo (**35 de 35 tareas**) y **mergeado a `main`** con el PR #3 el 2026-09-17 (ítem 0.1). Incluye:
   - `docs/requisitos.md` corregido a precio plano y ampliado con RF-11 a RF-14, RN-15 y RN-16.
   - `contratos/openapi.yaml` en 2.2.0.
   - `docs/arquitectura.md` y `docs/identidad.md` actualizados, y `uploads/` en `.gitignore`.
@@ -81,6 +88,8 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
   - Seed idempotente (tarea 8.2): la segunda corrida informa "La base ya tiene datos; no se cargó nada", termina en 0 y deja los conteos iguales (3 disciplinas, 6 canchas activas, 5 ítems de equipamiento activos, 2 usuarios, 0 reservas).
   - Migration Plan en limpio (tarea 9.3): con `docker compose down -v` se borraron el contenedor y el volumen, y `npm run db:up`, `npm run db:migrate` y `npm run db:seed` dejaron las 8 tablas, los tres índices (`ux_reserva_slot_activo` con su `WHERE`, `ix_reserva_usuario_estado`, `ix_reserva_fecha`) y los datos de la decisión 13, sin ningún paso manual extra.
   - Tarea 9.6: `git status` revisado contra la lista esperada (coincide, sin ningún `.env`) y descripción del PR redactada en `openspec/changes/especificacion-base-reservas/descripcion-pr.md`.
+- **PR #4 (`chore/audit-fix`)**: `npm audit fix` sin `--force` (de 10 a 8 vulnerabilidades); las restantes solo se corrigen bajando Prisma, así que quedan. Espera aprobación.
+- **Ítem 0.2 en `fix/rootdir-tests-api`**: los tests unitarios y e2e de la API pasan con Node 24.21 (decisión 16).
 - `openspec/specs/` sigue vacío hasta archivar ese cambio.
 - `apps/api` todavía no tiene módulos (solo `prisma/`) y `apps/web` no tiene páginas.
 - Todavía no existen `.github/workflows/ci.yml`, la protección de `main` ni el README.
@@ -88,14 +97,14 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
 ### Desvíos y hallazgos de la implementación (2026-09-16)
 
 - **Migración de verificación vacía**: `prisma migrate dev --create-only` crea una migración vacía aunque el schema esté sincronizado. No generó ningún `DROP INDEX` de `ux_reserva_slot_activo`; la carpeta vacía se borró.
-- **npm 11 y scripts de instalación**: con Node 24, npm 11 no ejecuta los scripts de instalación sin aprobarlos (`npm install-scripts`). Prisma y bcrypt funcionan igual, porque sus motores y binarios precompilados quedan instalados, así que no se aprobó ninguno. `.nvmrc` sigue pidiendo Node 20.
+- **npm 11 y scripts de instalación**: con Node 24, npm 11 no ejecuta los scripts de instalación sin aprobarlos (`npm install-scripts`). Prisma y bcrypt funcionan igual, porque sus motores y binarios precompilados quedan instalados, así que no se aprobó ninguno. Desde el 2026-09-21, `.nvmrc` pide Node 24 (decisión 16).
 - **Seed con TypeScript 6**: `ts-node` lo ejecuta sin `--transpile-only`. Prisma avisa que `package.json#prisma` queda obsoleto en Prisma 7; es esperable con la decisión 5.
 - **`migrate reset` y `down -v` los corre una persona, no un agente**: Prisma 6.19 detecta cuando lo invoca un agente y exige el consentimiento explícito del usuario, y Claude Code además bloquea por su cuenta los comandos que destruyen datos locales de forma irreversible. La idempotencia del seed y el Migration Plan desde cero se verificaron sin borrar nada: se creó la base aparte `club_reservas_limpia`, se corrieron `prisma migrate deploy` y `prisma db seed` apuntando a ella con `DATABASE_URL` en línea, se compararon tablas, índices y conteos, y se la eliminó. Esa vía sirve para cualquier integrante que no quiera perder su base local.
-- **Agregados al contrato fuera de la tabla de la decisión 16**:
+- **Agregados al contrato fuera de la tabla de la decisión 16 del `design.md`**:
   - `GET /canchas` declara también la respuesta 400 que usa la spec de `autenticacion`.
   - El 409 de la cancelación describe los dos casos de la spec (ya cancelada o turno terminado).
   - `ReenvioMailResponse` lleva `mensaje`, `tipo` y `destinatario`.
-- **Los tests de la API fallan desde antes de este cambio**: `npm run test --workspace api` corta con `TS5011`, porque TypeScript 6 pide `rootDir` explícito en `apps/api/tsconfig.json`. No lo causó la instalación, pero bloquea el job de tests del CI (ver "Pendientes").
+- **Los tests de la API fallan desde antes de este cambio**: `npm run test --workspace api` corta con `TS5011`, porque TypeScript 6 pide `rootDir` explícito en `apps/api/tsconfig.json`. No lo causó la instalación, pero bloquea el job de tests del CI. Se resolvió el 2026-09-21 en `fix/rootdir-tests-api` con `"rootDir": "./"`. Arreglado eso, apareció el problema de Nest 12 solo ESM que resuelve la decisión 16.
 
 ## Reparto del trabajo restante
 
@@ -110,9 +119,9 @@ tabla y en `requisitos.md` §8, en el mismo PR.
 
 | # | Rama | Qué entra | Responsable | Revisa | Depende de |
 |---|---|---|---|---|---|
-| 0.1 | `feature/spec-contrato-base` | Abrir el PR base con el texto de `descripcion-pr.md` | Quien lo implementó | **Los cuatro** | — |
-| 0.2 | `fix/rootdir-tests-api` | `TS5011`: `rootDir` en `apps/api/tsconfig.json` (o ajustar `ts-jest`) para que `npm run test --workspace api` pase | A definir | Cualquiera | 0.1 mergeado |
-| 0.3 | `chore/ci-y-proteccion-main` | `.github/workflows/ci.yml` (`spec:validate`, `contrato:lint`, tests contra el service container `postgres:17`), protección de `main` con checks obligatorios y una aprobación, y captura para el README | A definir | Cualquiera | 0.2 |
+| 0.1 | `feature/spec-contrato-base` | **Hecho**: PR #3, mergeado el 2026-09-17 | Quien lo implementó | **Los cuatro** | — |
+| 0.2 | `fix/rootdir-tests-api` | **En curso**: `"rootDir": "./"` en `apps/api/tsconfig.json` (`TS5011`), y Node 24 con Jest en `--experimental-vm-modules` (decisión 16), para que `test` y `test:e2e` de la API pasen | JereDev | Cualquiera | 0.1 mergeado |
+| 0.3 | `chore/ci-y-proteccion-main` | `.github/workflows/ci.yml` (`spec:validate`, `contrato:lint`, tests contra el service container `postgres:17`, Node con `node-version-file: .nvmrc`), protección de `main` con checks obligatorios y una aprobación, y captura para el README | A definir | Cualquiera | 0.2 |
 | 0.4 | `chore/archivar-especificacion-base` | `openspec archive especificacion-base-reservas`, que llena `openspec/specs/` | Quien lo implementó | Cualquiera | 0.1 mergeado; se archiva de a uno, avisando por el grupo |
 
 ### Hito 1 — features en paralelo (FASE 5)
@@ -136,7 +145,8 @@ lo confirme, se cierra ahí y en `requisitos.md` §8.
 
 ## Pendientes y preguntas abiertas
 
-- **Tests de la API con TypeScript 6** (`TS5011`): fijar `rootDir` en `apps/api/tsconfig.json` o ajustar `ts-jest`, en un `fix/` propio antes del CI.
+- **Cada integrante pasa a Node 24.21** (`nvm install 24.21.0`): con Node 20, los tests de la API no corren (decisión 16).
+- **`test:debug` de `apps/api`** apunta a `node_modules/.bin/jest`, que no existe dentro del workspace porque Jest se instala en la raíz; quedó como estaba.
 - **Asignar RF-11 a RF-14** a uno o dos integrantes; `requisitos.md` §8 ya los lista como "A asignar".
 - **Casilla de contacto**: variable de entorno para el destino de `POST /contacto` y respuesta si falla el proveedor; lo define el cambio de la landing.
 - **Usuarios inactivos**: si pueden iniciar sesión lo define el cambio de autenticación.
@@ -148,3 +158,4 @@ lo confirme, se cierra ahí y en `requisitos.md` §8.
 - **2026-09-14**: `openspec init` y propuesta del cambio base. Se generaron specs, diseño y tareas. Se incorporaron la consigna, el prototipo de Claude Design (club Deploy), PostgreSQL 17 local sin Docker y Next.js 16. Se decidió que todo el prototipo, incluida la administración, entra al MVP. Se creó esta memoria.
 - **2026-09-16**: el equipo confirmó Docker para la base: PostgreSQL 17 en `docker-compose.yml`, puerto 5434. Se actualizaron `proposal.md`, `design.md` (decisión 13, riesgos y Migration Plan) y `tasks.md` (secciones 4 a 6 y 9). Se implementó el cambio base salvo 8.2, 9.3 y 9.6, se pausó a pedido y se subió a GitHub (ver "Estado").
 - **2026-09-17**: se cerraron las tres tareas que faltaban (8.2, 9.3 y 9.6), así que el cambio base queda verificado de punta a punta y listo para el PR, con su descripción en `descripcion-pr.md`. Se reemplazaron los "Próximos pasos" por el "Reparto del trabajo restante", con una rama y un responsable por ítem, y se propuso asignar la administración (RF-11 a RF-14) a C y D.
+- **2026-09-21**: el PR base (#3) ya estaba mergeado desde el 2026-09-17 y quedó abierto el #4 (`npm audit fix`). En el ítem 0.2, fijar `rootDir` dejó ver que Jest no carga Nest 12, que es solo ESM. Se pasó a **Node 24.21** y a correr Jest con `--experimental-vm-modules` (decisión 16), y el CI de ejemplo de `docs/arquitectura.md` toma la versión de `.nvmrc`.
