@@ -156,94 +156,18 @@ Se versiona un `.env.example` con las claves vacías, salvo `DATABASE_URL`, que 
 
 ## 6. Integración continua
 
-`.github/workflows/ci.yml` corre en cada push a una rama y en cada PR hacia `main`.
+`.github/workflows/ci.yml` corre en cada PR hacia `main` y en cada push a `main`. Ese archivo es la fuente de verdad; acá va el resumen.
 
-```yaml
-name: CI
+| Job (check) | Qué hace |
+|---|---|
+| `specs` | `npm ci`, `npm run spec:validate` (`openspec validate --all --strict`) y `npm run contrato:lint` (Redocly) |
+| `api` | Espera a `specs`. Con un service container `postgres:17`: `prisma migrate deploy` sobre una base vacía, y lint, build, `test` y `test:e2e` de la API |
 
-on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main]
-
-jobs:
-
-  contrato:
-    name: Validar contrato OpenAPI
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npx @redocly/cli lint contratos/openapi.yaml
-
-  api:
-    name: Tests de la API
-    runs-on: ubuntu-latest
-    needs: contrato
-    services:
-      postgres:
-        image: postgres:17
-        env:
-          POSTGRES_USER: club
-          POSTGRES_PASSWORD: club
-          POSTGRES_DB: club_reservas_test
-        ports: ['5432:5432']
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    env:
-      DATABASE_URL: postgresql://club:club@localhost:5432/club_reservas_test
-      JWT_SECRET: secreto-de-test
-      RESEND_API_KEY: test
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npx prisma migrate deploy --schema apps/api/prisma/schema.prisma
-      - run: npm run test --workspace api
-      - run: npm run test:e2e --workspace api
-
-  drift:
-    name: El código no se despegó del contrato
-    runs-on: ubuntu-latest
-    needs: contrato
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm run openapi:export --workspace api
-      - run: npx swagger-diff contratos/openapi.yaml apps/api/openapi.generado.yaml
-
-  web:
-    name: Build del front
-    runs-on: ubuntu-latest
-    needs: contrato
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm run generate:api-types
-      - run: npm run lint --workspace web
-      - run: npm run build --workspace web
-```
-
-El job `contrato` va primero y los demás dependen de él. Si el spec no valida, no tiene sentido gastar minutos corriendo tests contra un contrato roto.
-
-La base de datos de CI es un **service container**, no un mock. Los tests corren contra PostgreSQL real, que es la única forma de verificar que el índice único parcial de RN-01 hace lo que dice.
+- Node sale de `.nvmrc` (`node-version-file`), y OpenSpec y Redocly son devDependencies de la raíz: el CI usa las mismas versiones que las máquinas del equipo.
+- `specs` va primero. Si la especificación no valida, no tiene sentido gastar minutos corriendo tests contra un contrato roto.
+- La base de datos de CI es un **service container**, no un mock. `migrate deploy` confirma que las migraciones, incluido el índice único parcial de RN-01, se aplican desde cero, y los tests que usen la base van a correr contra PostgreSQL real, que es la única forma de verificar que ese índice hace lo que dice.
+- Las variables de entorno de cada feature (`JWT_SECRET`, `RESEND_API_KEY`, etc.) se suman al job `api` en el PR que las introduce.
+- **A futuro**, cuando existan sus scripts: un job `web` (`generate:api-types`, lint y build de Next) y un job `drift` que compare el contrato con el OpenAPI que exporta Nest. Al sumarlos, hay que agregarlos también como checks obligatorios (sección 7).
 
 ---
 
@@ -251,16 +175,29 @@ La base de datos de CI es un **service container**, no un mock. Los tests corren
 
 El workflow por sí solo no bloquea nada. Pinta la ejecución de rojo y el botón de merge sigue disponible. **El bloqueo se configura a mano en GitHub** y es un requisito explícito de la consigna:
 
-`Settings → Branches → Add branch protection rule` sobre `main`:
+Solo puede hacerlo alguien con permisos de admin sobre el repo (hoy, `rociobazan`). En `Settings → Branches → Add branch protection rule`, sobre `main`:
 
 - Require a pull request before merging → **1 approval mínimo**
-- Require status checks to pass before merging → seleccionar `contrato`, `api`, `drift`, `web`
+- Require status checks to pass before merging → seleccionar `specs` y `api`
 - Require branches to be up to date before merging
 - Do not allow bypassing the above settings (incluye a los administradores)
 
 Sin ese último punto, el dueño del repo puede saltearse todo y la protección es decorativa.
 
-**Sacar captura de esta pantalla** y sumarla al README. Es la evidencia de que el bloqueo existe, algo que el historial de PRs por sí solo no demuestra.
+Lo mismo por API, con `gh` autenticado como admin:
+
+```bash
+gh api -X PUT repos/rociobazan/club-deportivo-deploy/branches/main/protection --input - <<'EOF'
+{
+  "required_status_checks": { "strict": true, "checks": [{ "context": "specs" }, { "context": "api" }] },
+  "enforce_admins": true,
+  "required_pull_request_reviews": { "required_approving_review_count": 1 },
+  "restrictions": null
+}
+EOF
+```
+
+**Sacar captura de esta pantalla** y sumarla al README. Es la evidencia de que el bloqueo existe, algo que el historial de PRs por sí solo no demuestra. Sin permisos de admin, sirve también la captura de un PR donde se vean `specs` y `api` como *Required* y el merge bloqueado.
 
 ---
 
