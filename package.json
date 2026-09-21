@@ -1,7 +1,9 @@
 {
   "name": "club-reservas",
   "private": true,
-  "workspaces": ["apps/*"],
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
     "dev:api": "npm run start:dev --workspace api",
     "dev:web": "npm run dev --workspace web",
@@ -12,7 +14,11 @@
     "db:studio": "npm exec --workspace api -- prisma studio",
     "spec:validate": "openspec validate --all --strict",
     "spec:view": "openspec view",
-    "contrato:lint": "npx @redocly/cli lint contratos/openapi.yaml",
+    "contrato:lint": "redocly lint contratos/openapi.yaml",
     "test:api": "npm run test --workspace api"
+  },
+  "devDependencies": {
+    "@fission-ai/openspec": "^1.13.1",
+    "@redocly/cli": "^2.53.3"
   }
 }
