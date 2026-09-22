@@ -93,10 +93,10 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
   - Seed idempotente (tarea 8.2): la segunda corrida informa "La base ya tiene datos; no se cargó nada", termina en 0 y deja los conteos iguales (3 disciplinas, 6 canchas activas, 5 ítems de equipamiento activos, 2 usuarios, 0 reservas).
   - Migration Plan en limpio (tarea 9.3): con `docker compose down -v` se borraron el contenedor y el volumen, y `npm run db:up`, `npm run db:migrate` y `npm run db:seed` dejaron las 8 tablas, los tres índices (`ux_reserva_slot_activo` con su `WHERE`, `ix_reserva_usuario_estado`, `ix_reserva_fecha`) y los datos de la decisión 13, sin ningún paso manual extra.
   - Tarea 9.6: `git status` revisado contra la lista esperada (coincide, sin ningún `.env`) y descripción del PR redactada en `openspec/changes/especificacion-base-reservas/descripcion-pr.md`.
-- **PR #4 (`chore/audit-fix`)**: `npm audit fix` sin `--force` (de 10 a 8 vulnerabilidades); las restantes solo se corrigen bajando Prisma, así que quedan. Se actualizó con `main` el 2026-09-21 y pasó el CI; espera aprobación.
+- **PR #4 (`chore/audit-fix`)**: `npm audit fix` sin `--force` (de 10 a 8 vulnerabilidades); las restantes solo se corrigen bajando Prisma, así que quedan. Se actualizó con main el 2026-09-21, pasó el CI y se mergeó.
 - **Ítems 0.2 y 0.3 hechos**: el PR #5 (tests de la API con Node 24, decisión 16) y el PR #6 (`ci.yml` con los checks `specs` y `api`, decisión 17) se mergearon el 2026-09-21, y el CI ya corrió en verde en `main`. Ninguno tuvo una aprobación registrada en GitHub, porque la protección de `main` todavía no está activa.
 - **Ítem 1.7 en `docs/readme`**: `README.md` con arquitectura, instrucciones de ejecución verificadas de punta a punta, usuarios de prueba, flujos de trabajo, CI y equipo. La captura de la protección se suma cuando esté activa.
-- `openspec/specs/` sigue vacío hasta archivar ese cambio.
+- `openspec/specs/` tiene las siete capacidades vigentes desde el archivado de especificacion-base-reservas (PR de chore/archivar-especificacion-base, 2026-09-21).
 - `apps/api` todavía no tiene módulos (solo `prisma/`) y `apps/web` no tiene páginas.
 - Todavía no existe la protección de `main`.
 
@@ -143,7 +143,7 @@ Cada una arranca con su propio `/opsx:propose`, que las cuatro personas revisan 
 | 1.4 | `feature/spec-reservas-notificaciones` | RF-05 a RF-08: mis reservas, detalle, cancelación y mails de confirmación y cancelación, más la pantalla de mis reservas | **D** | A | 1.1 y 1.3 |
 | 1.5 | `feature/landing-institucional` | RF-09 y RF-10: Inicio, El club y Contacto, con el prototipo como referencia | **A + B** | C y D | 0.1 |
 | 1.6 | `feature/spec-administracion` | RF-11 a RF-14: panel del club, ABM de canchas y equipamiento, reenvío del mail y pantallas de admin | **C + D** (propuesto el 2026-09-17; confirmar) | A y B | 1.1 y 1.2 |
-| 1.7 | `docs/readme` | **En curso**: README con arquitectura, instrucciones con Docker Desktop y `npm run db:up`, usuarios de prueba y, cuando esté activa, la captura de la protección de `main` | JereDev | Cualquiera | 0.3 |
+| 1.7 | `docs/readme` | **Hecho** (PR #7): README con arquitectura, instrucciones con Docker Desktop y `npm run db:up`, usuarios de prueba y, cuando esté activa, la captura de la protección de `main` | JereDev | Cualquiera | 0.3 |
 
 Queda **RF-11 a RF-14 asignado a C y D** para equilibrar, porque A y B se llevan además la landing
 (1.5). Era la *Open Question* "quién implementa la administración" del `design.md`; cuando el equipo
