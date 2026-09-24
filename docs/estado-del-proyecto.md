@@ -21,7 +21,7 @@ cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla.
 | Requisitos funcionales implementados | **0 de 15** (RF-00 a RF-14) |
 | Operaciones del contrato con endpoint | **0 de 18** |
 | Pantallas de producto | **0** |
-| Protección de `main` | ❌ **creada pero desactivada** |
+| Protección de `main` | ✅ **activa**: 1 aprobación y los tres checks |
 
 Los dos números importan y dicen cosas distintas. Lo cerrado es **toda la infraestructura**:
 contrato, specs, base de datos, CI, tests, README y la base del front. Era la condición para
@@ -36,11 +36,11 @@ ni un endpoint de negocio y no hay ninguna pantalla que un usuario pueda usar.
 |---|---|---|---|
 | 0.1 | Spec y contrato base | — | ✅ PR #3, 17/09 |
 | 0.2 | Tests de la API | Jeremías | ✅ PR #5, 21/09 |
-| 0.3 | CI y protección de `main` | Jeremías / **Rocío** | 🟡 CI listo; **falta activar la protección** |
+| 0.3 | CI y protección de `main` | Jeremías / Rocío | ✅ CI el 21/09; protección activa el 24/09 |
 | 0.4 | Archivar la spec base | Adrián | ✅ PR #9, 21/09 |
 
-El único resto del hito 0 es la protección de `main`, y no la puede hacer cualquiera: hace
-falta permiso de admin, que hoy solo tiene `rociobazan`. Detalle en la sección 5.
+**El hito 0 está cerrado.** De esa etapa solo queda la captura de la protección para el README,
+que pertenece al ítem 1.7.
 
 ---
 
@@ -125,39 +125,37 @@ Tres checks obligatorios en cada PR a `main` y en cada push a `main`:
 | `api` | Migraciones contra `postgres:17`, lint, build y tests de la API |
 | `web` | Lint y build del front, que además verifica los tipos |
 
-### Protección de `main` — el pendiente más importante
+### Protección de `main` — activa desde el 24/09
 
-**Hoy `main` no está protegida.** Cualquiera puede pushear directo y saltear el CI.
+`main` ya no acepta pushes directos ni merges sin revisión:
 
-Existe un ruleset llamado `main`, creado el 21/09, pero está en **`enforcement: "disabled"`**,
-así que GitHub no le aplica nada a la rama. Además, aunque se active tal como está, quedó con
-los valores por defecto y tampoco alcanzaría:
+| Regla | Estado |
+|---|---|
+| Pull request obligatorio | ✅ con **1 aprobación** |
+| Checks obligatorios | ✅ `specs`, `api` y `web` |
+| Rama al día antes de mergear | ✅ |
+| Borrado y force-push | ✅ bloqueados |
+| Bypass de administradores | ✅ nadie puede saltearla |
 
-| Configuración | Está | Tiene que estar |
-|---|---|---|
-| Enforcement | `disabled` | `active` |
-| Aprobaciones | `0` | `1` |
-| Checks obligatorios | ninguno | `specs`, `api`, `web` |
-| Ramas al día | no | sí |
-| Bypass de administradores | ya bloqueado ✅ | — |
+Está implementada como **ruleset** (`Settings → Rules`), no como la regla clásica de
+`Settings → Branches` que describe [`arquitectura.md` §7](arquitectura.md). Las dos sirven; lo
+que cambia es dónde se edita.
 
-Lo tiene que hacer `rociobazan`, la única cuenta con admin. Los pasos y el comando están en
-[`arquitectura.md` §7](arquitectura.md).
-
-Para verificar si quedó activa, sin necesidad de ser admin:
+Se verifica sin ser admin:
 
 ```bash
 gh api repos/rociobazan/club-deportivo-deploy/rules/branches/main
 ```
 
-Si devuelve `[]`, sigue sin proteger nada.
+Tiene que devolver las cuatro reglas. Si devuelve `[]`, no está protegiendo nada.
 
-**Por qué importa para la nota:** la consigna pide explícitamente el bloqueo del merge. Mientras
-no esté, los PRs se mergean sin aprobación registrada, que es exactamente lo que pasó con los
-#4, #5, #6 y #7.
+**Falta la captura** de esa pantalla para el README: es la evidencia que pide la consigna y es
+lo único que queda abierto del ítem 1.7.
+
+Todos los PRs anteriores al 24/09 entraron sin que GitHub exigiera aprobación, porque la
+protección no existía. De acá en adelante la exige solo.
 
 ---
-
 ## 6. Participación del equipo
 
 Cuenta para la evaluación: la lista de *Contributors* es parte de lo que se mira.
@@ -187,9 +185,8 @@ Dos cosas que conviene mirar de frente:
 
 ### Rocío (bloquea al resto)
 
-1. **Activar la protección de `main`** con los tres checks y una aprobación. Cierra el 0.3.
-2. **Sacar la captura** de la protección ya activa, para el README. Cierra el 1.7.
-3. **Agregar a Renzo** como colaborador.
+1. **Sacar la captura** de la protección ya activa, para el README. Cierra el 1.7.
+2. **Agregar a Renzo** como colaborador.
 
 ### Los cuatro
 
