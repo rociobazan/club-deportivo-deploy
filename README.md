@@ -51,7 +51,8 @@ Para profundizar:
 - [`docs/requisitos.md`](docs/requisitos.md): alcance, roles, reglas de negocio, requisitos funcionales y modelo de datos.
 - [`contratos/openapi.yaml`](contratos/openapi.yaml): el contrato de la API.
 - [`openspec/`](openspec/): las specs de OpenSpec.
-- [`docs/memoria-proyecto.md`](docs/memoria-proyecto.md): decisiones vigentes, estado del trabajo y reparto.
+- [`docs/estado-del-proyecto.md`](docs/estado-del-proyecto.md): en qué está el trabajo hoy, qué falta y quién lo destraba.
+- [`docs/memoria-proyecto.md`](docs/memoria-proyecto.md): decisiones vigentes, convenciones e historial.
 
 ## Requisitos previos
 

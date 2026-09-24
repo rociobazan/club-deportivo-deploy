@@ -12,6 +12,7 @@ Memoria compartida para cualquier integrante y cualquier agente de IA (Claude Co
 
 | Qué | Dónde manda |
 |---|---|
+| Estado del trabajo, qué falta y quién lo destraba | `docs/estado-del-proyecto.md` |
 | Qué exige el TP | `docs/Consigna TP — Sistema de Reservas con OpenSpec y CI-CD.md` |
 | Comportamiento del sistema | `openspec/specs/` después de archivar; mientras tanto, `openspec/changes/<cambio>/specs/` |
 | Forma de la API | `contratos/openapi.yaml` |
@@ -103,7 +104,14 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
 
     **Pantallas de estado** (2026-09-24), en `apps/web/app/`: `not-found.tsx` (404 con accesos a Inicio y Disponibilidad), `error.tsx` (mensaje genérico, botón de reintentar y el código del error; el detalle va al log, nunca a la pantalla) y `loading.tsx` (esqueleto que respeta `prefers-reduced-motion`). Las tres renderizan dentro del layout, así que llevan header y pie. **Ojo con la versión de Next**: el prop del error boundary es **`retry`**, no `reset`. No se usó `global-not-found`, que es experimental.
 
+21. **El estado del trabajo vive en un documento aparte** (2026-09-24), en `docs/estado-del-proyecto.md`: qué hay construido, qué falta y quién lo destraba, con los comandos que regeneran cada número. Esta memoria queda para las **decisiones y el historial**, o sea el *por qué*.
+    - Se separaron porque son cosas distintas: una decisión se escribe una vez y no se toca; el estado cambia en cada PR. Mezclados, el estado envejecía adentro de un documento que nadie relee entero.
+    - **Quien cierra un ítem lo marca en `estado-del-proyecto.md` en el mismo PR**, igual que acá.
+    - Las secciones "Estado al 2026-09-21", "Reparto" y "Pendientes" de este archivo quedan como contexto; el avance se sigue allá.
+
 ## Estado al 2026-09-21
+
+> **El estado al día está en [`estado-del-proyecto.md`](estado-del-proyecto.md).** Esta sección queda como contexto de lo que pasó hasta esa fecha y no se actualiza más.
 
 - **Cambio `especificacion-base-reservas`**: implementado y verificado por completo (**35 de 35 tareas**) y **mergeado a `main`** con el PR #3 el 2026-09-17 (ítem 0.1). Incluye:
   - `docs/requisitos.md` corregido a precio plano y ampliado con RF-11 a RF-14, RN-15 y RN-16.
@@ -143,6 +151,8 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
 
 ## Reparto del trabajo restante
 
+> **El estado al día está en [`estado-del-proyecto.md`](estado-del-proyecto.md).** Acá está el reparto acordado, que es la referencia; el avance de cada ítem se sigue allá.
+
 Cada integrante se lleva su feature **completa**: spec, contrato si hace falta, endpoint en Nest,
 tests y la pantalla en Next que la consume (`requisitos.md` §8). Una rama por ítem, un PR por rama,
 al menos una aprobación de quien figura en "Revisa".
@@ -180,6 +190,8 @@ lo confirme, se cierra ahí y en `requisitos.md` §8.
 
 ## Pendientes y preguntas abiertas
 
+> **El estado al día está en [`estado-del-proyecto.md`](estado-del-proyecto.md).** Acá quedan solo las preguntas abiertas del equipo, no el avance.
+
 - **Cada integrante pasa a Node 24.21** (`nvm install 24.21.0`): con Node 20, los tests de la API no corren (decisión 16).
 - **Protección de `main`**: 0.3 ya está mergeado; falta que `rociobazan` la configure con los pasos de `docs/arquitectura.md` §7, ahora con los **tres** checks (`specs`, `api` y `web`). Después, la captura va al README.
 - **Aprobar cada PR en GitHub antes de mergear**: #4 a #7 entraron sin aprobación registrada, y la consigna evalúa al menos una por PR. Con la protección activa, GitHub lo exige solo.
@@ -200,4 +212,4 @@ lo confirme, se cierra ahí y en `requisitos.md` §8.
 - **2026-09-17**: se cerraron las tres tareas que faltaban (8.2, 9.3 y 9.6), así que el cambio base queda verificado de punta a punta y listo para el PR, con su descripción en `descripcion-pr.md`. Se reemplazaron los "Próximos pasos" por el "Reparto del trabajo restante", con una rama y un responsable por ítem, y se propuso asignar la administración (RF-11 a RF-14) a C y D.
 - **2026-09-21**: el PR base (#3) ya estaba mergeado desde el 2026-09-17 y quedó abierto el #4 (`npm audit fix`). En el ítem 0.2, fijar `rootDir` dejó ver que Jest no carga Nest 12, que es solo ESM. Se pasó a **Node 24.21** y a correr Jest con `--experimental-vm-modules` (decisión 16), y el CI de ejemplo de `docs/arquitectura.md` toma la versión de `.nvmrc`. En el ítem 0.3 se escribió `ci.yml` con los checks `specs` y `api`, y OpenSpec y Redocly pasaron a devDependencies de la raíz (decisión 17). Rocío mergeó #5 y #6; el #4 se actualizó con `main`, pasó el CI y se mergeó; y entró el README (1.7) con el #7. Todos sin aprobación registrada, porque la protección todavía no está activa. Se borró `LEEME.md` (los "materiales iniciales" para armar el repo), que quedó obsoleto con el README.
 - **2026-09-23**: Adrián abrió el #9 con el archivado del cambio base; se le pidieron cambios porque la memoria quedaba con links rotos al `design.md` movido. Se limpiaron las ramas ya mergeadas. Se armó la **base visual del front** (decisión 18) en el PR #10, y quedó propuesto que JereDev se lleve el front completo, a confirmar por el equipo. Después se generaron los **tipos del contrato** (decisión 19).
-- **2026-09-24**: se sumó el job **web** al CI (lint y build del front). Hasta ahora el CI no compilaba `apps/web` en ninguna corrida, así que los PRs de front pasaban en verde sin que nadie verificara el front. La protección de `main` pasa a exigir tres checks. Se mergearon el #14, el #12 y el #15, en ese orden: los tres chocaban en esta memoria, porque cada PR escribe en las mismas secciones. Se reemplazó el diagrama de relaciones de `requisitos.md` §6 por un **erDiagram de Mermaid** derivado del `schema.prisma`, que además muestra la segunda clave foránea de `reserva` a `usuario` (`cancelada_por`), que el diagrama anterior no mostraba.
+- **2026-09-24**: se sumó el job **web** al CI (lint y build del front). Hasta ahora el CI no compilaba `apps/web` en ninguna corrida, así que los PRs de front pasaban en verde sin que nadie verificara el front. La protección de `main` pasa a exigir tres checks. Se mergearon el #14, el #12 y el #15, en ese orden: los tres chocaban en esta memoria, porque cada PR escribe en las mismas secciones. Se reemplazó el diagrama de relaciones de `requisitos.md` §6 por un **erDiagram de Mermaid** derivado del `schema.prisma`, que además muestra la segunda clave foránea de `reserva` a `usuario` (`cancelada_por`), que el diagrama anterior no mostraba. Se separó el estado del trabajo en `docs/estado-del-proyecto.md` (decisión 21). Al revisar la protección de `main`, se vio que el ruleset existe desde el 21/09 pero está en `enforcement: disabled`, con cero aprobaciones y sin checks obligatorios: `main` sigue sin proteger.
