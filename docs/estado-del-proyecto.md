@@ -51,19 +51,19 @@ pantalla en Next que la consume.
 
 | # | Qué | Requisitos | Responsable | Estado |
 |---|---|---|---|---|
-| 1.1 | Autenticación: registro, login, JWT, guards | RF-00 | **sin asignar (A)** | ❌ |
-| 1.2 | Catálogo y disponibilidad | RF-01 a RF-03 | **sin asignar (B)** | ❌ |
-| 1.3 | Crear reserva | RF-04 | **sin asignar (C)** | ❌ |
+| 1.1 | Autenticación: registro, login, JWT, guards | RF-00 | **Jeremías** | ❌ sin empezar |
+| 1.2 | Catálogo y disponibilidad | RF-01 a RF-03 | **Jeremías** | ❌ sin empezar |
+| 1.3 | Crear reserva | RF-04 | **sin asignar (C)** | ❌ **depende de 1.1 y 1.2** |
 | 1.4 | Mis reservas, cancelación y mails | RF-05 a RF-08 | **sin asignar (D)** | ❌ |
-| 1.5 | Sitio institucional y contacto | RF-09, RF-10 | **sin asignar (A + B)** | ❌ |
+| 1.5 | Sitio institucional y contacto | RF-09, RF-10 | **Jeremías** | ❌ sin empezar |
 | 1.6 | Administración | RF-11 a RF-14 | **sin asignar (C + D)** | ❌ |
 | 1.7 | README | — | Jeremías | 🟡 hecho; falta la captura de la protección |
 
-### El bloqueo no es técnico
+### Lo que falta repartir
 
-Mirá la columna de responsables: **siguen siendo letras**. Nadie reclamó su ítem. El reparto
-pide que, al tomar una rama, se reemplace la letra por el nombre acá, en `memoria-proyecto.md`
-y en `requisitos.md` §8, en el mismo PR.
+Jeremías tomó **1.1, 1.2 y 1.5** el 24/09. Quedan **1.3, 1.4 y 1.6** sin dueño, y son tres
+ítems para tres personas: Adrián, Rocío y Renzo. Quien tome una rama reemplaza la letra por su
+nombre acá, en `memoria-proyecto.md` y en `requisitos.md` §8, en el mismo PR.
 
 Dos cosas a tener en cuenta al repartir:
 
@@ -190,7 +190,7 @@ Dos cosas que conviene mirar de frente:
 
 ### Los cuatro
 
-3. **Repartir 1.1 a 1.6** y poner los nombres en las tres tablas. Sin esto no arranca nada.
+3. **Repartirse 1.3, 1.4 y 1.6** y poner los nombres en las tres tablas.
 4. **Confirmar** si Jeremías se lleva el front completo, propuesta abierta desde el 23/09.
 5. **Confirmar** que la administración (1.6) va a dos personas.
 
