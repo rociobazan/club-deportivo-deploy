@@ -87,6 +87,8 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
 
     Los nombres de tokens y componentes van en inglés, como el resto del código. Esto sale de la tarea 1.5 (landing), porque lo necesitan todas las pantallas.
 
+    **Shell de navegación** (2026-09-23), en `apps/web/components/layout/`: `SiteHeader` y `SiteFooter`, aplicados en el layout raíz, así que envuelven a todas las pantallas. El header lleva el logo, la navegación que pide la spec de `institucional` (El club, Canchas y precios, Disponibilidad y Contacto) y el botón de ingresar; `NavLink` es el único componente cliente, porque necesita la ruta para marcar el link activo. El pie lleva los horarios, la dirección y el contacto del prototipo. **El estado de sesión no está**: con sesión, el header tiene que mostrar el nombre y "Mis reservas" en lugar de "Ingresar", y eso lo trae el cambio de autenticación (RF-00), que es su dueño. Las rutas del menú todavía no existen: responden 404 hasta que entre cada feature.
+
 ## Estado al 2026-09-21
 
 - **Cambio `especificacion-base-reservas`**: implementado y verificado por completo (**35 de 35 tareas**) y **mergeado a `main`** con el PR #3 el 2026-09-17 (ítem 0.1). Incluye:
@@ -103,7 +105,9 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
 - **PR #4 (`chore/audit-fix`)**: `npm audit fix` sin `--force` (de 10 a 8 vulnerabilidades); las restantes solo se corrigen bajando Prisma, así que quedan. Mergeado el 2026-09-21.
 - **Ítems 0.2 y 0.3 hechos**: el PR #5 (tests de la API con Node 24, decisión 16) y el PR #6 (`ci.yml` con los checks `specs` y `api`, decisión 17) se mergearon el 2026-09-21, y el CI ya corrió en verde en `main`.
 - **Ítem 1.7 hecho**: el `README.md` (arquitectura, instrucciones de ejecución verificadas de punta a punta, usuarios de prueba, flujos de trabajo, CI y equipo) entró con el PR #7 el 2026-09-21. Falta la captura de la protección, que se suma cuando esté activa.
-- **Base visual del front (decisión 18), en la rama `chore/base-visual-web`**: tokens, tipografías, las cuatro primitivas y la página `/estilos`. Lint y build del workspace `web` en verde, y la página revisada en el navegador. `apps/web/app/page.tsx` sigue siendo la home por defecto de Next: la reemplaza la landing (1.5).
+- **Base visual del front (decisión 18)**: PR #10, con el CI en verde; espera aprobación. Tokens, tipografías, las cuatro primitivas y la página `/estilos`. `apps/web/app/page.tsx` sigue siendo la home por defecto de Next: la reemplaza la landing (1.5).
+- **Tipos del contrato (decisión 19)**: PR #11, con el CI en verde; espera aprobación. Sale de la rama del #10.
+- **Shell de navegación (decisión 18), en `chore/shell-navegacion`**, que también sale de la rama del #10: header y footer en el layout raíz. Lint y build en verde; revisado en el navegador y a 375 px, sin desborde horizontal y con el header en dos filas.
 - **#4, #5, #6 y #7 se mergearon sin ninguna aprobación registrada en GitHub**, porque la protección de `main` todavía no está activa.
 - `openspec/specs/` sigue vacío hasta archivar ese cambio.
 - `apps/api` todavía no tiene módulos (solo `prisma/`) y `apps/web` no tiene páginas.
