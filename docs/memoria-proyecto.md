@@ -2,7 +2,7 @@
 
 Memoria compartida para cualquier integrante y cualquier agente de IA (Claude Code, Copilot, Codex, Cursor, Gemini CLI u otro), en cualquier computadora. Resume qué pide la consigna, con qué se construye, qué se decidió, en qué estado está el trabajo y qué sigue.
 
-**Última actualización:** 2026-09-21
+**Última actualización:** 2026-09-23
 
 ## Cómo usar este documento
 
@@ -79,6 +79,13 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
     - `api` espera a `specs`, aplica las migraciones contra un service container `postgres:17` y corre lint, build y tests de la API.
     - **OpenSpec 1.13.1 y `@redocly/cli` 2.53.3 son devDependencies de la raíz**, para que el CI y los cuatro usen la misma versión (antes, OpenSpec era global y Redocly bajaba la última en cada corrida). `contrato:lint` usa el `redocly` local, no `npx`.
     - La protección de `main` (1 aprobación, checks `specs` y `api`, ramas al día y sin bypass para admins) la configura `rociobazan`, la única cuenta con admin, con los pasos o el comando `gh api` de `docs/arquitectura.md` §7. Si se renombra un job, hay que actualizar la regla.
+18. **Base visual del front, común a todas las pantallas** (2026-09-23). El prototipo (decisión 12) se traduce una sola vez y las pantallas lo consumen; **ninguna pantalla escribe colores, tipografías ni radios a mano**. Vive en:
+    - `apps/web/app/globals.css`: los tokens del prototipo como variables CSS y como tema de Tailwind 4 (`@theme`). Fondo `#060807`; superficies `#0B0F0E`, `#0E1211`, `#131817` y `#161C1A`; textos `#F2F5F4`, `#9AA5A1` y `#7F8A85`; acento `#00E58F` con hover `#7BFFCB`; alerta `#FF9B9B`; dorado `#C9A86B`; bordes de blanco translúcido.
+    - `apps/web/app/layout.tsx`: **Outfit** para títulos (`font-display`) y **DM Sans** para texto (`font-sans`), cargadas con `next/font`, más `lang="es"` y los metadatos del sitio.
+    - `apps/web/components/ui/`: `Button` (`primary`, `secondary`, `ghost`), `Card` con `CardTitle`, `Input` y `Badge` (`neutral`, `accent`, `danger`, `gold`).
+    - `apps/web/app/estilos`: página viva con los tokens y los componentes, para revisar la identidad sin abrir una pantalla del producto.
+
+    Los nombres de tokens y componentes van en inglés, como el resto del código. Esto sale de la tarea 1.5 (landing), porque lo necesitan todas las pantallas.
 
 ## Estado al 2026-09-21
 
@@ -96,6 +103,7 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
 - **PR #4 (`chore/audit-fix`)**: `npm audit fix` sin `--force` (de 10 a 8 vulnerabilidades); las restantes solo se corrigen bajando Prisma, así que quedan. Se actualizó con main el 2026-09-21, pasó el CI y se mergeó.
 - **Ítems 0.2 y 0.3 hechos**: el PR #5 (tests de la API con Node 24, decisión 16) y el PR #6 (`ci.yml` con los checks `specs` y `api`, decisión 17) se mergearon el 2026-09-21, y el CI ya corrió en verde en `main`.
 - **Ítem 1.7 hecho**: el `README.md` (arquitectura, instrucciones de ejecución verificadas de punta a punta, usuarios de prueba, flujos de trabajo, CI y equipo) entró con el PR #7 el 2026-09-21. Falta la captura de la protección, que se suma cuando esté activa.
+- **Base visual del front (decisión 18), en la rama `chore/base-visual-web`**: tokens, tipografías, las cuatro primitivas y la página `/estilos`. Lint y build del workspace `web` en verde, y la página revisada en el navegador. `apps/web/app/page.tsx` sigue siendo la home por defecto de Next: la reemplaza la landing (1.5).
 - **#4, #5, #6 y #7 se mergearon sin ninguna aprobación registrada en GitHub**, porque la protección de `main` todavía no está activa.
 - `openspec/specs/` tiene las siete capacidades vigentes desde el archivado de `especificacion-base-reservas` (PR de `chore/archivar-especificacion-base`, 2026-09-21).
 - `apps/api` todavía no tiene módulos (solo `prisma/`) y `apps/web` no tiene páginas.
@@ -159,6 +167,7 @@ lo confirme, se cierra ahí y en `requisitos.md` §8.
 - **`prisma generate` en el CI**: npm 11 no ejecuta el `postinstall` de `@prisma/client`. Cuando la API importe `PrismaClient`, hay que sumar `prisma generate` al job `api`.
 - **`test:debug` de `apps/api`** apunta a `node_modules/.bin/jest`, que no existe dentro del workspace porque Jest se instala en la raíz; quedó como estaba.
 - **Asignar RF-11 a RF-14** a uno o dos integrantes; `requisitos.md` §8 ya los lista como "A asignar".
+- **Propuesta abierta: que JereDev se lleve el front completo** (2026-09-23), porque tiene más disponibilidad. Cada integrante seguiría siendo dueño de su spec, su endpoint y sus tests, y revisaría la pantalla de su feature. **La tienen que aprobar los otros tres**, y si sale, se actualizan este reparto y `requisitos.md` §8 en el mismo PR. A tener en cuenta: `requisitos.md` §8 desaconseja repartir por capas, porque desbalancea los commits y eso se evalúa. El front no depende del back: las pantallas se arman contra el contrato y se conectan cuando cada endpoint existe.
 - **Casilla de contacto**: variable de entorno para el destino de `POST /contacto` y respuesta si falla el proveedor; lo define el cambio de la landing.
 - **Usuarios inactivos**: si pueden iniciar sesión lo define el cambio de autenticación.
 - **Prefijo del código**: `RES` por defecto; el equipo puede cambiarlo por configuración.
@@ -170,3 +179,4 @@ lo confirme, se cierra ahí y en `requisitos.md` §8.
 - **2026-09-16**: el equipo confirmó Docker para la base: PostgreSQL 17 en `docker-compose.yml`, puerto 5434. Se actualizaron `proposal.md`, `design.md` (decisión 13, riesgos y Migration Plan) y `tasks.md` (secciones 4 a 6 y 9). Se implementó el cambio base salvo 8.2, 9.3 y 9.6, se pausó a pedido y se subió a GitHub (ver "Estado").
 - **2026-09-17**: se cerraron las tres tareas que faltaban (8.2, 9.3 y 9.6), así que el cambio base queda verificado de punta a punta y listo para el PR, con su descripción en `descripcion-pr.md`. Se reemplazaron los "Próximos pasos" por el "Reparto del trabajo restante", con una rama y un responsable por ítem, y se propuso asignar la administración (RF-11 a RF-14) a C y D.
 - **2026-09-21**: el PR base (#3) ya estaba mergeado desde el 2026-09-17 y quedó abierto el #4 (`npm audit fix`). En el ítem 0.2, fijar `rootDir` dejó ver que Jest no carga Nest 12, que es solo ESM. Se pasó a **Node 24.21** y a correr Jest con `--experimental-vm-modules` (decisión 16), y el CI de ejemplo de `docs/arquitectura.md` toma la versión de `.nvmrc`. En el ítem 0.3 se escribió `ci.yml` con los checks `specs` y `api`, y OpenSpec y Redocly pasaron a devDependencies de la raíz (decisión 17). Rocío mergeó #5 y #6; el #4 se actualizó con `main`, pasó el CI y se mergeó; y entró el README (1.7) con el #7. Todos sin aprobación registrada, porque la protección todavía no está activa. Se borró `LEEME.md` (los "materiales iniciales" para armar el repo), que quedó obsoleto con el README.
+- **2026-09-23**: Adrián abrió el #9 con el archivado del cambio base; se le pidieron cambios porque la memoria quedaba con links rotos al `design.md` movido. Se limpiaron las ramas ya mergeadas. Se armó la **base visual del front** (decisión 18) en `chore/base-visual-web`, y quedó propuesto que JereDev se lleve el front completo, a confirmar por el equipo.

@@ -1,26 +1,59 @@
 @import "tailwindcss";
 
+/* Tokens del prototipo docs/claude-design/Deploy Club.dc.html (decisión 12 de la memoria). */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #060807;
+  --surface: #0b0f0e;
+  --surface-raised: #0e1211;
+  --surface-input: #131817;
+  --surface-hover: #161c1a;
+
+  --text: #f2f5f4;
+  --text-muted: #9aa5a1;
+  --text-subtle: #7f8a85;
+  --text-on-accent: #04120c;
+
+  --accent: #00e58f;
+  --accent-hover: #7bffcb;
+  --danger: #ff9b9b;
+  --gold: #c9a86b;
+
+  --border: rgb(255 255 255 / 0.09);
+  --border-strong: rgb(255 255 255 / 0.12);
+  --border-subtle: rgb(255 255 255 / 0.06);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-input: var(--surface-input);
+  --color-surface-hover: var(--surface-hover);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-subtle: var(--text-subtle);
+  --color-text-on-accent: var(--text-on-accent);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-danger: var(--danger);
+  --color-gold: var(--gold);
+
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-border-subtle: var(--border-subtle);
+
+  --font-sans: var(--font-dm-sans), system-ui, sans-serif;
+  --font-display: var(--font-outfit), sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--text-on-accent);
 }
