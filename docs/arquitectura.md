@@ -79,6 +79,11 @@ Esta es la decisión de arquitectura más importante del proyecto.
 
 **Por qué no Auth.js en Next.** Es la opción natural para un Next standalone, pero acá el entregable evaluado es el contrato de la API. Si el login vive en el front, los endpoints de Nest quedan sin descripción de seguridad en el `openapi.yaml` y la API no puede defenderse por sí sola. Un `curl` directo contra el backend saltearía toda la autenticación. Con el JWT emitido y validado en Nest, el contrato describe el sistema completo.
 
+**Auth.js como cliente de OAuth sí, como dueño de la sesión no.** Para "Ingresar con Google",
+el front puede usar Auth.js para obtener el `id_token` de Google y mandárselo a la API; Nest lo
+verifica y emite **su** JWT, el mismo de `/auth/login`. Así el contrato sigue describiendo cómo
+se protege la API. Ver [`adr/0001-login-con-google.md`](adr/0001-login-con-google.md).
+
 **El token va en cookie `httpOnly`, no en `localStorage`.** Una cookie `httpOnly` no es accesible desde JavaScript, así que un XSS no puede robar la sesión. Route Handlers de Next leen la cookie y agregan el header `Authorization` al llamar a la API.
 
 **CORS.** Nest habilita solo el origen del front (`FRONTEND_URL`), con `credentials: true`. Nada de `origin: '*'`.
