@@ -1,3 +1,4 @@
+import { SiteHeader } from "@/components/layout/site-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
@@ -60,6 +61,32 @@ export default function Estilos() {
             reservar.
           </p>
         </Card>
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <h2 className="font-display text-xl font-semibold">Header por rol</h2>
+        <p className="text-text-muted">
+          El header recibe el usuario por prop. Hasta que exista la sesión
+          (RF-00), el sitio muestra siempre el primero.
+        </p>
+        {[
+          { titulo: "Sin sesión", usuario: undefined },
+          {
+            titulo: "Socio",
+            usuario: { nombre: "Ana Pérez", rol: "SOCIO" as const },
+          },
+          {
+            titulo: "Administrador",
+            usuario: { nombre: "Rocío Bazán", rol: "ADMIN" as const },
+          },
+        ].map((caso) => (
+          <div key={caso.titulo} className="flex flex-col gap-2">
+            <span className="text-sm text-text-subtle">{caso.titulo}</span>
+            <div className="overflow-hidden rounded-xl border border-border [&_header]:static">
+              <SiteHeader usuario={caso.usuario} />
+            </div>
+          </div>
+        ))}
       </section>
 
       <section className="flex flex-col gap-4">

@@ -12,15 +12,15 @@ const variants: Record<Variant, string> = {
   ghost: "text-text-muted hover:text-text",
 };
 
+/** Para elementos que no son `<button>`, como un `<Link>` con aspecto de botón. */
+export function buttonClasses(variant: Variant = "primary", extra = "") {
+  return `${base} ${variants[variant]} ${extra}`.trim();
+}
+
 export function Button({
   variant = "primary",
   className = "",
   ...props
 }: ComponentProps<"button"> & { variant?: Variant }) {
-  return (
-    <button
-      className={`${base} ${variants[variant]} ${className}`.trim()}
-      {...props}
-    />
-  );
+  return <button className={buttonClasses(variant, className)} {...props} />;
 }
