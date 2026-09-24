@@ -1,3 +1,5 @@
+import { Logo } from "@/components/layout/logo";
+
 const columnas = [
   {
     titulo: "Horarios",
@@ -14,15 +16,7 @@ export function SiteFooter() {
     <footer className="mt-auto border-t border-border bg-black px-5 pb-8 pt-10">
       <div className="mx-auto grid w-full max-w-5xl gap-8 sm:grid-cols-2 lg:grid-cols-4">
         <div className="flex flex-col gap-3">
-          <span className="flex items-center gap-2">
-            <span
-              aria-hidden
-              className="grid size-8 place-items-center rounded-lg bg-accent font-display text-lg font-bold text-text-on-accent"
-            >
-              D
-            </span>
-            <span className="font-display text-lg font-semibold">Deploy</span>
-          </span>
+          <Logo />
           <p className="text-sm text-text-muted">
             Club deportivo de barrio. Tenis, pádel y fútbol 5 en General Paz,
             Córdoba.
