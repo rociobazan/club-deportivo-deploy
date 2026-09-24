@@ -90,6 +90,13 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
     - **El archivo generado se versiona**, para que `npm ci` y el build funcionen sin generarlo. La regeneración es determinista: con el mismo contrato da un archivo idéntico.
     - **Las pantallas importan de `apps/web/lib/api/types.ts`**, no de `schema.d.ts`: ahí están los alias (`Reserva`, `Cancha`, `Disciplina`, `Equipamiento`, `DisponibilidadResponse`, `PanelAdmin`, `ApiError`, entre otros).
     - Quien toque el contrato **corre `npm run generate:api-types` y commitea el resultado**. Hasta que el CI tenga el job de *drift* (`docs/arquitectura.md` §6), nada lo verifica solo.
+20. **Un solo cliente HTTP en el front** (2026-09-23), en `apps/web/lib/api/client.ts`. **Ninguna pantalla llama a `fetch` por su cuenta.**
+    - `apiFetch<T>(path, opciones)` arma la URL con `API_URL`, serializa el cuerpo a JSON, agrega `Authorization: Bearer` cuando le pasan un token y acepta `timeoutMs`.
+    - Ante cualquier falla lanza **`ApiHttpError`** con el formato `Error` del contrato (`tipo`, `titulo`, `estado`, `detalle`, `instancia`). `titulo` es el texto que se le muestra a la persona. Si la API no responde, el `estado` es `0` y el `tipo` es `SIN_CONEXION`, así se distingue de un error con respuesta HTTP.
+    - **La caché va explícita**: por defecto `no-store`, porque disponibilidad y reservas son datos vivos y por usuario. Quien quiera cachear lo pide.
+    - **El cliente no sabe de sesión**: recibe el token por parámetro. Leerlo de la cookie `httpOnly` es del cambio de autenticación (RF-00).
+    - Si quien llama **aborta su propio pedido**, el `AbortError` se propaga tal cual: cancelar no es una falla de la API. El vencimiento de `timeoutMs` sí llega como `SIN_CONEXION`.
+    - `API_URL` sale de `apps/web/.env.local`; hay `apps/web/.env.example` y el README dice cómo copiarlo. Sin esa variable, en desarrollo apunta a `http://localhost:3000/api/v1` y en producción falla al arrancar, a propósito.
 
 ## Estado al 2026-09-21
 
