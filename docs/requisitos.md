@@ -460,6 +460,10 @@ Dos detalles que el diagrama no puede mostrar y conviene tener presentes:
   sobre `(cancha_id, fecha, hora_inicio)` con `WHERE estado <> 'CANCELADA'`. Vive en una
   migración manual, no en el `schema.prisma`.
 
+Para imprimir o adjuntar a la entrega hay una copia en PDF del mismo diagrama:
+[`diagrama-base-de-datos.pdf`](diagrama-base-de-datos.pdf). La versión que manda es la de
+arriba, que se actualiza con el archivo; el PDF hay que regenerarlo a mano cuando cambie.
+
 ### Tablas
 
 **usuario**
