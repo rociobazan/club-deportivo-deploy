@@ -389,14 +389,76 @@ Reenvía el mail que corresponde al estado actual de la reserva: el de confirmac
 
 ### Diagrama de relaciones
 
+Derivado de `apps/api/prisma/schema.prisma`, que es la fuente de verdad del esquema. El
+diagrama muestra las claves que unen las tablas; los campos completos están más abajo,
+en "Tablas".
+
+```mermaid
+erDiagram
+    usuario {
+        serial id PK
+        varchar email UK
+        enum rol "ADMIN o SOCIO"
+        boolean activo
+    }
+    disciplina {
+        serial id PK
+        varchar nombre UK
+        int duracion_turno_min
+    }
+    cancha {
+        serial id PK
+        int disciplina_id FK
+        decimal precio_por_turno
+    }
+    equipamiento {
+        serial id PK
+        int disciplina_id FK
+        int stock_total
+        decimal precio_por_turno
+    }
+    reserva {
+        serial id PK
+        varchar codigo UK
+        int usuario_id FK
+        int cancha_id FK
+        int cancelada_por FK "NULL salvo que la hayan cancelado"
+        date fecha
+        varchar hora_inicio
+        enum estado "CONFIRMADA o CANCELADA. COMPLETADA se deriva al leer"
+        decimal monto_total
+    }
+    reserva_equipamiento {
+        serial id PK
+        int reserva_id FK
+        int equipamiento_id FK
+        int cantidad
+        decimal precio_unitario
+    }
+    notificacion {
+        serial id PK
+        int reserva_id FK
+        enum tipo "CONFIRMACION o CANCELACION"
+        enum estado "ENVIADA o FALLIDA"
+    }
+
+    disciplina ||--o{ cancha : "agrupa"
+    disciplina ||--o{ equipamiento : "agrupa"
+    usuario ||--o{ reserva : "es titular de"
+    usuario |o--o{ reserva : "canceló"
+    cancha ||--o{ reserva : "se reserva en"
+    reserva ||--o{ reserva_equipamiento : "incluye"
+    equipamiento ||--o{ reserva_equipamiento : "se alquila en"
+    reserva ||--o{ notificacion : "dispara"
 ```
-disciplina 1 ──< N cancha
-disciplina 1 ──< N equipamiento
-usuario    1 ──< N reserva
-cancha     1 ──< N reserva
-reserva    1 ──< N reserva_equipamiento >── N equipamiento
-reserva    1 ──< N notificacion
-```
+
+Dos detalles que el diagrama no puede mostrar y conviene tener presentes:
+
+- **`reserva` apunta dos veces a `usuario`**: `usuario_id` es quien reservó y
+  `cancelada_por` es quien canceló, que puede ser el titular o un administrador.
+- **RN-01 no es una relación sino un índice**: `ux_reserva_slot_activo`, único parcial
+  sobre `(cancha_id, fecha, hora_inicio)` con `WHERE estado <> 'CANCELADA'`. Vive en una
+  migración manual, no en el `schema.prisma`.
 
 ### Tablas
 
