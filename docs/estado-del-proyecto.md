@@ -17,7 +17,7 @@ cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla.
 
 | Medida | Estado |
 |---|---|
-| Ítems del reparto cerrados | **5 de 11** (3 cerrados, 2 esperando a otra persona) |
+| Ítems del reparto cerrados | **5 de 11** (4 cerrados; el 1.7 espera la captura) |
 | Requisitos funcionales implementados | **0 de 15** (RF-00 a RF-14) |
 | Operaciones del contrato con endpoint | **0 de 18** |
 | Pantallas de producto | **0** |
@@ -190,14 +190,14 @@ Dos cosas que conviene mirar de frente:
 
 ### Los cuatro
 
-4. **Repartir 1.1 a 1.6** y poner los nombres en las tres tablas. Sin esto no arranca nada.
-5. **Confirmar** si Jeremías se lleva el front completo, propuesta abierta desde el 23/09.
-6. **Confirmar** que la administración (1.6) va a dos personas.
+3. **Repartir 1.1 a 1.6** y poner los nombres en las tres tablas. Sin esto no arranca nada.
+4. **Confirmar** si Jeremías se lleva el front completo, propuesta abierta desde el 23/09.
+5. **Confirmar** que la administración (1.6) va a dos personas.
 
 ### Cuando el reparto esté hecho
 
-7. Cada quien: `/opsx:propose` de su feature, revisión de los cuatro, `/opsx:apply`.
-8. Arrancar por **1.1**, que es camino crítico, y **1.5** en paralelo, que no depende de nada.
+6. Cada quien: `/opsx:propose` de su feature, revisión de los cuatro, `/opsx:apply`.
+7. Arrancar por **1.1**, que es camino crítico, y **1.5** en paralelo, que no depende de nada.
 
 ---
 

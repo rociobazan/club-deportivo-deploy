@@ -132,10 +132,11 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
 - **Shell de navegación (decisión 18)**: PR #12, mergeado. Header con menú de mobile, footer, y el **logo del club** en los dos, más el favicon. Lint y build en verde; verificado a 375 px (header de 69 px, panel que abre y cierra, sin desborde) y en escritorio.
 - **Pantallas de estado (decisión 18)**: PR #15, mergeado. `not-found.tsx`, `error.tsx` y `loading.tsx`. Las tres se verificaron en el navegador con rutas temporales que después se borraron.
 - **Logo y favicon** (2026-09-23), en el mismo PR #12: el original del prototipo (`apps/web/public/logo-deploy-original.png`) es un cuadrado con fondo negro y la palabra "Deploy" adentro. De ahí se derivaron `apps/web/public/logo-deploy.png` (512 px, el que usan el header y el pie) y `apps/web/app/icon.png` (256 px, el favicon de Next), recortados al ícono y con fondo transparente. Se borró el `favicon.ico` de la plantilla, que si no le ganaba al ícono nuevo.
-- **#4, #5, #6 y #7 se mergearon sin ninguna aprobación registrada en GitHub**, porque la protección de `main` todavía no está activa.
+- **#4, #5, #6 y #7 se mergearon sin ninguna aprobación registrada en GitHub**, porque la protección de `main` todavía no estaba activa.
 - `openspec/specs/` tiene las siete capacidades vigentes desde el archivado de `especificacion-base-reservas` (PR de `chore/archivar-especificacion-base`, 2026-09-21).
 - `apps/api` todavía no tiene módulos (solo `prisma/`). `apps/web` ya tiene el shell, las pantallas de estado y `/estilos`; la home sigue siendo la de Next hasta que entre la landing (1.5).
-- Todavía no existe la protección de `main`.
+- Al 2026-09-21 todavía no existía la protección de `main`. Se activó el 2026-09-24; el estado
+  vigente está en [`estado-del-proyecto.md`](estado-del-proyecto.md).
 
 ### Desvíos y hallazgos de la implementación (2026-09-16)
 
@@ -193,7 +194,7 @@ lo confirme, se cierra ahí y en `requisitos.md` §8.
 > **El estado al día está en [`estado-del-proyecto.md`](estado-del-proyecto.md).** Acá quedan solo las preguntas abiertas del equipo, no el avance.
 
 - **Cada integrante pasa a Node 24.21** (`nvm install 24.21.0`): con Node 20, los tests de la API no corren (decisión 16).
-- **Protección de `main`**: 0.3 ya está mergeado; falta que `rociobazan` la configure con los pasos de `docs/arquitectura.md` §7, ahora con los **tres** checks (`specs`, `api` y `web`). Después, la captura va al README.
+- **Captura de la protección de `main`**: la protección quedó activa el 2026-09-24, con una aprobación y los tres checks. Falta la captura de esa pantalla para el README, que es lo único que cierra el ítem 1.7.
 - **Aprobar cada PR en GitHub antes de mergear**: #4 a #7 entraron sin aprobación registrada, y la consigna evalúa al menos una por PR. Con la protección activa, GitHub lo exige solo.
 - **El cuarto integrante, Renzo Bazán, no figura como colaborador del repo** y no tiene commits; lo agrega `rociobazan` en *Settings → Collaborators*.
 - **`prisma generate` en el CI**: npm 11 no ejecuta el `postinstall` de `@prisma/client`. Cuando la API importe `PrismaClient`, hay que sumar `prisma generate` al job `api`.
