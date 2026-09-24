@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { DM_Sans, Outfit } from "next/font/google";
+
+import { SiteFooter } from "@/components/layout/site-footer";
+import { SiteHeader } from "@/components/layout/site-header";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -24,7 +27,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="es"
       className={`${dmSans.variable} ${outfit.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+      <body className="min-h-full flex flex-col font-sans">
+        <SiteHeader />
+        {children}
+        <SiteFooter />
+      </body>
     </html>
   );
 }
