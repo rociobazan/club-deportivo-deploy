@@ -93,11 +93,11 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
   - Seed idempotente (tarea 8.2): la segunda corrida informa "La base ya tiene datos; no se cargó nada", termina en 0 y deja los conteos iguales (3 disciplinas, 6 canchas activas, 5 ítems de equipamiento activos, 2 usuarios, 0 reservas).
   - Migration Plan en limpio (tarea 9.3): con `docker compose down -v` se borraron el contenedor y el volumen, y `npm run db:up`, `npm run db:migrate` y `npm run db:seed` dejaron las 8 tablas, los tres índices (`ux_reserva_slot_activo` con su `WHERE`, `ix_reserva_usuario_estado`, `ix_reserva_fecha`) y los datos de la decisión 13, sin ningún paso manual extra.
   - Tarea 9.6: `git status` revisado contra la lista esperada (coincide, sin ningún `.env`) y descripción del PR redactada en `openspec/changes/especificacion-base-reservas/descripcion-pr.md`.
-- **PR #4 (`chore/audit-fix`)**: `npm audit fix` sin `--force` (de 10 a 8 vulnerabilidades); las restantes solo se corrigen bajando Prisma, así que quedan. Mergeado el 2026-09-21.
+- **PR #4 (`chore/audit-fix`)**: `npm audit fix` sin `--force` (de 10 a 8 vulnerabilidades); las restantes solo se corrigen bajando Prisma, así que quedan. Se actualizó con main el 2026-09-21, pasó el CI y se mergeó.
 - **Ítems 0.2 y 0.3 hechos**: el PR #5 (tests de la API con Node 24, decisión 16) y el PR #6 (`ci.yml` con los checks `specs` y `api`, decisión 17) se mergearon el 2026-09-21, y el CI ya corrió en verde en `main`.
 - **Ítem 1.7 hecho**: el `README.md` (arquitectura, instrucciones de ejecución verificadas de punta a punta, usuarios de prueba, flujos de trabajo, CI y equipo) entró con el PR #7 el 2026-09-21. Falta la captura de la protección, que se suma cuando esté activa.
 - **#4, #5, #6 y #7 se mergearon sin ninguna aprobación registrada en GitHub**, porque la protección de `main` todavía no está activa.
-- `openspec/specs/` sigue vacío hasta archivar ese cambio.
+- `openspec/specs/` tiene las siete capacidades vigentes desde el archivado de `especificacion-base-reservas` (PR de `chore/archivar-especificacion-base`, 2026-09-21).
 - `apps/api` todavía no tiene módulos (solo `prisma/`) y `apps/web` no tiene páginas.
 - Todavía no existe la protección de `main`.
 
