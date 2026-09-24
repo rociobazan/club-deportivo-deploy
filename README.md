@@ -73,7 +73,10 @@ Crear las variables de entorno de la API. `DATABASE_URL` ya viene completa y apu
 
 ```bash
 cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env.local
 ```
+
+El front solo necesita `API_URL`, que apunta a la API local.
 
 Levantar la base y cargarle los datos:
 
