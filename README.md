@@ -139,8 +139,9 @@ Cada funcionalidad empieza por su especificación:
 |---|---|
 | `specs` | Las specs de OpenSpec (`openspec validate --all --strict`) y el contrato OpenAPI |
 | `api` | Aplica las migraciones sobre un PostgreSQL 17 vacío y corre lint, build, tests unitarios y e2e de la API |
+| `web` | Lint y build del front; el build corre TypeScript, así que también verifica los tipos |
 
-La protección de `main` exige los dos checks en verde y una aprobación antes de mergear, sin excepciones para los administradores. El detalle está en [`docs/arquitectura.md`](docs/arquitectura.md), secciones 6 y 7.
+La protección de `main` exige los tres checks en verde y una aprobación antes de mergear, sin excepciones para los administradores. El detalle está en [`docs/arquitectura.md`](docs/arquitectura.md), secciones 6 y 7.
 
 ## Equipo
 

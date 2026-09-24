@@ -2,7 +2,7 @@
 
 Memoria compartida para cualquier integrante y cualquier agente de IA (Claude Code, Copilot, Codex, Cursor, Gemini CLI u otro), en cualquier computadora. Resume qué pide la consigna, con qué se construye, qué se decidió, en qué estado está el trabajo y qué sigue.
 
-**Última actualización:** 2026-09-21
+**Última actualización:** 2026-09-24
 
 ## Cómo usar este documento
 
@@ -74,11 +74,12 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
     - El aviso `ExperimentalWarning: VM Modules` es esperable.
 
     Alternativas descartadas: transformar `@nestjs` a CommonJS dentro de Jest (lento, frágil y atado a Node 20, que ya no tiene soporte) y migrar la API a ESM con Vitest, como el template `ts-esm` de Nest (más limpio, pero es un cambio estructural y sale del stack acordado).
-17. **CI con dos checks obligatorios: `specs` y `api`** (2026-09-21). `.github/workflows/ci.yml` corre en cada PR a `main` y en cada push a `main`. Detalle en `docs/arquitectura.md` §6 y §7.
+17. **CI con tres checks obligatorios: `specs`, `api` y `web`** (2026-09-21; `web` se sumó el 2026-09-24). `.github/workflows/ci.yml` corre en cada PR a `main` y en cada push a `main`. Detalle en `docs/arquitectura.md` §6 y §7.
     - `specs` valida OpenSpec (`--strict`) y el contrato.
     - `api` espera a `specs`, aplica las migraciones contra un service container `postgres:17` y corre lint, build y tests de la API.
     - **OpenSpec 1.13.1 y `@redocly/cli` 2.53.3 son devDependencies de la raíz**, para que el CI y los cuatro usen la misma versión (antes, OpenSpec era global y Redocly bajaba la última en cada corrida). `contrato:lint` usa el `redocly` local, no `npx`.
-    - La protección de `main` (1 aprobación, checks `specs` y `api`, ramas al día y sin bypass para admins) la configura `rociobazan`, la única cuenta con admin, con los pasos o el comando `gh api` de `docs/arquitectura.md` §7. Si se renombra un job, hay que actualizar la regla.
+    - `web` (2026-09-24) corre lint y build del front, en paralelo con `api`. Antes, el CI no compilaba `apps/web` en ninguna corrida: podía entrar a `main` un front roto sin que nadie se enterara.
+    - La protección de `main` (1 aprobación, checks `specs`, `api` y `web`, ramas al día y sin bypass para admins) la configura `rociobazan`, la única cuenta con admin, con los pasos o el comando `gh api` de `docs/arquitectura.md` §7. Si se renombra un job, hay que actualizar la regla.
 
 ## Estado al 2026-09-21
 
@@ -153,7 +154,7 @@ lo confirme, se cierra ahí y en `requisitos.md` §8.
 ## Pendientes y preguntas abiertas
 
 - **Cada integrante pasa a Node 24.21** (`nvm install 24.21.0`): con Node 20, los tests de la API no corren (decisión 16).
-- **Protección de `main`**: 0.3 ya está mergeado; falta que `rociobazan` la configure con los pasos de `docs/arquitectura.md` §7. Después, la captura va al README.
+- **Protección de `main`**: 0.3 ya está mergeado; falta que `rociobazan` la configure con los pasos de `docs/arquitectura.md` §7, ahora con los **tres** checks (`specs`, `api` y `web`). Después, la captura va al README.
 - **Aprobar cada PR en GitHub antes de mergear**: #4 a #7 entraron sin aprobación registrada, y la consigna evalúa al menos una por PR. Con la protección activa, GitHub lo exige solo.
 - **El cuarto integrante, Renzo Bazán, no figura como colaborador del repo** y no tiene commits; lo agrega `rociobazan` en *Settings → Collaborators*.
 - **`prisma generate` en el CI**: npm 11 no ejecuta el `postinstall` de `@prisma/client`. Cuando la API importe `PrismaClient`, hay que sumar `prisma generate` al job `api`.
@@ -170,3 +171,4 @@ lo confirme, se cierra ahí y en `requisitos.md` §8.
 - **2026-09-16**: el equipo confirmó Docker para la base: PostgreSQL 17 en `docker-compose.yml`, puerto 5434. Se actualizaron `proposal.md`, `design.md` (decisión 13, riesgos y Migration Plan) y `tasks.md` (secciones 4 a 6 y 9). Se implementó el cambio base salvo 8.2, 9.3 y 9.6, se pausó a pedido y se subió a GitHub (ver "Estado").
 - **2026-09-17**: se cerraron las tres tareas que faltaban (8.2, 9.3 y 9.6), así que el cambio base queda verificado de punta a punta y listo para el PR, con su descripción en `descripcion-pr.md`. Se reemplazaron los "Próximos pasos" por el "Reparto del trabajo restante", con una rama y un responsable por ítem, y se propuso asignar la administración (RF-11 a RF-14) a C y D.
 - **2026-09-21**: el PR base (#3) ya estaba mergeado desde el 2026-09-17 y quedó abierto el #4 (`npm audit fix`). En el ítem 0.2, fijar `rootDir` dejó ver que Jest no carga Nest 12, que es solo ESM. Se pasó a **Node 24.21** y a correr Jest con `--experimental-vm-modules` (decisión 16), y el CI de ejemplo de `docs/arquitectura.md` toma la versión de `.nvmrc`. En el ítem 0.3 se escribió `ci.yml` con los checks `specs` y `api`, y OpenSpec y Redocly pasaron a devDependencies de la raíz (decisión 17). Rocío mergeó #5 y #6; el #4 se actualizó con `main`, pasó el CI y se mergeó; y entró el README (1.7) con el #7. Todos sin aprobación registrada, porque la protección todavía no está activa. Se borró `LEEME.md` (los "materiales iniciales" para armar el repo), que quedó obsoleto con el README.
+- **2026-09-24**: se sumó el job **web** al CI (lint y build del front). Hasta ahora el CI no compilaba `apps/web` en ninguna corrida, así que los PRs de front pasaban en verde sin que nadie verificara el front. La protección de `main` pasa a exigir tres checks.

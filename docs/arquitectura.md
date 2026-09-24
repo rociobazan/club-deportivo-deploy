@@ -162,12 +162,14 @@ Se versiona un `.env.example` con las claves vacías, salvo `DATABASE_URL`, que 
 |---|---|
 | `specs` | `npm ci`, `npm run spec:validate` (`openspec validate --all --strict`) y `npm run contrato:lint` (Redocly) |
 | `api` | Espera a `specs`. Con un service container `postgres:17`: `prisma migrate deploy` sobre una base vacía, y lint, build, `test` y `test:e2e` de la API |
+| `web` | Espera a `specs`. Lint y build de Next; el build corre TypeScript, así que también verifica los tipos generados desde el contrato |
 
 - Node sale de `.nvmrc` (`node-version-file`), y OpenSpec y Redocly son devDependencies de la raíz: el CI usa las mismas versiones que las máquinas del equipo.
 - `specs` va primero. Si la especificación no valida, no tiene sentido gastar minutos corriendo tests contra un contrato roto.
 - La base de datos de CI es un **service container**, no un mock. `migrate deploy` confirma que las migraciones, incluido el índice único parcial de RN-01, se aplican desde cero, y los tests que usen la base van a correr contra PostgreSQL real, que es la única forma de verificar que ese índice hace lo que dice.
 - Las variables de entorno de cada feature (`JWT_SECRET`, `RESEND_API_KEY`, etc.) se suman al job `api` en el PR que las introduce.
-- **A futuro**, cuando existan sus scripts: un job `web` (`generate:api-types`, lint y build de Next) y un job `drift` que compare el contrato con el OpenAPI que exporta Nest. Al sumarlos, hay que agregarlos también como checks obligatorios (sección 7).
+- `api` y `web` corren en paralelo: ninguno depende del otro.
+- **A futuro**: tests del front dentro de `web`, cuando el equipo elija runner, y un job `drift` que compare el contrato con el OpenAPI que exporta Nest. Al sumar un job, hay que agregarlo también como check obligatorio (sección 7).
 
 ---
 
@@ -178,7 +180,7 @@ El workflow por sí solo no bloquea nada. Pinta la ejecución de rojo y el botó
 Solo puede hacerlo alguien con permisos de admin sobre el repo (hoy, `rociobazan`). En `Settings → Branches → Add branch protection rule`, sobre `main`:
 
 - Require a pull request before merging → **1 approval mínimo**
-- Require status checks to pass before merging → seleccionar `specs` y `api`
+- Require status checks to pass before merging → seleccionar `specs`, `api` y `web`
 - Require branches to be up to date before merging
 - Do not allow bypassing the above settings (incluye a los administradores)
 
@@ -189,7 +191,7 @@ Lo mismo por API, con `gh` autenticado como admin:
 ```bash
 gh api -X PUT repos/rociobazan/club-deportivo-deploy/branches/main/protection --input - <<'EOF'
 {
-  "required_status_checks": { "strict": true, "checks": [{ "context": "specs" }, { "context": "api" }] },
+  "required_status_checks": { "strict": true, "checks": [{ "context": "specs" }, { "context": "api" }, { "context": "web" }] },
   "enforce_admins": true,
   "required_pull_request_reviews": { "required_approving_review_count": 1 },
   "restrictions": null
@@ -197,7 +199,7 @@ gh api -X PUT repos/rociobazan/club-deportivo-deploy/branches/main/protection --
 EOF
 ```
 
-**Sacar captura de esta pantalla** y sumarla al README. Es la evidencia de que el bloqueo existe, algo que el historial de PRs por sí solo no demuestra. Sin permisos de admin, sirve también la captura de un PR donde se vean `specs` y `api` como *Required* y el merge bloqueado.
+**Sacar captura de esta pantalla** y sumarla al README. Es la evidencia de que el bloqueo existe, algo que el historial de PRs por sí solo no demuestra. Sin permisos de admin, sirve también la captura de un PR donde se vean `specs`, `api` y `web` como *Required* y el merge bloqueado.
 
 ---
 
