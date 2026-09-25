@@ -122,6 +122,7 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
     - **`PrismaService` es global**; `JWT_SECRET` y `JWT_EXPIRES_IN` son obligatorias para arrancar y `main.ts` carga `apps/api/.env` con `process.loadEnvFile` (nativo de Node; no pisa el entorno). **Sin Passport**: `@nestjs/jwt` alcanza y Google (ADR 0001) va a ser otro endpoint que emite el mismo JWT.
     - **Front**: la sesión es la cookie `sesion` (`httpOnly`, vigencia = `expiraEn`); `obtenerUsuario()` de `lib/sesion.ts` da el usuario memoizado por request vía `GET /auth/perfil`; `proxy.ts` redirige las rutas privadas sin cookie con chequeo optimista. Las pantallas usan **Server Functions** con `useActionState` en lugar del Route Handler del diseño archivado (decisión 15): misma cookie, sin `fetch` en el cliente. Se puede revertir en la revisión del #19.
     - **Tests**: e2e con un `it` por escenario de la spec; crean usuarios `@e2e.test` y borran solo esos, así no tocan el seed local.
+    - **Identificadores en castellano** (confirmado el 2026-09-25 tras el code review): funciones, clases, módulos y variables se nombran en castellano, como el resto del repo y como los campos del contrato y de la base. Lo que viene de librerías o de Next queda como es (`apiFetch`, `useActionState`).
 
 ## Estado al 2026-09-21
 
