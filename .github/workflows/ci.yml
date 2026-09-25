@@ -46,6 +46,9 @@ jobs:
           --health-retries 5
     env:
       DATABASE_URL: postgresql://club:club@localhost:5432/club_reservas_test
+      # Solo para los tests del CI; el valor real vive en apps/api/.env de cada integrante.
+      JWT_SECRET: secreto-solo-para-el-ci
+      JWT_EXPIRES_IN: 1h
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

@@ -4,10 +4,10 @@ Referencias: los requisitos están en `openspec/specs/autenticacion/spec.md` (lo
 
 ## 1. Rama, dependencias y verificación temprana
 
-- [ ] 1.1 Confirmar que `git branch --show-current` devuelve `feature/spec-autenticacion` y que la rama incluye `origin/main` (`git log --oneline HEAD..origin/main` vacío). Todos los commits de este cambio van ahí, en castellano y sin trailers ni pies de atribución (`AGENTS.md`).
-- [ ] 1.2 Instalar en el workspace `api` `@nestjs/jwt@12.0.2`, `class-validator@0.15.1` y `class-transformer@0.5.1` con `npm install --workspace api` y versiones exactas. Verificar con `npm ls --workspace api @nestjs/jwt class-validator class-transformer` que las tres figuran una sola vez.
-- [ ] 1.3 Escribir `apps/api/src/common/verificacion-entorno.spec.ts`: importa las tres librerías, firma y verifica un JWT con `JwtService`, hashea y compara una clave con `bcrypt`, y valida un DTO trivial con `class-validator`. Verificar que `npm run test --workspace api` pasa bajo `--experimental-vm-modules`. Si falla, frenar y decidir la alternativa de `design.md` (riesgos) antes de seguir.
-- [ ] 1.4 Sumar `JWT_SECRET` y `JWT_EXPIRES_IN` al bloque `env` del job `api` en `.github/workflows/ci.yml`. Verificar que `npx redocly lint` no aplica y que el YAML sigue siendo válido con `node -e "require('js-yaml')"` o, si no está, con `gh workflow view ci.yml` después del push.
+- [x] 1.1 Confirmar que `git branch --show-current` devuelve `feature/spec-autenticacion` y que la rama incluye `origin/main` (`git log --oneline HEAD..origin/main` vacío). Todos los commits de este cambio van ahí, en castellano y sin trailers ni pies de atribución (`AGENTS.md`).
+- [x] 1.2 Instalar en el workspace `api` `@nestjs/jwt@12.0.2`, `class-validator@0.15.1` y `class-transformer@0.5.1` con `npm install --workspace api` y versiones exactas. Verificar con `npm ls --workspace api @nestjs/jwt class-validator class-transformer` que las tres figuran una sola vez.
+- [x] 1.3 Escribir `apps/api/src/common/verificacion-entorno.spec.ts`: importa las tres librerías, firma y verifica un JWT con `JwtService`, hashea y compara una clave con `bcrypt`, y valida un DTO trivial con `class-validator`. Verificar que `npm run test --workspace api` pasa bajo `--experimental-vm-modules`. Si falla, frenar y decidir la alternativa de `design.md` (riesgos) antes de seguir.
+- [x] 1.4 Sumar `JWT_SECRET` y `JWT_EXPIRES_IN` al bloque `env` del job `api` en `.github/workflows/ci.yml`. Verificar que `npx redocly lint` no aplica y que el YAML sigue siendo válido con `node -e "require('js-yaml')"` o, si no está, con `gh workflow view ci.yml` después del push.
 
 ## 2. Base transversal de la API
 
