@@ -2,7 +2,7 @@
 
 Memoria compartida para cualquier integrante y cualquier agente de IA (Claude Code, Copilot, Codex, Cursor, Gemini CLI u otro), en cualquier computadora. Resume qué pide la consigna, con qué se construye, qué se decidió, en qué estado está el trabajo y qué sigue.
 
-**Última actualización:** 2026-09-24
+**Última actualización:** 2026-09-25
 
 ## Cómo usar este documento
 
@@ -116,6 +116,13 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
     - Arrastra migración (`password_hash` pasa a nullable), una operación nueva en el contrato, cambio de la spec de RF-00 por `/opsx:propose`, y `GOOGLE_CLIENT_ID` en el job `api` del CI.
     - **Es el primer ADR del repo**: las decisiones difíciles de revertir van a `docs/adr/`, numeradas, con las alternativas que se consideraron.
 
+23. **Lo que la autenticación deja fijado para las demás features** (2026-09-25; cambio OpenSpec `implementar-autenticacion`, PR #19).
+    - **API**: los guards de JWT y de rol son **globales**. Un endpoint sin decorar exige token; `@Publico()` lo exime y `@Roles('ADMIN')` lo restringe. Olvidar el decorador deja el endpoint cerrado, no abierto. `@UsuarioActual()` inyecta `{ id, rol }`.
+    - **Errores**: se lanzan con `ErrorDeApi(estado, tipo, titulo, detalle?)` y un único filtro los emite con el schema `Error` del contrato, también los 404 de fuera de `/api/v1` y los 500 (detalle solo en el log). Nada sale con el formato por defecto de Nest.
+    - **`PrismaService` es global**; `JWT_SECRET` y `JWT_EXPIRES_IN` son obligatorias para arrancar y `main.ts` carga `apps/api/.env` con `process.loadEnvFile` (nativo de Node; no pisa el entorno). **Sin Passport**: `@nestjs/jwt` alcanza y Google (ADR 0001) va a ser otro endpoint que emite el mismo JWT.
+    - **Front**: la sesión es la cookie `sesion` (`httpOnly`, vigencia = `expiraEn`); `obtenerUsuario()` de `lib/sesion.ts` da el usuario memoizado por request vía `GET /auth/perfil`; `proxy.ts` redirige las rutas privadas sin cookie con chequeo optimista. Las pantallas usan **Server Functions** con `useActionState` en lugar del Route Handler del diseño archivado (decisión 15): misma cookie, sin `fetch` en el cliente. Se puede revertir en la revisión del #19.
+    - **Tests**: e2e con un `it` por escenario de la spec; crean usuarios `@e2e.test` y borran solo esos, así no tocan el seed local.
+
 ## Estado al 2026-09-21
 
 > **El estado al día está en [`estado-del-proyecto.md`](estado-del-proyecto.md).** Esta sección queda como contexto de lo que pasó hasta esa fecha y no se actualiza más.
@@ -221,3 +228,4 @@ lo confirme, se cierra ahí y en `requisitos.md` §8.
 - **2026-09-21**: el PR base (#3) ya estaba mergeado desde el 2026-09-17 y quedó abierto el #4 (`npm audit fix`). En el ítem 0.2, fijar `rootDir` dejó ver que Jest no carga Nest 12, que es solo ESM. Se pasó a **Node 24.21** y a correr Jest con `--experimental-vm-modules` (decisión 16), y el CI de ejemplo de `docs/arquitectura.md` toma la versión de `.nvmrc`. En el ítem 0.3 se escribió `ci.yml` con los checks `specs` y `api`, y OpenSpec y Redocly pasaron a devDependencies de la raíz (decisión 17). Rocío mergeó #5 y #6; el #4 se actualizó con `main`, pasó el CI y se mergeó; y entró el README (1.7) con el #7. Todos sin aprobación registrada, porque la protección todavía no está activa. Se borró `LEEME.md` (los "materiales iniciales" para armar el repo), que quedó obsoleto con el README.
 - **2026-09-23**: Adrián abrió el #9 con el archivado del cambio base; se le pidieron cambios porque la memoria quedaba con links rotos al `design.md` movido. Se limpiaron las ramas ya mergeadas. Se armó la **base visual del front** (decisión 18) en el PR #10, y quedó propuesto que JereDev se lleve el front completo, a confirmar por el equipo. Después se generaron los **tipos del contrato** (decisión 19).
 - **2026-09-24**: se sumó el job **web** al CI (lint y build del front). Hasta ahora el CI no compilaba `apps/web` en ninguna corrida, así que los PRs de front pasaban en verde sin que nadie verificara el front. La protección de `main` pasa a exigir tres checks. Se mergearon el #14, el #12 y el #15, en ese orden: los tres chocaban en esta memoria, porque cada PR escribe en las mismas secciones. Se reemplazó el diagrama de relaciones de `requisitos.md` §6 por un **erDiagram de Mermaid** derivado del `schema.prisma`, que además muestra la segunda clave foránea de `reserva` a `usuario` (`cancelada_por`), que el diagrama anterior no mostraba. Se separó el estado del trabajo en `docs/estado-del-proyecto.md` (decisión 21). Al revisar la protección de `main`, se vio que el ruleset existía desde el 21/09 pero estaba en `enforcement: disabled`, con cero aprobaciones y sin checks: no protegía nada. Rocío lo corrigió el mismo día, así que **`main` ya está protegida** con una aprobación y los tres checks, y el ítem 0.3 queda cerrado. Jeremías tomó los ítems **1.1, 1.2 y 1.5**; quedan 1.3, 1.4 y 1.6 para Adrián, Rocío y Renzo, uno cada uno. Se decidió sumar **login con Google** después de RF-00, con la sesión emitida por Nest (decisión 22 y primer ADR del repo).
+- **2026-09-25**: se implementó **RF-00** (ítem 1.1) en el PR #19: módulo `auth`, base transversal de la API (decisión 23), pantallas `/ingresar` y `/registro`, sesión en cookie y `proxy.ts`. 39 unitarios y 32 e2e en verde; los 14 escenarios del delta de spec verificados a mano en el navegador. Al probar se vio que nada cargaba `apps/api/.env` y que el 404 de fuera del prefijo salía en HTML; los dos quedaron corregidos en el mismo PR.
