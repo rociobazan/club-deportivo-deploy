@@ -31,7 +31,7 @@ export function SiteHeader({ usuario }: { usuario?: UsuarioDelHeader }) {
       </nav>
 
       {usuario ? (
-        <span className="order-3 flex items-center gap-2" title={usuario.nombre}>
+        <div className="order-3 flex items-center gap-2" title={usuario.nombre}>
           <span
             aria-hidden
             className="grid size-9 place-items-center rounded-full border border-border-strong text-sm font-bold text-accent"
@@ -52,7 +52,7 @@ export function SiteHeader({ usuario }: { usuario?: UsuarioDelHeader }) {
               Cerrar sesión
             </Button>
           </form>
-        </span>
+        </div>
       ) : (
         <Link
           href="/ingresar"

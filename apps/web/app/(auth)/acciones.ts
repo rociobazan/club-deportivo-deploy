@@ -109,7 +109,8 @@ export async function registrarse(
       body: { email: valores.email, password },
     });
   } catch (error) {
-    mensajeDe(error);
+    // Un error que no vino de la API es un bug y se propaga al error boundary.
+    if (!(error instanceof ApiHttpError)) throw error;
     return {
       error: "La cuenta se creó, pero no pudimos iniciar la sesión. Ingresá con tu mail y contraseña.",
       valores,

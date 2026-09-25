@@ -104,22 +104,25 @@ export class AuthService {
   }
 
   async ingresar(datos: LoginDto): Promise<RespuestaLogin> {
-    const usuario = await this.prisma.usuario.findUnique({
+    // La misma selección pública que registrar y perfil, más el hash para comparar:
+    // una columna nueva en `usuario` no sale por el login sin decidirlo acá.
+    const encontrado = await this.prisma.usuario.findUnique({
       where: { email: normalizarEmail(datos.email) },
+      select: { ...SELECCION_PUBLICA, passwordHash: true },
     });
 
     const coincide = await bcrypt.compare(
       datos.password,
-      usuario?.passwordHash ?? AuthService.HASH_SENUELO,
+      encontrado?.passwordHash ?? AuthService.HASH_SENUELO,
     );
-    if (!usuario || !coincide) throw credencialesInvalidas();
+    if (!encontrado || !coincide) throw credencialesInvalidas();
 
+    const { passwordHash: _hash, ...usuario } = encontrado;
     const accessToken = await this.jwt.signAsync({ sub: usuario.id, rol: usuario.rol });
     // La vigencia real sale del token firmado, no de parsear JWT_EXPIRES_IN (design.md, 6).
     const { exp, iat } = this.jwt.decode<{ exp: number; iat: number }>(accessToken);
 
-    const { passwordHash: _hash, activo: _activo, creadoEn: _creadoEn, ...publico } = usuario;
-    return { accessToken, expiraEn: exp - iat, usuario: publico };
+    return { accessToken, expiraEn: exp - iat, usuario };
   }
 
   async perfil(id: number): Promise<UsuarioPublico> {

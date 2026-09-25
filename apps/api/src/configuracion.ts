@@ -35,6 +35,9 @@ function vigencia(valor: string): VigenciaJwt {
       `JWT_EXPIRES_IN tiene un valor inválido ("${valor}"): usá segundos o una duración como 1h, 30m o 7d.`,
     );
   }
+  // jsonwebtoken interpreta un string sin unidad en MILISEGUNDOS ("3600" = 3,6 s);
+  // los dígitos sueltos se convierten a número, que sí son segundos.
+  if (/^\d+$/.test(valor)) return Number(valor);
   // Validado recién arriba; jsonwebtoken lo vuelve a chequear al firmar.
   return valor as VigenciaJwt;
 }

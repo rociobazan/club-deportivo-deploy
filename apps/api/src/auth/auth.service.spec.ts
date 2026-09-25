@@ -11,6 +11,7 @@ type PrismaFalso = {
   };
 };
 
+// Lo que devuelve findUnique con la selección pública más el hash.
 const socio = {
   id: 42,
   nombre: 'Bruno',
@@ -18,8 +19,6 @@ const socio = {
   email: 'socio@club.test',
   telefono: null,
   rol: 'SOCIO' as const,
-  activo: true,
-  creadoEn: new Date('2026-09-01T00:00:00Z'),
   passwordHash: bcrypt.hashSync('clave1234', 10),
 };
 
@@ -153,9 +152,9 @@ describe('AuthService', () => {
 
       await servicio.ingresar({ email: '  Socio@Club.test ', password: 'clave1234' });
 
-      expect(prisma.usuario.findUnique).toHaveBeenCalledWith({
-        where: { email: 'socio@club.test' },
-      });
+      expect(prisma.usuario.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { email: 'socio@club.test' } }),
+      );
     });
   });
 

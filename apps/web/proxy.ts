@@ -11,11 +11,10 @@ import { COOKIE_SESION } from "@/lib/sesion";
 export function proxy(request: NextRequest) {
   if (request.cookies.has(COOKIE_SESION)) return NextResponse.next();
 
-  // Se arma como string para que `volver` quede legible (`/mis-reservas`, no `%2F...`).
-  const destino = new URL(
-    `/ingresar?volver=${request.nextUrl.pathname}`,
-    request.url,
-  );
+  // Ruta completa, con su query, para volver exactamente a lo que se pidió.
+  const { pathname, search } = request.nextUrl;
+  const destino = new URL('/ingresar', request.url);
+  destino.searchParams.set('volver', pathname + search);
   return NextResponse.redirect(destino);
 }
 

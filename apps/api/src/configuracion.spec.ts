@@ -29,10 +29,14 @@ describe('leerConfiguracion', () => {
     ).toThrow('JWT_EXPIRES_IN');
   });
 
-  it('acepta segundos y duraciones con unidad en JWT_EXPIRES_IN', () => {
-    for (const valor of ['3600', '30m', '7d', '1.5h', '2 days']) {
+  it('acepta duraciones con unidad en JWT_EXPIRES_IN tal cual', () => {
+    for (const valor of ['30m', '7d', '1.5h', '2 days']) {
       expect(leerConfiguracion({ ...completo, JWT_EXPIRES_IN: valor }).jwtExpiresIn).toBe(valor);
     }
+  });
+
+  it('convierte los dígitos sueltos a número, porque como string jsonwebtoken los lee en milisegundos', () => {
+    expect(leerConfiguracion({ ...completo, JWT_EXPIRES_IN: '3600' }).jwtExpiresIn).toBe(3600);
   });
 
   it('trata una variable en blanco como ausente', () => {
