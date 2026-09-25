@@ -8,12 +8,10 @@ import {
   navegacionPara,
   type UsuarioDelHeader,
 } from "@/components/layout/navegacion";
-import { buttonClasses } from "@/components/ui/button";
+import { Button, buttonClasses } from "@/components/ui/button";
+import { cerrarSesion } from "@/app/(auth)/acciones";
 
-/**
- * `usuario` llega vacío hasta que exista la sesión: leer la cookie `httpOnly`
- * y cerrar sesión son del cambio de autenticación (RF-00), que es su dueño.
- */
+/** `usuario` lo lee el layout de la cookie de sesión (`lib/sesion.ts`). */
 export function SiteHeader({ usuario }: { usuario?: UsuarioDelHeader }) {
   const navegacion = navegacionPara(usuario);
 
@@ -48,6 +46,12 @@ export function SiteHeader({ usuario }: { usuario?: UsuarioDelHeader }) {
               Admin
             </span>
           ) : null}
+          {/* Server Function: borra la cookie y vuelve al inicio. */}
+          <form action={cerrarSesion}>
+            <Button type="submit" variant="ghost" className="max-sm:min-h-10 max-sm:px-3">
+              Cerrar sesión
+            </Button>
+          </form>
         </span>
       ) : (
         <Link
