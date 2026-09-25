@@ -29,7 +29,7 @@ describe('Base transversal (e2e)', () => {
     }).compile();
 
     app = modulo.createNestApplication();
-    configurarApp(app);
+    await configurarApp(app);
     await app.init();
     jwt = app.get(JwtService);
   });
@@ -48,7 +48,13 @@ describe('Base transversal (e2e)', () => {
   describe('Prefijo', () => {
     it('sirve las rutas bajo /api/v1', async () => {
       await api().get('/api/v1/').expect(200);
-      await api().get('/').expect(404);
+    });
+
+    it('fuera del prefijo responde 404 con el schema Error, no el HTML de Express', async () => {
+      const { body, type } = await api().get('/').expect(404);
+
+      expect(type).toBe('application/json');
+      expect(body).toMatchObject({ tipo: 'NO_ENCONTRADO', estado: 404, instancia: '/' });
     });
   });
 

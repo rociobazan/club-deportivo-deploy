@@ -40,7 +40,7 @@ describe('autenticacion (e2e)', () => {
 
     const modulo = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = modulo.createNestApplication();
-    configurarApp(app);
+    await configurarApp(app);
     await app.init();
     prisma = app.get(PrismaService);
   });
