@@ -12,6 +12,8 @@ Memoria compartida para cualquier integrante y cualquier agente de IA (Claude Co
 
 | Qué | Dónde manda |
 |---|---|
+| Estado del trabajo, qué falta y quién lo destraba | `docs/estado-del-proyecto.md` |
+| Decisiones difíciles de revertir | `docs/adr/` |
 | Qué exige el TP | `docs/Consigna TP — Sistema de Reservas con OpenSpec y CI-CD.md` |
 | Comportamiento del sistema | `openspec/specs/` después de archivar; mientras tanto, `openspec/changes/<cambio>/specs/` |
 | Forma de la API | `contratos/openapi.yaml` |
@@ -103,7 +105,20 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
 
     **Pantallas de estado** (2026-09-24), en `apps/web/app/`: `not-found.tsx` (404 con accesos a Inicio y Disponibilidad), `error.tsx` (mensaje genérico, botón de reintentar y el código del error; el detalle va al log, nunca a la pantalla) y `loading.tsx` (esqueleto que respeta `prefers-reduced-motion`). Las tres renderizan dentro del layout, así que llevan header y pie. **Ojo con la versión de Next**: el prop del error boundary es **`retry`**, no `reset`. No se usó `global-not-found`, que es experimental.
 
+21. **El estado del trabajo vive en un documento aparte** (2026-09-24), en `docs/estado-del-proyecto.md`: qué hay construido, qué falta y quién lo destraba, con los comandos que regeneran cada número. Esta memoria queda para las **decisiones y el historial**, o sea el *por qué*.
+    - Se separaron porque son cosas distintas: una decisión se escribe una vez y no se toca; el estado cambia en cada PR. Mezclados, el estado envejecía adentro de un documento que nadie relee entero.
+    - **Quien cierra un ítem lo marca en `estado-del-proyecto.md` en el mismo PR**, igual que acá.
+    - Las secciones "Estado al 2026-09-21", "Reparto" y "Pendientes" de este archivo quedan como contexto; el avance se sigue allá.
+
+22. **Login con Google sin mover la sesión al front** (2026-09-24; ADR `docs/adr/0001-login-con-google.md`). El front obtiene el `id_token` de Google y lo manda a `POST /auth/google`; **Nest lo verifica y emite su propio JWT**, el mismo de `/auth/login`.
+    - Se puede usar **Auth.js solo como cliente de OAuth**. Lo que `arquitectura.md` §2 descarta es que el front sea dueño de la sesión, porque entonces el contrato deja de describir cómo se protege la API y un `curl` directo la saltearía.
+    - **Entra después de RF-00**, como cambio aparte: 1.1 es camino crítico y no se le suma alcance.
+    - Arrastra migración (`password_hash` pasa a nullable), una operación nueva en el contrato, cambio de la spec de RF-00 por `/opsx:propose`, y `GOOGLE_CLIENT_ID` en el job `api` del CI.
+    - **Es el primer ADR del repo**: las decisiones difíciles de revertir van a `docs/adr/`, numeradas, con las alternativas que se consideraron.
+
 ## Estado al 2026-09-21
+
+> **El estado al día está en [`estado-del-proyecto.md`](estado-del-proyecto.md).** Esta sección queda como contexto de lo que pasó hasta esa fecha y no se actualiza más.
 
 - **Cambio `especificacion-base-reservas`**: implementado y verificado por completo (**35 de 35 tareas**) y **mergeado a `main`** con el PR #3 el 2026-09-17 (ítem 0.1). Incluye:
   - `docs/requisitos.md` corregido a precio plano y ampliado con RF-11 a RF-14, RN-15 y RN-16.
@@ -124,10 +139,11 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
 - **Shell de navegación (decisión 18)**: PR #12, mergeado. Header con menú de mobile, footer, y el **logo del club** en los dos, más el favicon. Lint y build en verde; verificado a 375 px (header de 69 px, panel que abre y cierra, sin desborde) y en escritorio.
 - **Pantallas de estado (decisión 18)**: PR #15, mergeado. `not-found.tsx`, `error.tsx` y `loading.tsx`. Las tres se verificaron en el navegador con rutas temporales que después se borraron.
 - **Logo y favicon** (2026-09-23), en el mismo PR #12: el original del prototipo (`apps/web/public/logo-deploy-original.png`) es un cuadrado con fondo negro y la palabra "Deploy" adentro. De ahí se derivaron `apps/web/public/logo-deploy.png` (512 px, el que usan el header y el pie) y `apps/web/app/icon.png` (256 px, el favicon de Next), recortados al ícono y con fondo transparente. Se borró el `favicon.ico` de la plantilla, que si no le ganaba al ícono nuevo.
-- **#4, #5, #6 y #7 se mergearon sin ninguna aprobación registrada en GitHub**, porque la protección de `main` todavía no está activa.
+- **#4, #5, #6 y #7 se mergearon sin ninguna aprobación registrada en GitHub**, porque la protección de `main` todavía no estaba activa.
 - `openspec/specs/` tiene las siete capacidades vigentes desde el archivado de `especificacion-base-reservas` (PR de `chore/archivar-especificacion-base`, 2026-09-21).
 - `apps/api` todavía no tiene módulos (solo `prisma/`). `apps/web` ya tiene el shell, las pantallas de estado y `/estilos`; la home sigue siendo la de Next hasta que entre la landing (1.5).
-- Todavía no existe la protección de `main`.
+- Al 2026-09-21 todavía no existía la protección de `main`. Se activó el 2026-09-24; el estado
+  vigente está en [`estado-del-proyecto.md`](estado-del-proyecto.md).
 
 ### Desvíos y hallazgos de la implementación (2026-09-16)
 
@@ -142,6 +158,8 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
 - **Los tests de la API fallan desde antes de este cambio**: `npm run test --workspace api` corta con `TS5011`, porque TypeScript 6 pide `rootDir` explícito en `apps/api/tsconfig.json`. No lo causó la instalación, pero bloquea el job de tests del CI. Se resolvió el 2026-09-21 en `fix/rootdir-tests-api` con `"rootDir": "./"`. Arreglado eso, apareció el problema de Nest 12 solo ESM que resuelve la decisión 16.
 
 ## Reparto del trabajo restante
+
+> **El estado al día está en [`estado-del-proyecto.md`](estado-del-proyecto.md).** Acá está el reparto acordado, que es la referencia; el avance de cada ítem se sigue allá.
 
 Cada integrante se lleva su feature **completa**: spec, contrato si hace falta, endpoint en Nest,
 tests y la pantalla en Next que la consume (`requisitos.md` §8). Una rama por ítem, un PR por rama,
@@ -166,11 +184,11 @@ Cada una arranca con su propio `/opsx:propose`, que las cuatro personas revisan 
 
 | # | Rama | Qué entra | Responsable | Revisa | Depende de |
 |---|---|---|---|---|---|
-| 1.1 | `feature/spec-autenticacion` | RF-00: registro, login, JWT, guards de rol, y las pantallas de registro e ingreso en Next | **A** | B | 0.1. **Camino crítico**: hasta que estén los guards, C y D testean con un mock del token |
-| 1.2 | `feature/spec-disponibilidad` | RF-01, RF-02, RF-03: disciplinas, canchas, equipamiento y consulta de disponibilidad, más la pantalla de disponibilidad | **B** | C | 0.1 |
+| 1.1 | `feature/spec-autenticacion` | RF-00: registro, login, JWT, guards de rol, y las pantallas de registro e ingreso en Next | **Jeremías** | Cualquiera de los otros tres | 0.1. **Camino crítico**: hasta que estén los guards, C y D testean con un mock del token |
+| 1.2 | `feature/spec-disponibilidad` | RF-01, RF-02, RF-03: disciplinas, canchas, equipamiento y consulta de disponibilidad, más la pantalla de disponibilidad | **Jeremías** | Cualquiera de los otros tres | 0.1 |
 | 1.3 | `feature/spec-creacion-reserva` | RF-04 con RN-01, RN-05 y RN-06: creación de reservas y formulario | **C** | D | 1.1 y 1.2 |
 | 1.4 | `feature/spec-reservas-notificaciones` | RF-05 a RF-08: mis reservas, detalle, cancelación y mails de confirmación y cancelación, más la pantalla de mis reservas | **D** | A | 1.1 y 1.3 |
-| 1.5 | `feature/landing-institucional` | RF-09 y RF-10: Inicio, El club y Contacto, con el prototipo como referencia | **A + B** | C y D | 0.1 |
+| 1.5 | `feature/landing-institucional` | RF-09 y RF-10: Inicio, El club y Contacto, con el prototipo como referencia | **Jeremías** | Cualquiera de los otros tres | 0.1 |
 | 1.6 | `feature/spec-administracion` | RF-11 a RF-14: panel del club, ABM de canchas y equipamiento, reenvío del mail y pantallas de admin | **C + D** (propuesto el 2026-09-17; confirmar) | A y B | 1.1 y 1.2 |
 | 1.7 | `docs/readme` | **Hecho**: PR #7, mergeado el 2026-09-21 (README con arquitectura, instrucciones con Docker Desktop y `npm run db:up` y usuarios de prueba). **Falta** la captura de la protección de `main`, cuando esté activa | JereDev | Cualquiera | 0.3 |
 
@@ -180,8 +198,10 @@ lo confirme, se cierra ahí y en `requisitos.md` §8.
 
 ## Pendientes y preguntas abiertas
 
+> **El estado al día está en [`estado-del-proyecto.md`](estado-del-proyecto.md).** Acá quedan solo las preguntas abiertas del equipo, no el avance.
+
 - **Cada integrante pasa a Node 24.21** (`nvm install 24.21.0`): con Node 20, los tests de la API no corren (decisión 16).
-- **Protección de `main`**: 0.3 ya está mergeado; falta que `rociobazan` la configure con los pasos de `docs/arquitectura.md` §7, ahora con los **tres** checks (`specs`, `api` y `web`). Después, la captura va al README.
+- **Captura de la protección de `main`**: la protección quedó activa el 2026-09-24, con una aprobación y los tres checks. Falta la captura de esa pantalla para el README, que es lo único que cierra el ítem 1.7.
 - **Aprobar cada PR en GitHub antes de mergear**: #4 a #7 entraron sin aprobación registrada, y la consigna evalúa al menos una por PR. Con la protección activa, GitHub lo exige solo.
 - **El cuarto integrante, Renzo Bazán, no figura como colaborador del repo** y no tiene commits; lo agrega `rociobazan` en *Settings → Collaborators*.
 - **`prisma generate` en el CI**: npm 11 no ejecuta el `postinstall` de `@prisma/client`. Cuando la API importe `PrismaClient`, hay que sumar `prisma generate` al job `api`.
@@ -200,4 +220,4 @@ lo confirme, se cierra ahí y en `requisitos.md` §8.
 - **2026-09-17**: se cerraron las tres tareas que faltaban (8.2, 9.3 y 9.6), así que el cambio base queda verificado de punta a punta y listo para el PR, con su descripción en `descripcion-pr.md`. Se reemplazaron los "Próximos pasos" por el "Reparto del trabajo restante", con una rama y un responsable por ítem, y se propuso asignar la administración (RF-11 a RF-14) a C y D.
 - **2026-09-21**: el PR base (#3) ya estaba mergeado desde el 2026-09-17 y quedó abierto el #4 (`npm audit fix`). En el ítem 0.2, fijar `rootDir` dejó ver que Jest no carga Nest 12, que es solo ESM. Se pasó a **Node 24.21** y a correr Jest con `--experimental-vm-modules` (decisión 16), y el CI de ejemplo de `docs/arquitectura.md` toma la versión de `.nvmrc`. En el ítem 0.3 se escribió `ci.yml` con los checks `specs` y `api`, y OpenSpec y Redocly pasaron a devDependencies de la raíz (decisión 17). Rocío mergeó #5 y #6; el #4 se actualizó con `main`, pasó el CI y se mergeó; y entró el README (1.7) con el #7. Todos sin aprobación registrada, porque la protección todavía no está activa. Se borró `LEEME.md` (los "materiales iniciales" para armar el repo), que quedó obsoleto con el README.
 - **2026-09-23**: Adrián abrió el #9 con el archivado del cambio base; se le pidieron cambios porque la memoria quedaba con links rotos al `design.md` movido. Se limpiaron las ramas ya mergeadas. Se armó la **base visual del front** (decisión 18) en el PR #10, y quedó propuesto que JereDev se lleve el front completo, a confirmar por el equipo. Después se generaron los **tipos del contrato** (decisión 19).
-- **2026-09-24**: se sumó el job **web** al CI (lint y build del front). Hasta ahora el CI no compilaba `apps/web` en ninguna corrida, así que los PRs de front pasaban en verde sin que nadie verificara el front. La protección de `main` pasa a exigir tres checks. Se mergearon el #14, el #12 y el #15, en ese orden: los tres chocaban en esta memoria, porque cada PR escribe en las mismas secciones. Se reemplazó el diagrama de relaciones de `requisitos.md` §6 por un **erDiagram de Mermaid** derivado del `schema.prisma`, que además muestra la segunda clave foránea de `reserva` a `usuario` (`cancelada_por`), que el diagrama anterior no mostraba.
+- **2026-09-24**: se sumó el job **web** al CI (lint y build del front). Hasta ahora el CI no compilaba `apps/web` en ninguna corrida, así que los PRs de front pasaban en verde sin que nadie verificara el front. La protección de `main` pasa a exigir tres checks. Se mergearon el #14, el #12 y el #15, en ese orden: los tres chocaban en esta memoria, porque cada PR escribe en las mismas secciones. Se reemplazó el diagrama de relaciones de `requisitos.md` §6 por un **erDiagram de Mermaid** derivado del `schema.prisma`, que además muestra la segunda clave foránea de `reserva` a `usuario` (`cancelada_por`), que el diagrama anterior no mostraba. Se separó el estado del trabajo en `docs/estado-del-proyecto.md` (decisión 21). Al revisar la protección de `main`, se vio que el ruleset existía desde el 21/09 pero estaba en `enforcement: disabled`, con cero aprobaciones y sin checks: no protegía nada. Rocío lo corrigió el mismo día, así que **`main` ya está protegida** con una aprobación y los tres checks, y el ítem 0.3 queda cerrado. Jeremías tomó los ítems **1.1, 1.2 y 1.5**; quedan 1.3, 1.4 y 1.6 para Adrián, Rocío y Renzo, uno cada uno. Se decidió sumar **login con Google** después de RF-00, con la sesión emitida por Nest (decisión 22 y primer ADR del repo).
