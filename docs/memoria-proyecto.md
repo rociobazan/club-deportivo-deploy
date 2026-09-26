@@ -76,7 +76,7 @@ Detalle y alternativas descartadas en `openspec/changes/especificacion-base-rese
     - El aviso `ExperimentalWarning: VM Modules` es esperable.
 
     Alternativas descartadas: transformar `@nestjs` a CommonJS dentro de Jest (lento, frágil y atado a Node 20, que ya no tiene soporte) y migrar la API a ESM con Vitest, como el template `ts-esm` de Nest (más limpio, pero es un cambio estructural y sale del stack acordado).
-17. **CI con tres checks obligatorios: `specs`, `api` y `web`** (2026-09-21; `web` se sumó el 2026-09-24). `.github/workflows/ci.yml` corre en cada PR a `main` y en cada push a `main`. Detalle en `docs/arquitectura.md` §6 y §7.
+17. **CI con tres checks obligatorios: `specs`, `api` y `web`** (2026-09-21; `web` se sumó el 2026-09-24). `.github/workflows/ci.yml` corre en cada PR, apunte a la rama que apunte (desde el 2026-09-26; antes solo a `main`, y los PRs apilados quedaban sin CI), y en cada push a `main`. Detalle en `docs/arquitectura.md` §6 y §7.
     - `specs` valida OpenSpec (`--strict`) y el contrato.
     - `api` espera a `specs`, aplica las migraciones contra un service container `postgres:17` y corre lint, build y tests de la API.
     - **OpenSpec 1.13.1 y `@redocly/cli` 2.53.3 son devDependencies de la raíz**, para que el CI y los cuatro usen la misma versión (antes, OpenSpec era global y Redocly bajaba la última en cada corrida). `contrato:lint` usa el `redocly` local, no `npx`.
