@@ -1,4 +1,4 @@
-import { Module, ValidationPipe } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { AppController } from './app.controller';
@@ -9,6 +9,7 @@ import { DisponibilidadModule } from './disponibilidad/disponibilidad.module';
 import { FiltroDeErrores } from './common/filtro-de-errores';
 import { JwtAuthGuard } from './common/jwt-auth.guard';
 import { RolesGuard } from './common/roles.guard';
+import { crearPipeDeValidacion } from './common/validacion';
 import { CONFIGURACION, Configuracion } from './configuracion';
 import { ConfiguracionModule } from './configuracion.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -34,14 +35,7 @@ import { PrismaModule } from './prisma/prisma.module';
   providers: [
     AppService,
     // Registrados por DI y no en main.ts para que los e2e prueben la app real.
-    {
-      provide: APP_PIPE,
-      useValue: new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    },
+    { provide: APP_PIPE, useFactory: crearPipeDeValidacion },
     { provide: APP_FILTER, useClass: FiltroDeErrores },
     // El orden importa: primero se identifica al usuario, después se mira su rol.
     { provide: APP_GUARD, useClass: JwtAuthGuard },

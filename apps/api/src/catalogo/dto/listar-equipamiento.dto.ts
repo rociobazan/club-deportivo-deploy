@@ -1,7 +1,7 @@
 import { Transform, Type } from 'class-transformer';
 import { IsBoolean, IsInt, IsOptional, Min } from 'class-validator';
+import { aBooleano } from '../../common/transformaciones';
 import { EsFecha, EsHora } from '../../common/validadores';
-import { aBooleano } from './listar-canchas.dto';
 
 export class ListarEquipamientoDto {
   @IsOptional()

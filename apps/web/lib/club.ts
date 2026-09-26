@@ -11,15 +11,26 @@ export const HORA_CIERRE = process.env.HORA_CIERRE?.trim() || "23:00";
 
 export type Momento = { fecha: string; hora: string };
 
-const formato = new Intl.DateTimeFormat("en-CA", {
-  timeZone: ZONA_HORARIA_CLUB,
-  hourCycle: "h23",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-});
+/** Falla al importar con un mensaje claro, igual que la API al arrancar, y no con un RangeError suelto. */
+function crearFormato(): Intl.DateTimeFormat {
+  try {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: ZONA_HORARIA_CLUB,
+      hourCycle: "h23",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    throw new Error(
+      `ZONA_HORARIA_CLUB tiene un valor inválido ("${ZONA_HORARIA_CLUB}") en apps/web/.env.local: usá un nombre IANA como America/Argentina/Cordoba.`,
+    );
+  }
+}
+
+const formato = crearFormato();
 
 /** Fecha `YYYY-MM-DD` y hora `HH:MM` locales del club, como las calcula la API. */
 export function ahoraEnElClub(instante: Date = new Date()): Momento {

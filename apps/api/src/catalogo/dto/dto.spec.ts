@@ -1,13 +1,10 @@
-import { BadRequestException, ValidationPipe } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
+import { crearPipeDeValidacion } from '../../common/validacion';
 import { ListarCanchasDto } from './listar-canchas.dto';
 import { ListarEquipamientoDto } from './listar-equipamiento.dto';
 
-// La misma configuración que registra AppModule como APP_PIPE.
-const pipe = new ValidationPipe({
-  whitelist: true,
-  forbidNonWhitelisted: true,
-  transform: true,
-});
+// El mismo pipe que registra AppModule como APP_PIPE.
+const pipe = crearPipeDeValidacion();
 
 const validar = <T>(metatype: new () => T, query: Record<string, string>) =>
   pipe.transform(query, { type: 'query', metatype }) as Promise<T>;

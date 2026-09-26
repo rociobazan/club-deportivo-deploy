@@ -1,15 +1,8 @@
 import { Transform, Type } from 'class-transformer';
 import { IsBoolean, IsInt, IsOptional, Min } from 'class-validator';
+import { aBooleano } from '../../common/transformaciones';
 
-/**
- * Los query params llegan como texto. El ValidationPipe global no convierte
- * solo, así que cada campo declara su transformación (design.md, decisión 6):
- * `true`/`false` pasan a booleano y cualquier otra cosa queda para que
- * `@IsBoolean()` la rechace.
- */
-export const aBooleano = ({ value }: { value: unknown }) =>
-  value === 'true' ? true : value === 'false' ? false : value;
-
+/** Los query params llegan como texto: cada campo declara su transformación (decisión 6). */
 export class ListarCanchasDto {
   @IsOptional()
   @Type(() => Number)

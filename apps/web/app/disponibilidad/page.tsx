@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import Form from "next/form";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardTitle } from "@/components/ui/card";
 import { EstadoError } from "@/components/ui/estado-error";
 import { Input } from "@/components/ui/input";
 import { apiFetch, ApiHttpError } from "@/lib/api/client";
-import type { Disciplina, DisponibilidadResponse } from "@/lib/api/types";
+import type { Cancha, Disciplina, DisponibilidadResponse } from "@/lib/api/types";
 import { ahoraEnElClub, esFechaValida, fechaLegible } from "@/lib/club";
+import { aMinutos } from "@/lib/grilla";
 import { obtenerUsuario } from "@/lib/sesion";
 import { AvisoSocio } from "./aviso-socio";
 import { GrillaCancha } from "./grilla-cancha";
@@ -45,21 +47,26 @@ export default async function PaginaDisponibilidad({ searchParams }: Props) {
   const disciplinaId =
     Number.isInteger(disciplinaIdPedida) && disciplinaIdPedida > 0 ? disciplinaIdPedida : undefined;
 
-  const consultaActual = `/disponibilidad?fecha=${fecha}${disciplinaId ? `&disciplinaId=${disciplinaId}` : ""}`;
+  // Una sola query: la usan la llamada a la API, "Reintentar" y el `volver` del aviso.
+  const consulta = new URLSearchParams({ fecha });
+  if (disciplinaId) consulta.set("disciplinaId", String(disciplinaId));
+  const consultaActual = `/disponibilidad?${consulta}`;
 
   let disciplinas: Disciplina[];
+  let canchas: Cancha[];
   let disponibilidad: DisponibilidadResponse;
   let usuarioConSesion: boolean;
   try {
-    const [listaDisciplinas, respuesta, usuario] = await Promise.all([
+    const [listaDisciplinas, listaCanchas, respuesta, usuario] = await Promise.all([
       apiFetch<Disciplina[]>("/disciplinas", { timeoutMs: 2000 }),
-      apiFetch<DisponibilidadResponse>(
-        `/disponibilidad?fecha=${fecha}${disciplinaId ? `&disciplinaId=${disciplinaId}` : ""}`,
-        { timeoutMs: 2000 },
-      ),
+      // Para saber la disciplina (por id) de cada cancha: la respuesta de
+      // disponibilidad solo trae el nombre.
+      apiFetch<Cancha[]>("/canchas", { timeoutMs: 2000 }),
+      apiFetch<DisponibilidadResponse>(consultaActual, { timeoutMs: 2000 }),
       obtenerUsuario(),
     ]);
     disciplinas = listaDisciplinas;
+    canchas = listaCanchas;
     disponibilidad = respuesta;
     usuarioConSesion = usuario !== null;
   } catch (error) {
@@ -75,21 +82,38 @@ export default async function PaginaDisponibilidad({ searchParams }: Props) {
     );
   }
 
-  // La grilla se dibuja con la duración de la disciplina; `nombre` es único.
-  const duracionPorDisciplina = new Map(disciplinas.map((d) => [d.nombre, d.duracionTurnoMin]));
+  // La grilla se dibuja con la duración del turno de la disciplina de cada cancha,
+  // resuelta por id. Si algo no matchea, la duración sale del primer turno libre,
+  // que la API calculó con la misma grilla; nunca se asume un valor.
+  const duracionPorDisciplina = new Map(disciplinas.map((d) => [d.id, d.duracionTurnoMin]));
+  const disciplinaPorCancha = new Map(canchas.map((c) => [c.id, c.disciplinaId]));
+  const duracionDe = (cancha: DisponibilidadResponse["canchas"][number]): number | undefined => {
+    const porId = duracionPorDisciplina.get(disciplinaPorCancha.get(cancha.canchaId) ?? -1);
+    if (porId) return porId;
+    const primero = cancha.slots[0];
+    return primero ? aMinutos(primero.horaFin) - aMinutos(primero.horaInicio) : undefined;
+  };
   const esHoy = fecha === ahora.fecha;
 
-  const grilla = disponibilidad.canchas.map((cancha) => (
-    <GrillaCancha
-      key={cancha.canchaId}
-      cancha={cancha}
-      duracionMin={duracionPorDisciplina.get(cancha.disciplina ?? "") ?? 60}
-      fecha={fecha}
-      esHoy={esHoy}
-      horaAhora={ahora.hora}
-      conSesion={usuarioConSesion}
-    />
-  ));
+  const grilla = disponibilidad.canchas.map((cancha) => {
+    const duracionMin = duracionDe(cancha);
+    return duracionMin ? (
+      <GrillaCancha
+        key={cancha.canchaId}
+        cancha={cancha}
+        duracionMin={duracionMin}
+        fecha={fecha}
+        esHoy={esHoy}
+        horaAhora={ahora.hora}
+        conSesion={usuarioConSesion}
+      />
+    ) : (
+      <Card key={cancha.canchaId}>
+        <CardTitle>{cancha.nombre}</CardTitle>
+        <p className="mt-1 text-sm text-text-muted">Sin turnos libres para esta fecha.</p>
+      </Card>
+    );
+  });
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
