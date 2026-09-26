@@ -11,6 +11,10 @@ export type PayloadJwt = { sub: number; rol: Rol };
  * Guard global: todo endpoint exige `Authorization: Bearer <jwt>` salvo que
  * esté marcado con `@Publico()` (design.md, decisión 2). Deja `{ id, rol }` en
  * `request.usuario` para el guard de roles y para `@UsuarioActual()`.
+ *
+ * En un endpoint público el token es opcional: si viene y es válido, el
+ * usuario queda disponible (así `GET /canchas?incluirInactivas=true` puede
+ * exigir ADMIN); si falta o es inválido, la solicitud sigue como anónima.
  */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -24,11 +28,13 @@ export class JwtAuthGuard implements CanActivate {
       contexto.getHandler(),
       contexto.getClass(),
     ]);
-    if (esPublico) return true;
 
     const solicitud = contexto.switchToHttp().getRequest<SolicitudConUsuario>();
     const token = extraerBearer(solicitud.headers.authorization);
-    if (!token) throw noAutenticado();
+    if (!token) {
+      if (esPublico) return true;
+      throw noAutenticado();
+    }
 
     try {
       const payload = await this.jwt.verifyAsync<PayloadJwt>(token);
@@ -36,6 +42,7 @@ export class JwtAuthGuard implements CanActivate {
       return true;
     } catch {
       // Vencido, mal formado o con otra firma: para el cliente es lo mismo.
+      if (esPublico) return true;
       throw noAutenticado();
     }
   }
