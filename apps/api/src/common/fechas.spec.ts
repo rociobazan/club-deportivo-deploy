@@ -1,4 +1,12 @@
-import { comparar, esFechaValida, esHoraValida } from './fechas';
+import { aFechaDb, comparar, deFechaDb, esFechaValida, esHoraValida } from './fechas';
+
+describe('aFechaDb y deFechaDb', () => {
+  it('van y vuelven sin que la zona horaria se meta en el medio', () => {
+    const fecha = aFechaDb('2026-09-15');
+    expect(fecha.toISOString()).toBe('2026-09-15T00:00:00.000Z');
+    expect(deFechaDb(fecha)).toBe('2026-09-15');
+  });
+});
 
 describe('esFechaValida', () => {
   it('acepta YYYY-MM-DD de fechas reales', () => {

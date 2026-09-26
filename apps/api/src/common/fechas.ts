@@ -21,6 +21,19 @@ export function esHoraValida(valor: string): boolean {
 }
 
 /**
+ * `reserva.fecha` es `@db.Date`: Prisma la lee y escribe como un `Date` a las
+ * 00:00 UTC. Estas dos funciones son el único puente entre ese `Date` y el
+ * `YYYY-MM-DD` del contrato, para que ninguna zona horaria se meta en el medio.
+ */
+export function aFechaDb(fecha: string): Date {
+  return new Date(`${fecha}T00:00:00.000Z`);
+}
+
+export function deFechaDb(fecha: Date): string {
+  return fecha.toISOString().slice(0, 10);
+}
+
+/**
  * Negativo si `a` es anterior a `b`, 0 si son iguales, positivo si es posterior.
  * Con `YYYY-MM-DD` y `HH:MM`, comparar como texto es comparar en el tiempo.
  */

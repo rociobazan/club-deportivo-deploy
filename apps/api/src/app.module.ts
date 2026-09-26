@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { CatalogoModule } from './catalogo/catalogo.module';
 import { FiltroDeErrores } from './common/filtro-de-errores';
 import { JwtAuthGuard } from './common/jwt-auth.guard';
 import { RolesGuard } from './common/roles.guard';
@@ -15,6 +16,7 @@ import { PrismaModule } from './prisma/prisma.module';
   imports: [
     ConfiguracionModule,
     AuthModule,
+    CatalogoModule,
     PrismaModule,
     // Global para que el guard de JWT, que también es global, pueda inyectar JwtService.
     JwtModule.registerAsync({
