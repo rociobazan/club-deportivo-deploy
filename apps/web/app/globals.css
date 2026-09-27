@@ -73,3 +73,116 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/*
+ * Movimiento del inicio (diseño "Inicio Deploy v2"). Los keyframes viven acá y
+ * no junto al componente porque Tailwind no genera animaciones a medida, y el
+ * hero y el indicador de "abierto" del header comparten varias.
+ */
+@keyframes dpy-entrada {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Los tres orbes del fondo del hero derivan con `transform` para que la
+   animación corra en la GPU y no relayoutee la página en cada frame. */
+@keyframes dpy-orbe-a {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(-12%, 10%) scale(1.15);
+  }
+  66% {
+    transform: translate(8%, -6%) scale(0.95);
+  }
+}
+
+@keyframes dpy-orbe-b {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  40% {
+    transform: translate(14%, -12%) scale(1.1);
+  }
+  70% {
+    transform: translate(-6%, 8%) scale(0.9);
+  }
+}
+
+@keyframes dpy-orbe-c {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(10%, 14%);
+  }
+}
+
+@keyframes dpy-haz {
+  0% {
+    transform: translateX(-30%) rotate(-12deg);
+    opacity: 0;
+  }
+  15%,
+  85% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateX(130%) rotate(-12deg);
+    opacity: 0;
+  }
+}
+
+/*
+ * Reveal al scroll. El estado oculto lo define este archivo y lo enciende
+ * `ActivarReveal` poniendo `data-reveal="on"`. Si el JS no corre, el
+ * `<noscript>` de la página anula el estado oculto: el contenido nunca queda
+ * invisible por una animación que no llegó a arrancar.
+ */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 0.7s ease,
+    transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+[data-reveal="on"] {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* El bloque de arriba ya acorta las transiciones. Esto además evita tener que
+     esperar al observador para poder leer el contenido. */
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * Fondo que mezcla la paleta, para las pantallas que sin él quedan planas
+ * (ingreso, contacto). Son capas estáticas y no un shader: el degradé hace el
+ * trabajo y no hay nada moviéndose que distraiga de un formulario.
+ *
+ * Los `rgb()` literales son `--accent` y `--accent-hover` con alfa, que un
+ * gradiente no puede sacar de la variable sin `color-mix`.
+ */
+.fondo-mezcla {
+  background:
+    radial-gradient(90% 70% at 12% 0%, rgb(0 229 143 / 0.1), transparent 60%),
+    radial-gradient(70% 60% at 100% 15%, rgb(123 255 203 / 0.06), transparent 65%),
+    radial-gradient(100% 80% at 50% 110%, rgb(0 229 143 / 0.05), transparent 70%),
+    linear-gradient(165deg, var(--surface) 0%, var(--bg) 50%, var(--surface) 100%);
+}
