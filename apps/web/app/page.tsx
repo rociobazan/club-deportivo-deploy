@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
@@ -65,7 +66,8 @@ export default async function Inicio() {
 
   return (
     <main className="flex-1">
-      <section className="mx-auto w-full max-w-5xl px-6 pb-16 pt-14 sm:pt-20">
+      <section className="mx-auto grid w-full max-w-5xl items-center gap-10 px-6 pb-16 pt-14 sm:pt-20 lg:grid-cols-2">
+        <div>
         <Badge tone="accent">{HERO.eyebrow}</Badge>
 
         <h1 className="mt-5 font-display text-4xl font-semibold leading-[1.1] sm:text-6xl">
@@ -99,6 +101,28 @@ export default async function Inicio() {
             </div>
           ))}
         </dl>
+        </div>
+
+        {/*
+          `fill` con el contenedor en `aspect-[4/3]`: es el caso de recorte
+          (`object-cover`) y evita clavar las dimensiones intrínsecas.
+
+          `loading="eager"` y `fetchPriority="high"` en lugar de `priority`, que
+          Next 16 deprecó: es la imagen más grande arriba del pliegue, la
+          candidata a LCP, así que no tiene que esperar ni competir por ancho
+          de banda.
+        */}
+        <div className="relative aspect-[4/3] overflow-hidden rounded-[20px] border border-border-strong">
+          <Image
+            src={HERO.foto.src}
+            alt={HERO.foto.alt}
+            fill
+            loading="eager"
+            fetchPriority="high"
+            sizes="(min-width: 1024px) 512px, (min-width: 640px) 90vw, 100vw"
+            className="object-cover"
+          />
+        </div>
       </section>
 
       <section
@@ -162,6 +186,28 @@ export default async function Inicio() {
               </li>
             ))}
           </ul>
+
+          {/*
+            Apiladas en celular y de a dos desde `sm`: en dos columnas a 375 px
+            quedaban de 148 px de ancho, donde no se distingue nada. El
+            prototipo las pone siempre de a dos, pensado para escritorio.
+          */}
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            {INSTALACIONES.fotos.map((foto) => (
+              <div
+                key={foto.src}
+                className="relative aspect-[4/3] overflow-hidden rounded-[14px] border border-border"
+              >
+                <Image
+                  src={foto.src}
+                  alt={foto.alt}
+                  fill
+                  sizes="(min-width: 640px) 50vw, 100vw"
+                  className="object-cover"
+                />
+              </div>
+            ))}
+          </div>
 
           <Link href="/el-club" className={buttonClasses("secondary", "mt-8")}>
             Conocer el club

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +19,14 @@ export const metadata: Metadata = {
  * acá un dato que se desincroniza en cuanto alguien lo edita en el panel.
  */
 export default function PaginaElClub() {
+  /*
+   * Tenis no tiene foto, así que la primera que se ve es la de Pádel: esa queda
+   * arriba del pliegue y es el elemento LCP, por lo que no puede cargar en
+   * `lazy`. Next avisa por consola cuando pasa, y se calcula acá en lugar de
+   * asumir que la primera disciplina es la que tiene foto.
+   */
+  const primeraConFoto = DISCIPLINAS.findIndex((disciplina) => disciplina.foto);
+
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
       <header className="mb-10">
@@ -31,11 +40,26 @@ export default function PaginaElClub() {
       </header>
 
       <div className="flex flex-col gap-12">
-        {DISCIPLINAS.map((disciplina) => (
+        {DISCIPLINAS.map((disciplina, indice) => (
           <section
             key={disciplina.nombre}
             aria-labelledby={`disciplina-${disciplina.nombre}`}
           >
+            {/* No todas tienen foto: Tenis va sin banner, como en el prototipo. */}
+            {disciplina.foto ? (
+              <div className="relative mb-5 aspect-[16/9] overflow-hidden rounded-[20px] border border-border">
+                <Image
+                  src={disciplina.foto.src}
+                  alt={disciplina.foto.alt}
+                  fill
+                  loading={indice === primeraConFoto ? "eager" : "lazy"}
+                  fetchPriority={indice === primeraConFoto ? "high" : "auto"}
+                  sizes="(min-width: 1024px) 1024px, 100vw"
+                  className="object-cover"
+                />
+              </div>
+            ) : null}
+
             <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
               <div>
                 <h2

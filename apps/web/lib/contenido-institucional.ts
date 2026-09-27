@@ -6,7 +6,21 @@
  *
  * Lo único que sí viene de la API es el precio "desde" de cada disciplina en
  * Inicio, y degrada en silencio si no llega.
+ *
+ * Las fotos son las del prototipo, convertidas a WebP y reducidas al ancho que
+ * cada una ocupa en la página: los PNG originales pesaban 13 MB entre las cinco.
+ * Viven en `public/fotos/` y se sirven con `next/image`.
  */
+
+export type Foto = {
+  /** Ruta dentro de `public/`. */
+  src: string;
+  /**
+   * Qué se ve, no cómo se llama la sección: el prototipo usaba el nombre de la
+   * disciplina como alternativo, que no le dice nada a quien no ve la imagen.
+   */
+  alt: string;
+};
 
 export const HERO = {
   eyebrow: "Club deportivo · Córdoba",
@@ -19,6 +33,10 @@ export const HERO = {
     { valor: "15 h", etiqueta: "de 8 a 23" },
     { valor: "3", etiqueta: "disciplinas" },
   ],
+  foto: {
+    src: "/fotos/entrada.webp",
+    alt: "Entrada del club Deploy, con las canchas de fondo",
+  },
 } as const;
 
 export type CanchaInstitucional = {
@@ -28,6 +46,8 @@ export type CanchaInstitucional = {
 };
 
 export type DisciplinaInstitucional = {
+  /** No todas tienen: el prototipo muestra Pádel y Fútbol 5, y Tenis sin foto. */
+  foto?: Foto;
   /**
    * El mismo nombre que la disciplina en la base. Es la clave con la que Inicio
    * le pega el precio que devuelve la API; si no coincide, la tarjeta se muestra
@@ -55,6 +75,10 @@ export const DISCIPLINAS: DisciplinaInstitucional[] = [
     duracionTurnoMin: 90,
     descripcion:
       "Tres canchas panorámicas, dos techadas para cuando Córdoba decide llover. Hora y media de juego.",
+    foto: {
+      src: "/fotos/padel.webp",
+      alt: "Cancha de pádel panorámica y techada, con las paredes de vidrio iluminadas",
+    },
     canchas: [
       { nombre: "Pádel 1", detalle: "Techada" },
       { nombre: "Pádel 2", detalle: "Techada" },
@@ -66,6 +90,10 @@ export const DISCIPLINAS: DisciplinaInstitucional[] = [
     duracionTurnoMin: 60,
     descripcion:
       "Césped sintético nuevo, arcos reglamentarios y la cancha más peleada del club. Una hora de partido.",
+    foto: {
+      src: "/fotos/futbol5.webp",
+      alt: "Cancha de fútbol 5 de césped sintético, con los arcos y las luces encendidas",
+    },
     canchas: [{ nombre: "Cancha Sur", detalle: "Césped sintético" }],
   },
 ];
@@ -75,6 +103,10 @@ export const INSTALACIONES = {
   titulo: "Un club chico que funciona como uno grande",
   bajada:
     "Vestuarios con agua caliente todo el día, buffet abierto hasta el último turno, luces LED en las seis canchas y estacionamiento propio sobre la calle lateral.",
+  fotos: [
+    { src: "/fotos/vestuarios.webp", alt: "Vestuarios y duchas del club" },
+    { src: "/fotos/buffet.webp", alt: "Buffet, kiosco y asadores del club" },
+  ],
 } as const;
 
 /** La misma lista que el prototipo usa en Inicio y en El club. */
