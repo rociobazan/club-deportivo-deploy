@@ -5,7 +5,7 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { registrarse, type EstadoRegistro } from "./acciones";
-import { Campo } from "./campo";
+import { Campo } from "@/components/ui/campo";
 
 export function FormularioRegistro({ volver }: { volver: string }) {
   const [estado, accion, enviando] = useActionState<EstadoRegistro, FormData>(

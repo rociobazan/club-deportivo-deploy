@@ -52,8 +52,12 @@ export async function enviarContacto(
   // El campo trampa se reenvía tal cual: quien decide qué hacer es la API.
   const sitioWeb = texto(formData, "sitioWeb");
 
+  // `envios` se arrastra en todos los caminos: la `key` del formulario depende
+  // de él, y perderlo re-montaría los campos y el foco sin motivo.
+  const envios = anterior.envios;
+
   const errores = validar(valores);
-  if (Object.keys(errores).length > 0) return { errores, valores };
+  if (Object.keys(errores).length > 0) return { errores, valores, envios };
 
   let respuesta: ContactoResponse;
   try {
@@ -79,10 +83,11 @@ export async function enviarContacto(
         ? "No pudimos enviar tu mensaje. Escribinos por mail o llamanos y lo resolvemos."
         : error.message,
       valores,
+      envios,
     };
   }
 
-  return { enviado: respuesta.mensaje, envios: (anterior.envios ?? 0) + 1 };
+  return { enviado: respuesta.mensaje, envios: (envios ?? 0) + 1 };
 }
 
 function validar(

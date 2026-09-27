@@ -10,6 +10,13 @@ import { ContactoDto } from './dto/contacto.dto';
 /** `ContactoResponse` del contrato. */
 export type ContactoRespuesta = { mensaje: string };
 
+/**
+ * Deja el nombre en una sola línea para el asunto. `@IsString()` acepta saltos
+ * de línea y tabulaciones, y un asunto con un salto en el medio es inválido: el
+ * proveedor lo rechazaría y una consulta legítima terminaría en un 502.
+ */
+const unaLinea = (valor: string) => valor.replace(/\s+/g, ' ').trim();
+
 /** El mismo texto para un envío real y para uno descartado por el campo trampa. */
 const CONFIRMACION = 'Recibimos tu consulta. Te respondemos dentro de las 48 horas.';
 
@@ -38,7 +45,7 @@ export class ContactoService {
     try {
       await this.correo.enviar({
         para: this.configuracion.mailContacto,
-        asunto: `Contacto desde el sitio · ${datos.nombre}`,
+        asunto: `Contacto desde el sitio · ${unaLinea(datos.nombre)}`,
         texto: this.cuerpo(datos),
         // Así el club contesta desde su casilla sin copiar la dirección a mano.
         responderA: datos.email,

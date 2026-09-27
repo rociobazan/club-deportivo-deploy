@@ -1,11 +1,11 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { ThrottlerStorage } from '@nestjs/throttler';
-import type { ThrottlerStorageService } from '@nestjs/throttler';
+import { ThrottlerStorage, ThrottlerStorageService } from '@nestjs/throttler';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { CORREO } from '../src/common/correo/correo';
+import type { Correo } from '../src/common/correo/correo';
 import { CorreoDoble } from '../src/common/correo/correo-doble';
 import { configurarApp } from '../src/configurar-app';
 
@@ -20,9 +20,22 @@ import { configurarApp } from '../src/configurar-app';
 describe('contacto (e2e)', () => {
   let app: INestApplication<App>;
   let correo: CorreoDoble;
-  let almacenDelLimite: ThrottlerStorageService;
 
   const api = () => request(app.getHttpServer());
+
+  /**
+   * El límite es por IP y todos los pedidos salen de 127.0.0.1, así que sin
+   * reiniciarlo cada test heredaría los golpes del anterior. Vaciar el mapa que
+   * `ThrottlerStorageService` expone en `storage` **no alcanza**: el servicio
+   * re-deriva el conteo de un segundo mapa interno de vencimientos, así que los
+   * golpes vuelven. Por eso el almacén se reemplaza por uno que delega en una
+   * instancia real que se renueva antes de cada test: el conteo de las 5 por
+   * minuto se sigue probando de verdad y cada test arranca de cero.
+   */
+  let almacen = new ThrottlerStorageService();
+  const almacenReiniciable: ThrottlerStorage = {
+    increment: (...argumentos) => almacen.increment(...argumentos),
+  };
 
   const CASILLA_DEL_CLUB = 'club@e2e.test';
   const valido = {
@@ -37,23 +50,36 @@ describe('contacto (e2e)', () => {
     process.env.JWT_EXPIRES_IN = '1h';
     process.env.MAIL_FROM = 'turnos@e2e.test';
     process.env.MAIL_CONTACTO = CASILLA_DEL_CLUB;
+    // Que el cliente de mail no dependa de lo que cada máquina tenga exportado.
+    delete process.env.RESEND_API_KEY;
 
-    const modulo = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const modulo = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(ThrottlerStorage)
+      .useValue(almacenReiniciable)
+      .compile();
     app = modulo.createNestApplication();
     await configurarApp(app);
 
-    correo = app.get<CorreoDoble>(CORREO);
-    almacenDelLimite = app.get<ThrottlerStorageService>(ThrottlerStorage);
+    const clienteDeMail = app.get<Correo>(CORREO);
+    // Si no es el doble, esta suite mandaría mails de verdad: mejor cortar acá
+    // con un motivo claro que descubrirlo en la casilla del club.
+    if (!(clienteDeMail instanceof CorreoDoble)) {
+      throw new Error(
+        'El cliente de mail en los tests tiene que ser CorreoDoble: revisá NODE_ENV y RESEND_API_KEY.',
+      );
+    }
+    correo = clienteDeMail;
   });
 
   beforeEach(() => {
     correo.limpiar();
-    // El límite es por IP y todos los pedidos salen de 127.0.0.1: sin esto cada
-    // test heredaría los golpes del anterior.
-    almacenDelLimite.storage.clear();
+    // Corta el intervalo de barrido del anterior antes de reemplazarlo.
+    almacen.onApplicationShutdown();
+    almacen = new ThrottlerStorageService();
   });
 
   afterAll(async () => {
+    almacen.onApplicationShutdown();
     await app.close();
   });
 
@@ -118,6 +144,7 @@ describe('contacto (e2e)', () => {
         estado: 429,
         instancia: '/contacto',
       });
+      expect(sexta.body.detalle).toContain('5 mensajes por minuto');
       expect(correo.enviados).toHaveLength(5);
     });
   });

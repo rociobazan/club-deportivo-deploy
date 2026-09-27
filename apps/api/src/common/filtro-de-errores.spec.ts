@@ -32,16 +32,17 @@ describe('FiltroDeErrores', () => {
     log.mockRestore();
   });
 
-  it('emite un 429 como DEMASIADAS_SOLICITUDES con el texto del contrato', () => {
-    // Lo que lanza el ThrottlerGuard: un HttpException 429 con mensaje interno.
-    const { estado, cuerpo } = capturar(new HttpException('ThrottlerException: Too Many Requests', 429));
+  it('emite un 429 sin personalizar como DEMASIADAS_SOLICITUDES, sin filtrar el mensaje interno', () => {
+    // Un 429 que nadie tradujo: el texto interno de la excepción no se muestra.
+    const { estado, cuerpo } = capturar(
+      new HttpException('ThrottlerException: Too Many Requests', 429),
+    );
 
     expect(estado).toBe(429);
     expect(cuerpo).toEqual({
       tipo: 'DEMASIADAS_SOLICITUDES',
-      titulo: 'Superaste el límite de mensajes',
+      titulo: 'Hiciste demasiadas solicitudes',
       estado: 429,
-      detalle: 'Se admiten hasta 5 mensajes por minuto. Volvé a intentar en un rato.',
       instancia: '/contacto',
     });
   });

@@ -5,7 +5,7 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ingresar, type EstadoIngreso } from "./acciones";
-import { Campo } from "./campo";
+import { Campo } from "@/components/ui/campo";
 
 // Cliente por `useActionState`: estado de envío y errores sin código de fetch.
 export function FormularioIngreso({ volver }: { volver: string }) {
