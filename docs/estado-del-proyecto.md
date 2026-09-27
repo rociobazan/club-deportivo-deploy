@@ -18,9 +18,9 @@ cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla.
 | Medida | Estado |
 |---|---|
 | Ítems del reparto cerrados | **5 de 11** (4 cerrados; el 1.7 espera la captura) |
-| Requisitos funcionales implementados | **0 de 15** en `main`; RF-00 (PR #19), RF-01, RF-02, RF-03 y RF-07 (PR de 1.2) y **RF-09 y RF-10 (PR de 1.5)** |
-| Operaciones del contrato con endpoint | **0 de 18** en `main`; 3 en el PR #19, 4 en el PR de 1.2 y 1 en el de 1.5 (**8 de 18**) |
-| Pantallas de producto | **0** en `main`; ingreso y registro (PR #19), canchas y disponibilidad (PR de 1.2), inicio, El club y contacto (PR de 1.5) |
+| Requisitos funcionales implementados | **0 de 15** en `main`; RF-00 (PR #19), RF-01, RF-02, RF-03 y RF-07 (PR #20) y **RF-09 y RF-10 (PR #21)** |
+| Operaciones del contrato con endpoint | **0 de 18** en `main`; 3 en el PR #19, 4 en el PR #20 y 1 en el #21 (**8 de 18**) |
+| Pantallas de producto | **0** en `main`; ingreso y registro (PR #19), canchas y disponibilidad (PR #20), inicio, El club y contacto (PR #21) |
 | Protección de `main` | ✅ **activa**: 1 aprobación y los tres checks |
 
 Los dos números importan y dicen cosas distintas. Lo cerrado es **toda la infraestructura**:
@@ -53,10 +53,10 @@ pantalla en Next que la consume.
 |---|---|---|---|---|
 | 1.1 | Autenticación: registro, login, JWT, guards | RF-00 | **Jeremías** | 🟡 **implementado en el PR #19**, esperando revisión |
 | 1.1b | Login con Google | — | **Jeremías** | ❌ decidido ([ADR 0001](adr/0001-login-con-google.md)), entra después de 1.1 |
-| 1.2 | Catálogo y disponibilidad | RF-01 a RF-03 | **Jeremías** | 🟡 **implementado**, PR apilado sobre el #19, esperando que ese entre |
+| 1.2 | Catálogo y disponibilidad | RF-01 a RF-03 | **Jeremías** | 🟡 **implementado** en el PR #20, apilado sobre el #19, esperando que ese entre |
 | 1.3 | Crear reserva | RF-04 | **sin asignar (C)** | ❌ sus dos dependencias (1.1 y 1.2) ya están implementadas: puede arrancar |
 | 1.4 | Mis reservas, cancelación y mails | RF-05 a RF-08 | **sin asignar (D)** | ❌ |
-| 1.5 | Sitio institucional y contacto | RF-09, RF-10 | **Jeremías** | 🟡 **implementado**, PR apilado sobre el de 1.2 |
+| 1.5 | Sitio institucional y contacto | RF-09, RF-10 | **Jeremías** | 🟡 **implementado**, PR #21 apilado sobre el #20 |
 | 1.6 | Administración | RF-11 a RF-14 | **sin asignar (C + D)** | ❌ |
 | 1.7 | README | — | Jeremías | 🟡 hecho; falta la captura de la protección |
 
@@ -103,8 +103,8 @@ Está la base que van a usar todas las pantallas, y ninguna pantalla de producto
 | Tipos generados del contrato y cliente HTTP | |
 | Página `/estilos` para revisar la identidad | |
 | Registro e ingreso (PR #19) | |
-| Canchas y precios y Disponibilidad (PR de 1.2) | |
-| Inicio, El club y Contacto (PR de 1.5) | |
+| Canchas y precios y Disponibilidad (PR #20) | |
+| Inicio, El club y Contacto (PR #21) | |
 
 La home dejó de ser la plantilla por defecto de Next en el PR de 1.5.
 
