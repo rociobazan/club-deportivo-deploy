@@ -18,9 +18,9 @@ cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla.
 | Medida | Estado |
 |---|---|
 | Ítems del reparto cerrados | **5 de 11** (4 cerrados; el 1.7 espera la captura) |
-| Requisitos funcionales implementados | **0 de 15** en `main`; RF-00 en el PR #19 y **RF-01, RF-02, RF-03 y RF-07 en el PR de 1.2** |
-| Operaciones del contrato con endpoint | **0 de 18** en `main`; 3 en el PR #19 y 4 más en el PR de 1.2 (7 de 18) |
-| Pantallas de producto | **0** en `main`; ingreso y registro (PR #19), canchas y disponibilidad (PR de 1.2) |
+| Requisitos funcionales implementados | **0 de 15** en `main`; RF-00 (PR #19), RF-01, RF-02, RF-03 y RF-07 (PR de 1.2) y **RF-09 y RF-10 (PR de 1.5)** |
+| Operaciones del contrato con endpoint | **0 de 18** en `main`; 3 en el PR #19, 4 en el PR de 1.2 y 1 en el de 1.5 (**8 de 18**) |
+| Pantallas de producto | **0** en `main`; ingreso y registro (PR #19), canchas y disponibilidad (PR de 1.2), inicio, El club y contacto (PR de 1.5) |
 | Protección de `main` | ✅ **activa**: 1 aprobación y los tres checks |
 
 Los dos números importan y dicen cosas distintas. Lo cerrado es **toda la infraestructura**:
@@ -56,7 +56,7 @@ pantalla en Next que la consume.
 | 1.2 | Catálogo y disponibilidad | RF-01 a RF-03 | **Jeremías** | 🟡 **implementado**, PR apilado sobre el #19, esperando que ese entre |
 | 1.3 | Crear reserva | RF-04 | **sin asignar (C)** | ❌ sus dos dependencias (1.1 y 1.2) ya están implementadas: puede arrancar |
 | 1.4 | Mis reservas, cancelación y mails | RF-05 a RF-08 | **sin asignar (D)** | ❌ |
-| 1.5 | Sitio institucional y contacto | RF-09, RF-10 | **Jeremías** | ❌ sin empezar |
+| 1.5 | Sitio institucional y contacto | RF-09, RF-10 | **Jeremías** | 🟡 **implementado**, PR apilado sobre el de 1.2 |
 | 1.6 | Administración | RF-11 a RF-14 | **sin asignar (C + D)** | ❌ |
 | 1.7 | README | — | Jeremías | 🟡 hecho; falta la captura de la protección |
 
@@ -70,8 +70,9 @@ Dos cosas a tener en cuenta al repartir:
 
 - **1.1 es camino crítico.** 1.3 y 1.4 dependen de que existan los guards. Hasta entonces,
   quienes trabajen en esas dos tienen que testear con un token mockeado.
-- **1.5 no depende de nadie.** Es lo único que puede arrancar hoy mismo sin esperar a otra
-  persona.
+- **1.3, 1.4 y 1.6 ya pueden arrancar las tres.** Sus dependencias (1.1, 1.2 y el cliente de
+  mail que trae 1.5) están implementadas. 1.4 reutiliza `CorreoService` y su doble sin volver a
+  decidir proveedor ni cómo se testea.
 
 ---
 
@@ -94,24 +95,30 @@ Está la base que van a usar todas las pantallas, y ninguna pantalla de producto
 
 | Hay | No hay |
 |---|---|
-| Identidad visual y tokens (`globals.css`) | Landing (Inicio, El club, Contacto) |
-| Primitivas: `Button`, `Card`, `Input`, `Badge` | Registro e ingreso (en el PR #19) |
-| Header con menú de mobile y menús por rol | Formulario de reserva |
-| Pie, logo y favicon | Mis reservas y detalle |
-| Pantallas de 404, error y carga | Pantallas de administración |
-| Tipos generados del contrato y cliente HTTP | Landing (Inicio, El club, Contacto) |
+| Identidad visual y tokens (`globals.css`) | Formulario de reserva |
+| Primitivas: `Button`, `Card`, `Input`, `Textarea`, `Badge` | Mis reservas y detalle |
+| Header con menú de mobile y menús por rol | Pantallas de administración |
+| Pie, logo y favicon | |
+| Pantallas de 404, error y carga | |
+| Tipos generados del contrato y cliente HTTP | |
 | Página `/estilos` para revisar la identidad | |
+| Registro e ingreso (PR #19) | |
 | Canchas y precios y Disponibilidad (PR de 1.2) | |
+| Inicio, El club y Contacto (PR de 1.5) | |
 
-La home (`app/page.tsx`) sigue siendo la plantilla por defecto de Next: la reemplaza 1.5.
+La home dejó de ser la plantilla por defecto de Next en el PR de 1.5.
 
 ### Specs
 
 `openspec/specs/` tiene las siete capacidades vigentes: `administracion`, `autenticacion`,
 `catalogo`, `disponibilidad`, `institucional`, `notificaciones` y `reservas`.
 
-**No hay ninguna propuesta en curso**: `openspec/changes/` solo tiene `archive/`. Cada feature
-del hito 1 arranca con su propio `/opsx:propose`, que los cuatro revisan antes del `/opsx:apply`.
+**Hay tres propuestas en curso en `openspec/changes/`**, una por cada ítem de Jeremías:
+`implementar-autenticacion` (1.1), `implementar-catalogo-y-disponibilidad` (1.2) e
+`implementar-landing-y-contacto` (1.5), cada una con sus tareas tildadas en su PR. Se archivan
+con `/opsx:archive` desde `main` cuando el PR entra, y ahí los deltas pasan a `openspec/specs/`.
+Cada feature del hito 1 arranca con su propio `/opsx:propose`, que los cuatro revisan antes del
+`/opsx:apply`.
 
 ---
 
@@ -199,7 +206,8 @@ Dos cosas que conviene mirar de frente:
 ### Cuando el reparto esté hecho
 
 6. Cada quien: `/opsx:propose` de su feature, revisión de los cuatro, `/opsx:apply`.
-7. Arrancar por **1.1**, que es camino crítico, y **1.5** en paralelo, que no depende de nada.
+7. Revisar y mergear la pila de Jeremías en orden (1.1 → 1.2 → 1.5), retargeteando cada PR a
+   `main` cuando entra el de abajo, y archivar cada cambio de OpenSpec después del merge.
 
 ---
 

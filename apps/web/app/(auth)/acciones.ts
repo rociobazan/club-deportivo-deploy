@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { apiFetch, ApiHttpError } from "@/lib/api/client";
 import type { LoginResponse, Usuario } from "@/lib/api/types";
+import { EMAIL, texto } from "@/lib/formularios";
 import { borrarSesion, destinoSeguro, guardarSesion } from "@/lib/sesion";
 
 /*
@@ -24,11 +25,6 @@ export type EstadoRegistro = {
   errores?: Partial<Record<CampoRegistro, string>>;
   valores?: { nombre: string; apellido: string; email: string; telefono: string };
 };
-
-const texto = (formData: FormData, campo: string) =>
-  String(formData.get(campo) ?? "").trim();
-
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** `titulo` es el texto apto para la persona; si no fue la API, es un bug y se propaga. */
 function mensajeDe(error: unknown): string {

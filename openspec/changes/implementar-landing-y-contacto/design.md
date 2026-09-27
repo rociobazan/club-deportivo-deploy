@@ -65,7 +65,9 @@ Server Function `enviarContacto` con `useActionState`: valida en el servidor del
 
 ### 9. Movimiento reducido con una regla global
 
-En `globals.css`: `@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important } }`. Cubre las animaciones de hoy (el esqueleto de carga) y las que vengan, sin recordar `motion-reduce:` en cada clase.
+En `globals.css`: `@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important } }`. Cubre las animaciones de hoy (el esqueleto de carga) y las que vengan, sin recordar `motion-reduce:` en cada clase.
+
+*Por qué duraciones de 0,01 ms y no `animation: none`*: anular la animación sobre `*` deja de disparar `animationend`, así que rompería cualquier componente que dependa de ese evento. Una duración despreciable no se ve y mantiene el ciclo del evento.
 
 ### 10. Lighthouse se corre en headless con el Chrome de la máquina
 

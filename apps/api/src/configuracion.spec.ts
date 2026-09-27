@@ -11,6 +11,9 @@ describe('leerConfiguracion', () => {
       horaApertura: '08:00',
       horaCierre: '23:00',
       zonaHoraria: 'America/Argentina/Cordoba',
+      mailFrom: 'turnos@clubdeploy.com.ar',
+      mailContacto: 'hola@clubdeploy.com.ar',
+      resendApiKey: undefined,
     });
   });
 
@@ -93,5 +96,44 @@ describe('leerConfiguracion', () => {
     expect(() =>
       leerConfiguracion({ ...completo, NODE_ENV: 'production' }),
     ).toThrow('FRONTEND_URL');
+  });
+
+  it('toma las casillas de mail del entorno', () => {
+    expect(
+      leerConfiguracion({
+        ...completo,
+        MAIL_FROM: 'sistema@otroclub.test',
+        MAIL_CONTACTO: 'consultas@otroclub.test',
+      }),
+    ).toMatchObject({
+      mailFrom: 'sistema@otroclub.test',
+      mailContacto: 'consultas@otroclub.test',
+    });
+  });
+
+  it('corta el arranque si una casilla no es una dirección de mail', () => {
+    expect(() => leerConfiguracion({ ...completo, MAIL_FROM: 'turnos@' })).toThrow('MAIL_FROM');
+    expect(() => leerConfiguracion({ ...completo, MAIL_CONTACTO: 'hola' })).toThrow(
+      'MAIL_CONTACTO',
+    );
+  });
+
+  it('fuera de producción deja RESEND_API_KEY sin definir, así el cliente de mail es el doble', () => {
+    expect(leerConfiguracion(completo).resendApiKey).toBeUndefined();
+    expect(leerConfiguracion({ ...completo, RESEND_API_KEY: 're_algo' }).resendApiKey).toBe(
+      're_algo',
+    );
+  });
+
+  it('en producción exige RESEND_API_KEY', () => {
+    const produccion = {
+      ...completo,
+      NODE_ENV: 'production',
+      FRONTEND_URL: 'https://club.test',
+    };
+    expect(() => leerConfiguracion(produccion)).toThrow('RESEND_API_KEY');
+    expect(
+      leerConfiguracion({ ...produccion, RESEND_API_KEY: 're_algo' }).resendApiKey,
+    ).toBe('re_algo');
   });
 });

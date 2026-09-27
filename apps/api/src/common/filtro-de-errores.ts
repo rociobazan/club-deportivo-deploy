@@ -90,6 +90,16 @@ function traducir(excepcion: unknown): Omit<CuerpoDeError, 'instancia'> {
           estado,
           detalle,
         };
+      // El ThrottlerGuard de /contacto lanza un HttpException 429. Se mapea acá
+      // por estado, sin que el filtro conozca la librería, y el detalle sale
+      // del contrato en vez del mensaje interno de la excepción.
+      case 429:
+        return {
+          tipo: 'DEMASIADAS_SOLICITUDES',
+          titulo: 'Superaste el límite de mensajes',
+          estado,
+          detalle: 'Se admiten hasta 5 mensajes por minuto. Volvé a intentar en un rato.',
+        };
       default:
         return {
           tipo: 'ERROR_HTTP',

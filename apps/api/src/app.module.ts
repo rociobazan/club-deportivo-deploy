@@ -5,7 +5,9 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { CatalogoModule } from './catalogo/catalogo.module';
+import { ContactoModule } from './contacto/contacto.module';
 import { DisponibilidadModule } from './disponibilidad/disponibilidad.module';
+import { CorreoModule } from './common/correo/correo.module';
 import { FiltroDeErrores } from './common/filtro-de-errores';
 import { JwtAuthGuard } from './common/jwt-auth.guard';
 import { RolesGuard } from './common/roles.guard';
@@ -17,8 +19,10 @@ import { PrismaModule } from './prisma/prisma.module';
 @Module({
   imports: [
     ConfiguracionModule,
+    CorreoModule,
     AuthModule,
     CatalogoModule,
+    ContactoModule,
     DisponibilidadModule,
     PrismaModule,
     // Global para que el guard de JWT, que también es global, pueda inyectar JwtService.

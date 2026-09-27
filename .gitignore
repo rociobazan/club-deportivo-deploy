@@ -49,3 +49,6 @@ Thumbs.db
 # Turbo / cachés
 .turbo/
 *.tsbuildinfo
+
+# Artefactos de las herramientas de navegador (snapshots y logs de Playwright)
+.playwright-mcp/

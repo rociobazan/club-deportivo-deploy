@@ -57,3 +57,19 @@ body {
   background: var(--accent);
   color: var(--text-on-accent);
 }
+
+/*
+ * Movimiento reducido (design.md, decisión 9): apaga las animaciones de hoy,
+ * como el esqueleto de carga, y las que vengan, sin tener que acordarse de
+ * poner `motion-reduce:` clase por clase. Lo pide la spec `institucional`.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
