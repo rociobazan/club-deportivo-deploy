@@ -7,7 +7,50 @@
 export const ZONA_HORARIA_CLUB =
   process.env.ZONA_HORARIA_CLUB?.trim() || "America/Argentina/Cordoba";
 export const HORA_APERTURA = process.env.HORA_APERTURA?.trim() || "08:00";
+/** Cierre de lunes a viernes. */
 export const HORA_CIERRE = process.env.HORA_CIERRE?.trim() || "23:00";
+/** Los sábados el club cierra antes. */
+export const HORA_CIERRE_SABADO = process.env.HORA_CIERRE_SABADO?.trim() || "18:00";
+
+/**
+ * Días en los que el club no abre, 0 domingo a 6 sábado. La API valida el
+ * formato al arrancar (`apps/api/src/configuracion.ts`); acá alcanza con
+ * descartar lo que no sea un día, porque las dos leen la misma variable.
+ */
+export const DIAS_CERRADOS: readonly number[] = (process.env.DIAS_CERRADOS ?? "0")
+  .split(",")
+  .map((parte) => Number(parte.trim()))
+  .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6);
+
+export const SABADO = 6;
+
+/** La ventana de atención de un día, o `null` si ese día el club no abre. */
+export type VentanaDelDia = { apertura: string; cierre: string } | null;
+
+/**
+ * El día de la semana de una fecha `YYYY-MM-DD`, 0 domingo a 6 sábado. Se arma
+ * en UTC a propósito: la fecha ya viene resuelta en la zona del club, así que
+ * interpretarla por el huso del navegador o del servidor la correría un día.
+ */
+export function diaDeLaSemana(fecha: string): number {
+  const [anio, mes, dia] = fecha.split("-").map(Number);
+  return new Date(Date.UTC(anio, mes - 1, dia)).getUTCDay();
+}
+
+/**
+ * Copia consciente de `apps/api/src/common/horario.ts`, por el mismo motivo que
+ * `lib/grilla.ts`: el sitio dibuja la grilla completa y necesita saber qué días
+ * hay turnos sin preguntarle a la API. La API es la fuente de verdad.
+ */
+export function ventanaDelDia(fecha: string): VentanaDelDia {
+  const dia = diaDeLaSemana(fecha);
+  if (DIAS_CERRADOS.includes(dia)) return null;
+
+  return {
+    apertura: HORA_APERTURA,
+    cierre: dia === SABADO ? HORA_CIERRE_SABADO : HORA_CIERRE,
+  };
+}
 
 export type Momento = { fecha: string; hora: string };
 

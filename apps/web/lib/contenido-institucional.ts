@@ -32,7 +32,7 @@ export type Foto = {
 export const HERO = {
   titulo: "Salí a jugar.",
   bajada:
-    "Deploy es un club de barrio con seis canchas de tenis, pádel y fútbol 5 en Rivadeo 1480. Abierto todos los días de 8 a 23.",
+    "Deploy es un club de barrio con seis canchas de tenis, pádel y fútbol 5 en Rivadeo 1480. Abierto de lunes a sábado.",
   /** La tarjeta flotante del hero, que lleva a la disponibilidad por disciplina. */
   atajo: {
     titulo: "Reservá directo",
@@ -153,7 +153,7 @@ export const SERVICIOS = [
   {
     icono: "ducha",
     titulo: "Vestuarios con agua caliente",
-    descripcion: "Abiertos de 8 a 23, con lockers y secadores.",
+    descripcion: "Abiertos todo el día, con lockers y secadores.",
   },
   {
     icono: "parrilla",
@@ -186,7 +186,7 @@ export const COMO_RESERVAR = {
     {
       icono: "calendario",
       titulo: "Elegí el día",
-      detalle: "Cualquier día de la semana, de 8 a 23.",
+      detalle: "De lunes a sábado. Los domingos el club no abre.",
     },
     {
       icono: "tocar",
