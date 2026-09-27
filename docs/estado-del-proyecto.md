@@ -52,13 +52,13 @@ pantalla en Next que la consume.
 | # | Qué | Requisitos | Responsable | Estado |
 |---|---|---|---|---|
 | 1.1 | Autenticación: registro, login, JWT, guards | RF-00 | **Jeremías** | 🟡 **implementado en el PR #19**, esperando revisión |
-| 1.1b | Login con Google | — | **Jeremías** | ❌ decidido ([ADR 0001](adr/0001-login-con-google.md)), entra después de 1.1 |
+| 1.1b | Login con Google | — | — | ⛔ **descartado el 27/09**: el equipo decidió no hacerlo ([ADR 0001](adr/0001-login-con-google.md), marcada como descartada) |
 | 1.2 | Catálogo y disponibilidad | RF-01 a RF-03 | **Jeremías** | 🟡 **implementado** en el PR #20, apilado sobre el #19, esperando que ese entre |
 | 1.3 | Crear reserva | RF-04 | **sin asignar (C)** | ❌ sus dos dependencias (1.1 y 1.2) ya están implementadas: puede arrancar |
 | 1.4 | Mis reservas, cancelación y mails | RF-05 a RF-08 | **sin asignar (D)** | ❌ |
 | 1.5 | Sitio institucional y contacto | RF-09, RF-10 | **Jeremías** | 🟡 **implementado**, PR #21 apilado sobre el #20 |
 | 1.6 | Administración | RF-11 a RF-14 | **sin asignar (C + D)** | ❌ |
-| 1.7 | README | — | Jeremías | 🟡 hecho; falta la captura de la protección |
+| 1.7 | README | — | Jeremías | ✅ hecho el 27/09: la captura de la protección se reemplazó por una tabla con el estado real del ruleset, leída de la API de GitHub y reproducible con un comando |
 
 ### Lo que falta repartir
 

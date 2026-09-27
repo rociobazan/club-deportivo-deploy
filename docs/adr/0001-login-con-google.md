@@ -1,8 +1,17 @@
 # ADR 0001 — Login con Google sin mover la sesión al front
 
 **Fecha:** 2026-09-24
-**Estado:** aceptada, pendiente de revisión del equipo
+**Estado:** **descartada el 2026-09-27.** No se implementa.
 **Decide:** Jeremías (dueño del ítem 1.1)
+
+> **Descartada (2026-09-27).** El equipo decidió no hacer login con Google. RF-00 no lo pide:
+> el registro con mail y contraseña, el JWT y los guards de rol ya cubren el requisito, y esto
+> sumaba una migración (`password_hash` nullable), un endpoint nuevo en el contrato, una
+> credencial de Google Cloud por cada entorno y una ronda de revisión de spec.
+>
+> La decisión de fondo que sí sigue vigente es la de `arquitectura.md` §2, que esta ADR
+> respetaba: **Nest es el único emisor de tokens**. Si algún día se retoma el ingreso con
+> Google, el análisis de abajo sigue siendo válido y el camino elegido era el híbrido.
 
 ## Contexto
 
