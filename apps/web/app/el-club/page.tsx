@@ -20,10 +20,10 @@ export const metadata: Metadata = {
  */
 export default function PaginaElClub() {
   /*
-   * Tenis no tiene foto, así que la primera que se ve es la de Pádel: esa queda
-   * arriba del pliegue y es el elemento LCP, por lo que no puede cargar en
-   * `lazy`. Next avisa por consola cuando pasa, y se calcula acá en lugar de
-   * asumir que la primera disciplina es la que tiene foto.
+   * La primera foto de la página queda arriba del pliegue y es el elemento LCP,
+   * así que no puede cargar en `lazy`; Next avisa por consola cuando pasa. Se
+   * busca cuál es en lugar de asumir que la trae la primera disciplina, porque
+   * la foto es opcional y el orden puede cambiar.
    */
   const primeraConFoto = DISCIPLINAS.findIndex((disciplina) => disciplina.foto);
 
@@ -45,7 +45,7 @@ export default function PaginaElClub() {
             key={disciplina.nombre}
             aria-labelledby={`disciplina-${disciplina.nombre}`}
           >
-            {/* No todas tienen foto: Tenis va sin banner, como en el prototipo. */}
+            {/* La foto es opcional: sin ella la sección arranca por el título. */}
             {disciplina.foto ? (
               <div className="relative mb-5 aspect-[16/9] overflow-hidden rounded-[20px] border border-border">
                 <Image

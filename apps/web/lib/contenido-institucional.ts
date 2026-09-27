@@ -46,7 +46,7 @@ export type CanchaInstitucional = {
 };
 
 export type DisciplinaInstitucional = {
-  /** No todas tienen: el prototipo muestra Pádel y Fútbol 5, y Tenis sin foto. */
+  /** Opcional: una disciplina puede no tener foto todavía. */
   foto?: Foto;
   /**
    * El mismo nombre que la disciplina en la base. Es la clave con la que Inicio
@@ -65,6 +65,10 @@ export const DISCIPLINAS: DisciplinaInstitucional[] = [
     duracionTurnoMin: 60,
     descripcion:
       "Dos canchas iluminadas, una de polvo y una de cemento. Turnos de una hora, del alba al cierre.",
+    foto: {
+      src: "/fotos/tenis.webp",
+      alt: "Cancha de tenis de polvo de ladrillo al atardecer, con las luces encendidas",
+    },
     canchas: [
       { nombre: "Cancha 1", detalle: "Polvo de ladrillo" },
       { nombre: "Cancha 2", detalle: "Cemento" },
