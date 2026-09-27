@@ -83,8 +83,8 @@ export const DISCIPLINAS: DisciplinaInstitucional[] = [
       alt: "Cancha de tenis de polvo de ladrillo al atardecer, con las luces encendidas",
     },
     canchas: [
-      { nombre: "Cancha 1", detalle: "Polvo de ladrillo" },
-      { nombre: "Cancha 2", detalle: "Cemento" },
+      { nombre: "Polvo", detalle: "Al aire libre, con luces" },
+      { nombre: "Cemento", detalle: "Al aire libre, con luces" },
     ],
   },
   {
@@ -99,9 +99,9 @@ export const DISCIPLINAS: DisciplinaInstitucional[] = [
       alt: "Cancha de pádel panorámica y techada, con las paredes de vidrio iluminadas",
     },
     canchas: [
-      { nombre: "Pádel 1", detalle: "Techada" },
-      { nombre: "Pádel 2", detalle: "Techada" },
-      { nombre: "Pádel 3", detalle: "Descubierta" },
+      { nombre: "Panorámica 1", detalle: "Techada" },
+      { nombre: "Panorámica 2", detalle: "Techada" },
+      { nombre: "Descubierta", detalle: "Paredes de vidrio" },
     ],
   },
   {
@@ -115,7 +115,7 @@ export const DISCIPLINAS: DisciplinaInstitucional[] = [
       src: "/fotos/futbol5.webp",
       alt: "Cancha de fútbol 5 de césped sintético, con los arcos y las luces encendidas",
     },
-    canchas: [{ nombre: "Cancha Sur", detalle: "Césped sintético" }],
+    canchas: [{ nombre: "Sintética", detalle: "Césped sintético, con luces" }],
   },
 ];
 

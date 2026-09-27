@@ -29,12 +29,12 @@ async function main() {
 
     await tx.cancha.createMany({
       data: [
-        { disciplinaId: tenis.id, nombre: 'Cancha 1', superficie: 'polvo de ladrillo', techada: false, precioPorTurno: 9000 },
-        { disciplinaId: tenis.id, nombre: 'Cancha 2', superficie: 'cemento', techada: false, precioPorTurno: 8000 },
-        { disciplinaId: padel.id, nombre: 'Pádel 1', superficie: 'sintético', techada: true, precioPorTurno: 14000 },
-        { disciplinaId: padel.id, nombre: 'Pádel 2', superficie: 'sintético', techada: true, precioPorTurno: 14000 },
-        { disciplinaId: padel.id, nombre: 'Pádel 3', superficie: 'sintético', techada: false, precioPorTurno: 12000 },
-        { disciplinaId: futbol.id, nombre: 'Cancha Sur', superficie: 'césped sintético', techada: false, precioPorTurno: 20000 },
+        { disciplinaId: tenis.id, nombre: 'Polvo', superficie: 'polvo de ladrillo', techada: false, precioPorTurno: 9000 },
+        { disciplinaId: tenis.id, nombre: 'Cemento', superficie: 'cemento', techada: false, precioPorTurno: 8000 },
+        { disciplinaId: padel.id, nombre: 'Panorámica 1', superficie: 'sintético', techada: true, precioPorTurno: 14000 },
+        { disciplinaId: padel.id, nombre: 'Panorámica 2', superficie: 'sintético', techada: true, precioPorTurno: 14000 },
+        { disciplinaId: padel.id, nombre: 'Descubierta', superficie: 'sintético', techada: false, precioPorTurno: 12000 },
+        { disciplinaId: futbol.id, nombre: 'Sintética', superficie: 'césped sintético', techada: false, precioPorTurno: 20000 },
       ],
     });
 
