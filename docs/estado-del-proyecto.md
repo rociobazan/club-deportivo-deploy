@@ -194,8 +194,11 @@ Dos cosas que conviene mirar de frente:
 
 ### Rocío (bloquea al resto)
 
-1. **Sacar la captura** de la protección ya activa, para el README. Cierra el 1.7.
-2. **Agregar a Renzo** como colaborador.
+1. **Agregar a Renzo** como colaborador. Es lo único que bloquea al resto.
+
+> La captura de la protección que figuraba acá ya no hace falta: el 27/09 se reemplazó por una
+> tabla con el estado real del *ruleset* en el README, leída de la API de GitHub. El 1.7 está
+> cerrado.
 
 ### Los cuatro
 
