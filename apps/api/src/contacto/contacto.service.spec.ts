@@ -17,6 +17,7 @@ const datos = (extra: Partial<ContactoDto> = {}): ContactoDto =>
   Object.assign(new ContactoDto(), {
     nombre: 'Ana Fernández',
     email: 'ana@example.com',
+    telefono: '351 482 7719',
     mensaje: 'Consulta por un torneo interno.',
     ...extra,
   });
@@ -39,12 +40,12 @@ describe('ContactoService', () => {
     expect(correo.enviados[0]?.texto).toContain('351 482 7719');
   });
 
-  it('deja constancia de que no dejó teléfono en lugar de un campo vacío', async () => {
+  it('el teléfono viaja en el cuerpo del mail, para poder devolver la llamada', async () => {
     const correo = new CorreoDoble(false);
 
     await new ContactoService(correo, configuracion).enviar(datos());
 
-    expect(correo.enviados[0]?.texto).toContain('no dejó');
+    expect(correo.enviados[0]?.texto).toContain('Teléfono: 351 482 7719');
   });
 
   it('Campo trampa completo: responde igual y no envía nada', async () => {

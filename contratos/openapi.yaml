@@ -1438,7 +1438,7 @@ components:
 
     ContactoRequest:
       type: object
-      required: [nombre, email, mensaje]
+      required: [nombre, email, telefono, mensaje]
       properties:
         nombre:
           type: string
@@ -1451,7 +1451,6 @@ components:
         telefono:
           type: string
           maxLength: 30
-          nullable: true
           example: '+5493541000000'
         mensaje:
           type: string

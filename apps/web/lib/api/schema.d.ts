@@ -826,7 +826,7 @@ export interface components {
              */
             email: string;
             /** @example +5493541000000 */
-            telefono?: string | null;
+            telefono: string;
             /** @example Hola, quería consultar por el alquiler de canchas para un torneo interno. */
             mensaje: string;
             /**

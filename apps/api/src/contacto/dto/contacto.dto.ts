@@ -15,10 +15,10 @@ export class ContactoDto {
   @IsEmail()
   email: string;
 
-  @IsOptional()
   @IsString()
+  @IsNotEmpty()
   @MaxLength(30)
-  telefono?: string;
+  telefono: string;
 
   @IsString()
   @IsNotEmpty()

@@ -71,7 +71,7 @@ export class ContactoService {
     return [
       `Nombre: ${nombre}`,
       `Mail: ${email}`,
-      `Teléfono: ${telefono?.trim() || 'no dejó'}`,
+      `Teléfono: ${telefono}`,
       '',
       mensaje,
     ].join('\n');

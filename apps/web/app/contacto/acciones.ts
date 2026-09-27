@@ -67,8 +67,8 @@ export async function enviarContacto(
       body: {
         nombre: valores.nombre,
         email: valores.email,
+        telefono: valores.telefono,
         mensaje: valores.mensaje,
-        ...(valores.telefono ? { telefono: valores.telefono } : {}),
         sitioWeb,
       },
     });
@@ -102,7 +102,8 @@ function validar(
   if (!valores.email) errores.email = "Ingresá tu mail.";
   else if (!EMAIL.test(valores.email)) errores.email = "Ese mail no parece válido.";
 
-  if (valores.telefono.length > MAXIMO_TELEFONO)
+  if (!valores.telefono) errores.telefono = "Ingresá tu teléfono.";
+  else if (valores.telefono.length > MAXIMO_TELEFONO)
     errores.telefono = `Como máximo ${MAXIMO_TELEFONO} caracteres.`;
 
   if (!valores.mensaje) errores.mensaje = "Escribinos tu consulta.";

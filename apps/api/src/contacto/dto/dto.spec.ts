@@ -12,12 +12,18 @@ const validar = (valor: unknown) =>
 const valido = {
   nombre: 'Ana Fernández',
   email: 'ana@example.com',
+  telefono: '351 482 7719',
   mensaje: 'Hola, quería consultar por el alquiler de canchas para un torneo.',
 };
 
 describe('ContactoDto', () => {
-  it('acepta un cuerpo válido, con teléfono opcional ausente', async () => {
+  it('acepta un cuerpo válido', async () => {
     await expect(validar(valido)).resolves.toBeInstanceOf(ContactoDto);
+  });
+
+  it('Teléfono ausente: lo rechaza, porque el club responde también por teléfono', async () => {
+    const { telefono: _telefono, ...sinTelefono } = valido;
+    await expect(validar(sinTelefono)).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('Mail mal formado: rechaza ana@', async () => {

@@ -68,7 +68,7 @@ export function FormularioContacto() {
 
         <Campo
           id="telefono"
-          label="Teléfono (opcional)"
+          label="Teléfono"
           error={estado.errores?.telefono}
         >
           <Input
@@ -77,6 +77,7 @@ export function FormularioContacto() {
             type="tel"
             autoComplete="tel"
             placeholder="351 000 0000"
+            required
             maxLength={30}
             defaultValue={estado.valores?.telefono}
             aria-invalid={estado.errores?.telefono ? true : undefined}
