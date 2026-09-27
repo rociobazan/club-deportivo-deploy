@@ -16,8 +16,10 @@ const prisma = new PrismaClient();
  * desde la migración `nombre_unico_por_disciplina`. Los ids no cambian, así que
  * las reservas que apunten a una cancha la siguen apuntando después de recargar.
  *
- * Lo que el seed **no** toca es `activa`/`activo`: si alguien dio de baja una
- * cancha desde el panel, recargar el seed no la revive. Solo se fija al crear.
+ * Lo que el seed **no** toca: `activa`/`activo`, así que dar de baja una cancha
+ * desde el panel sobrevive a una recarga; y el `passwordHash` de un usuario que
+ * ya existe, porque pisarlo seria resetear una credencial en silencio con un
+ * valor que está en el repositorio. Los dos se fijan solo al crear.
  *
  * Y lo que **no resuelve**: como la clave es el nombre, un renombre no se
  * propaga. Si en una base ya cargada se cambia "Cancha 1" por "Polvo" acá, el
@@ -63,6 +65,15 @@ const USUARIOS = [
 ] as const;
 
 async function main() {
+  // El guard viejo ("no cargar si hay datos") no estaba pensado como defensa,
+  // pero lo era: sin el, un `db:seed` contra una base que no sea de desarrollo
+  // pisaria el catalogo en silencio. Se reemplaza por uno explicito.
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'El seed carga datos de prueba y no puede correrse con NODE_ENV=production.',
+    );
+  }
+
   const hash = await bcrypt.hash('clave1234', 10);
 
   // Todo en una transacción: un seed a medias dejaría el catálogo mezclando
@@ -104,12 +115,13 @@ async function main() {
       });
     }
 
-    // La contraseña vuelve a la de prueba en cada carga: son usuarios de
-    // desarrollo y la documenta el README.
+    // El hash se fija **solo al crear**. Recargar el seed no puede pisar la
+    // contraseña de una cuenta que ya existe: seria un reseteo de credenciales
+    // en silencio, y con un valor que esta escrito en el repositorio.
     for (const usuario of USUARIOS) {
       await tx.usuario.upsert({
         where: { email: usuario.email },
-        update: { ...usuario, passwordHash: hash },
+        update: { nombre: usuario.nombre, apellido: usuario.apellido, rol: usuario.rol },
         create: { ...usuario, passwordHash: hash },
       });
     }
