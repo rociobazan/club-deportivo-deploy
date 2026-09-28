@@ -17,7 +17,7 @@ cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla.
 
 | Medida | Estado |
 |---|---|
-| Ítems del reparto cerrados | **5 de 11** (4 cerrados; el 1.7 espera la captura) |
+| Ítems del reparto cerrados | **5 de 11**: todo el hito 0 y el 1.7 |
 | Requisitos funcionales implementados | **0 de 15** en `main`; RF-00 (PR #19), RF-01, RF-02, RF-03 y RF-07 (PR #20) y **RF-09 y RF-10 (PR #21)** |
 | Operaciones del contrato con endpoint | **0 de 18** en `main`; 3 en el PR #19, 4 en el PR #20 y 1 en el #21 (**8 de 18**) |
 | Pantallas de producto | **0** en `main`; ingreso y registro (PR #19), canchas y disponibilidad (PR #20), inicio, El club y contacto (PR #21) |
@@ -39,8 +39,7 @@ ni un endpoint de negocio y no hay ninguna pantalla que un usuario pueda usar.
 | 0.3 | CI y protección de `main` | Jeremías / Rocío | ✅ CI el 21/09; protección activa el 24/09 |
 | 0.4 | Archivar la spec base | Adrián | ✅ PR #9, 21/09 |
 
-**El hito 0 está cerrado.** De esa etapa solo queda la captura de la protección para el README,
-que pertenece al ítem 1.7.
+**El hito 0 está cerrado**, sin nada pendiente de esa etapa.
 
 ---
 
@@ -52,13 +51,13 @@ pantalla en Next que la consume.
 | # | Qué | Requisitos | Responsable | Estado |
 |---|---|---|---|---|
 | 1.1 | Autenticación: registro, login, JWT, guards | RF-00 | **Jeremías** | 🟡 **implementado en el PR #19**, esperando revisión |
-| 1.1b | Login con Google | — | **Jeremías** | ❌ decidido ([ADR 0001](adr/0001-login-con-google.md)), entra después de 1.1 |
+| 1.1b | Login con Google | — | — | ⛔ **descartado el 27/09**: el equipo decidió no hacerlo ([ADR 0001](adr/0001-login-con-google.md), marcada como descartada) |
 | 1.2 | Catálogo y disponibilidad | RF-01 a RF-03 | **Jeremías** | 🟡 **implementado** en el PR #20, apilado sobre el #19, esperando que ese entre |
 | 1.3 | Crear reserva | RF-04 | **sin asignar (C)** | ❌ sus dos dependencias (1.1 y 1.2) ya están implementadas: puede arrancar |
 | 1.4 | Mis reservas, cancelación y mails | RF-05 a RF-08 | **sin asignar (D)** | ❌ |
 | 1.5 | Sitio institucional y contacto | RF-09, RF-10 | **Jeremías** | 🟡 **implementado**, PR #21 apilado sobre el #20 |
 | 1.6 | Administración | RF-11 a RF-14 | **sin asignar (C + D)** | ❌ |
-| 1.7 | README | — | Jeremías | 🟡 hecho; falta la captura de la protección |
+| 1.7 | README | — | Jeremías | ✅ hecho el 27/09: la captura de la protección se reemplazó por una tabla con el estado real del ruleset, leída de la API de GitHub y reproducible con un comando |
 
 ### Lo que falta repartir
 
@@ -158,8 +157,9 @@ gh api repos/rociobazan/club-deportivo-deploy/rules/branches/main
 
 Tiene que devolver las cuatro reglas. Si devuelve `[]`, no está protegiendo nada.
 
-**Falta la captura** de esa pantalla para el README: es la evidencia que pide la consigna y es
-lo único que queda abierto del ítem 1.7.
+El README lleva esa misma tabla con el estado real del *ruleset*, no una captura: se puede
+volver a verificar con el comando de arriba y no envejece sin que nadie se entere. Con eso quedó
+cerrado el ítem 1.7 el 27/09.
 
 Todos los PRs anteriores al 24/09 entraron sin que GitHub exigiera aprobación, porque la
 protección no existía. De acá en adelante la exige solo.
@@ -194,8 +194,11 @@ Dos cosas que conviene mirar de frente:
 
 ### Rocío (bloquea al resto)
 
-1. **Sacar la captura** de la protección ya activa, para el README. Cierra el 1.7.
-2. **Agregar a Renzo** como colaborador.
+1. **Agregar a Renzo** como colaborador. Es lo único que bloquea al resto.
+
+> La captura de la protección que figuraba acá ya no hace falta: el 27/09 se reemplazó por una
+> tabla con el estado real del *ruleset* en el README, leída de la API de GitHub. El 1.7 está
+> cerrado.
 
 ### Los cuatro
 
