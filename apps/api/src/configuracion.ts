@@ -35,6 +35,18 @@ export type Configuracion = {
   mailFrom: string;
   /** Casilla del club que recibe los mensajes del formulario de contacto. */
   mailContacto: string;
+  /** Días hacia adelante que se pueden reservar, contando hoy (RN-03). El límite es inclusivo. */
+  horizonteReservaDias: number;
+  /** Reservas activas que puede tener un SOCIO al mismo tiempo (RN-07). No aplica a ADMIN. */
+  maxReservasActivasSocio: number;
+  /** Prefijo del código de reserva: `<prefijo>-XXXXXX`. Máximo 5 letras, porque la columna es VarChar(12). */
+  prefijoCodigoReserva: string;
+  /**
+   * Anticipación mínima con la que un SOCIO puede cancelar (RN-04). La lee el
+   * ítem 1.4, que implementa la cancelación; acá se valida y se expone para que
+   * no tenga que volver a tocar este archivo.
+   */
+  cancelacionMinutosMinimos: number;
   /**
    * Clave de Resend. Sin ella el cliente de mail es un doble, así cualquiera
    * puede levantar la API sin pedir una clave (design.md, decisión 1). En
@@ -51,6 +63,10 @@ const DIAS_CERRADOS_POR_DEFECTO = '0';
 const ZONA_HORARIA_POR_DEFECTO = 'America/Argentina/Cordoba';
 const MAIL_FROM_POR_DEFECTO = 'turnos@clubdeploy.com.ar';
 const MAIL_CONTACTO_POR_DEFECTO = 'hola@clubdeploy.com.ar';
+const HORIZONTE_RESERVA_DIAS_POR_DEFECTO = 30;
+const MAX_RESERVAS_ACTIVAS_SOCIO_POR_DEFECTO = 3;
+const PREFIJO_CODIGO_RESERVA_POR_DEFECTO = 'RES';
+const CANCELACION_MINUTOS_MINIMOS_POR_DEFECTO = 120;
 
 const HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -107,6 +123,40 @@ function mail(nombre: string, valor: string | undefined, porDefecto: string): st
   if (!MAIL.test(v)) {
     throw new Error(
       `${nombre} tiene un valor inválido ("${v}"): tiene que ser una dirección de mail, por ejemplo ${porDefecto}.`,
+    );
+  }
+  return v;
+}
+
+function entero(
+  nombre: string,
+  valor: string | undefined,
+  porDefecto: number,
+  minimo: number,
+): number {
+  const v = valor?.trim();
+  if (!v) return porDefecto;
+
+  // Number('') es 0 y Number('3.5') es 3.5: los dos tienen que cortar, así que
+  // se valida el texto además del resultado.
+  const n = Number(v);
+  if (!/^-?\d+$/.test(v) || !Number.isInteger(n) || n < minimo) {
+    throw new Error(
+      `${nombre} tiene un valor inválido ("${v}"): usá un número entero mayor o igual a ${minimo}, por ejemplo ${porDefecto}.`,
+    );
+  }
+  return n;
+}
+
+// Mayúsculas y hasta 5 letras: con el guion y los 6 caracteres del sufijo, el
+// código entra en el VarChar(12) de `reserva.codigo`.
+const PREFIJO_CODIGO = /^[A-Z]{2,5}$/;
+
+function prefijoCodigo(valor: string | undefined): string {
+  const v = valor?.trim() || PREFIJO_CODIGO_RESERVA_POR_DEFECTO;
+  if (!PREFIJO_CODIGO.test(v)) {
+    throw new Error(
+      `PREFIJO_CODIGO_RESERVA tiene un valor inválido ("${v}"): usá de 2 a 5 letras mayúsculas, por ejemplo ${PREFIJO_CODIGO_RESERVA_POR_DEFECTO}.`,
     );
   }
   return v;
@@ -176,6 +226,25 @@ export function leerConfiguracion(
     zonaHoraria: zonaHoraria(entorno.ZONA_HORARIA_CLUB),
     mailFrom: mail('MAIL_FROM', entorno.MAIL_FROM, MAIL_FROM_POR_DEFECTO),
     mailContacto: mail('MAIL_CONTACTO', entorno.MAIL_CONTACTO, MAIL_CONTACTO_POR_DEFECTO),
+    horizonteReservaDias: entero(
+      'HORIZONTE_RESERVA_DIAS',
+      entorno.HORIZONTE_RESERVA_DIAS,
+      HORIZONTE_RESERVA_DIAS_POR_DEFECTO,
+      1,
+    ),
+    maxReservasActivasSocio: entero(
+      'MAX_RESERVAS_ACTIVAS_SOCIO',
+      entorno.MAX_RESERVAS_ACTIVAS_SOCIO,
+      MAX_RESERVAS_ACTIVAS_SOCIO_POR_DEFECTO,
+      1,
+    ),
+    prefijoCodigoReserva: prefijoCodigo(entorno.PREFIJO_CODIGO_RESERVA),
+    cancelacionMinutosMinimos: entero(
+      'CANCELACION_MINUTOS_MINIMOS',
+      entorno.CANCELACION_MINUTOS_MINIMOS,
+      CANCELACION_MINUTOS_MINIMOS_POR_DEFECTO,
+      0,
+    ),
     resendApiKey: enProduccion
       ? obligatoria('RESEND_API_KEY')
       : entorno.RESEND_API_KEY?.trim() || undefined,

@@ -15,6 +15,10 @@ describe('leerConfiguracion', () => {
       zonaHoraria: 'America/Argentina/Cordoba',
       mailFrom: 'turnos@clubdeploy.com.ar',
       mailContacto: 'hola@clubdeploy.com.ar',
+      horizonteReservaDias: 30,
+      maxReservasActivasSocio: 3,
+      prefijoCodigoReserva: 'RES',
+      cancelacionMinutosMinimos: 120,
       resendApiKey: undefined,
     });
   });
@@ -172,5 +176,60 @@ describe('leerConfiguracion', () => {
     expect(
       leerConfiguracion({ ...produccion, RESEND_API_KEY: 're_algo' }).resendApiKey,
     ).toBe('re_algo');
+  });
+
+  it('toma las reglas de reserva del entorno', () => {
+    const configuracion = leerConfiguracion({
+      ...completo,
+      HORIZONTE_RESERVA_DIAS: '45',
+      MAX_RESERVAS_ACTIVAS_SOCIO: '5',
+      PREFIJO_CODIGO_RESERVA: 'CUM',
+      CANCELACION_MINUTOS_MINIMOS: '0',
+    });
+    expect(configuracion).toMatchObject({
+      horizonteReservaDias: 45,
+      maxReservasActivasSocio: 5,
+      prefijoCodigoReserva: 'CUM',
+      cancelacionMinutosMinimos: 0,
+    });
+  });
+
+  it('corta el arranque si el horizonte o el máximo de reservas no son enteros positivos', () => {
+    expect(() => leerConfiguracion({ ...completo, HORIZONTE_RESERVA_DIAS: '0' })).toThrow(
+      'HORIZONTE_RESERVA_DIAS',
+    );
+    expect(() => leerConfiguracion({ ...completo, HORIZONTE_RESERVA_DIAS: '30.5' })).toThrow(
+      'HORIZONTE_RESERVA_DIAS',
+    );
+    expect(() => leerConfiguracion({ ...completo, MAX_RESERVAS_ACTIVAS_SOCIO: 'dos' })).toThrow(
+      'MAX_RESERVAS_ACTIVAS_SOCIO',
+    );
+    expect(() => leerConfiguracion({ ...completo, MAX_RESERVAS_ACTIVAS_SOCIO: '-1' })).toThrow(
+      'MAX_RESERVAS_ACTIVAS_SOCIO',
+    );
+  });
+
+  it('acepta cero minutos de anticipación para cancelar, pero no un negativo', () => {
+    expect(leerConfiguracion({ ...completo, CANCELACION_MINUTOS_MINIMOS: '0' })).toMatchObject({
+      cancelacionMinutosMinimos: 0,
+    });
+    expect(() => leerConfiguracion({ ...completo, CANCELACION_MINUTOS_MINIMOS: '-1' })).toThrow(
+      'CANCELACION_MINUTOS_MINIMOS',
+    );
+  });
+
+  it('corta el arranque si el prefijo del código no son de 2 a 5 letras mayúsculas', () => {
+    expect(() => leerConfiguracion({ ...completo, PREFIJO_CODIGO_RESERVA: 'RESERVA' })).toThrow(
+      'PREFIJO_CODIGO_RESERVA',
+    );
+    expect(() => leerConfiguracion({ ...completo, PREFIJO_CODIGO_RESERVA: 'res' })).toThrow(
+      'PREFIJO_CODIGO_RESERVA',
+    );
+    expect(() => leerConfiguracion({ ...completo, PREFIJO_CODIGO_RESERVA: 'R' })).toThrow(
+      'PREFIJO_CODIGO_RESERVA',
+    );
+    expect(() => leerConfiguracion({ ...completo, PREFIJO_CODIGO_RESERVA: 'RES-1' })).toThrow(
+      'PREFIJO_CODIGO_RESERVA',
+    );
   });
 });
