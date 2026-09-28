@@ -36,8 +36,26 @@ describe('JwtAuthGuard', () => {
 
   it('deja pasar un endpoint @Publico() sin token', async () => {
     const guard = new JwtAuthGuard(reflector(true), jwt);
-    const { contexto } = contextoCon(undefined);
+    const { contexto, solicitud } = contextoCon(undefined);
     await expect(guard.canActivate(contexto)).resolves.toBe(true);
+    expect(solicitud.usuario).toBeUndefined();
+  });
+
+  it('en un endpoint @Publico() con token válido deja al usuario disponible', async () => {
+    const guard = new JwtAuthGuard(reflector(true), jwt);
+    const token = await jwt.signAsync({ sub: 9, rol: 'ADMIN' });
+    const { contexto, solicitud } = contextoCon(`Bearer ${token}`);
+
+    await expect(guard.canActivate(contexto)).resolves.toBe(true);
+    expect(solicitud.usuario).toEqual({ id: 9, rol: 'ADMIN' });
+  });
+
+  it('en un endpoint @Publico() un token inválido no rechaza: sigue como anónimo', async () => {
+    const guard = new JwtAuthGuard(reflector(true), jwt);
+    const { contexto, solicitud } = contextoCon('Bearer no-es-un-jwt');
+
+    await expect(guard.canActivate(contexto)).resolves.toBe(true);
+    expect(solicitud.usuario).toBeUndefined();
   });
 
   it('rechaza con 401 cuando no hay token', async () => {

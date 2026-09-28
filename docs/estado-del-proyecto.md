@@ -7,7 +7,7 @@
 el historial viven en [`memoria-proyecto.md`](memoria-proyecto.md). Este documento no repite
 esas decisiones: las enlaza.
 
-**Última verificación:** 2026-09-25, contra el código y la API de GitHub, no contra lo que
+**Última verificación:** 2026-09-26, contra el código y la API de GitHub, no contra lo que
 dice la memoria. Los comandos que producen cada número están en la última sección, para que
 cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla.
 
@@ -18,9 +18,9 @@ cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla.
 | Medida | Estado |
 |---|---|
 | Ítems del reparto cerrados | **5 de 11** (4 cerrados; el 1.7 espera la captura) |
-| Requisitos funcionales implementados | **0 de 15** en `main`; **RF-00 completo en el PR #19** |
-| Operaciones del contrato con endpoint | **0 de 18** en `main`; 3 de 18 en el PR #19 |
-| Pantallas de producto | **0** en `main`; ingreso y registro en el PR #19 |
+| Requisitos funcionales implementados | **0 de 15** en `main`; RF-00 en el PR #19 y **RF-01, RF-02, RF-03 y RF-07 en el PR de 1.2** |
+| Operaciones del contrato con endpoint | **0 de 18** en `main`; 3 en el PR #19 y 4 más en el PR de 1.2 (7 de 18) |
+| Pantallas de producto | **0** en `main`; ingreso y registro (PR #19), canchas y disponibilidad (PR de 1.2) |
 | Protección de `main` | ✅ **activa**: 1 aprobación y los tres checks |
 
 Los dos números importan y dicen cosas distintas. Lo cerrado es **toda la infraestructura**:
@@ -53,8 +53,8 @@ pantalla en Next que la consume.
 |---|---|---|---|---|
 | 1.1 | Autenticación: registro, login, JWT, guards | RF-00 | **Jeremías** | 🟡 **implementado en el PR #19**, esperando revisión |
 | 1.1b | Login con Google | — | **Jeremías** | ❌ decidido ([ADR 0001](adr/0001-login-con-google.md)), entra después de 1.1 |
-| 1.2 | Catálogo y disponibilidad | RF-01 a RF-03 | **Jeremías** | ❌ sin empezar |
-| 1.3 | Crear reserva | RF-04 | **sin asignar (C)** | ❌ **depende de 1.1 y 1.2** |
+| 1.2 | Catálogo y disponibilidad | RF-01 a RF-03 | **Jeremías** | 🟡 **implementado**, PR apilado sobre el #19, esperando que ese entre |
+| 1.3 | Crear reserva | RF-04 | **sin asignar (C)** | ❌ sus dos dependencias (1.1 y 1.2) ya están implementadas: puede arrancar |
 | 1.4 | Mis reservas, cancelación y mails | RF-05 a RF-08 | **sin asignar (D)** | ❌ |
 | 1.5 | Sitio institucional y contacto | RF-09, RF-10 | **Jeremías** | ❌ sin empezar |
 | 1.6 | Administración | RF-11 a RF-14 | **sin asignar (C + D)** | ❌ |
@@ -96,11 +96,12 @@ Está la base que van a usar todas las pantallas, y ninguna pantalla de producto
 |---|---|
 | Identidad visual y tokens (`globals.css`) | Landing (Inicio, El club, Contacto) |
 | Primitivas: `Button`, `Card`, `Input`, `Badge` | Registro e ingreso (en el PR #19) |
-| Header con menú de mobile y menús por rol | Disponibilidad |
-| Pie, logo y favicon | Formulario de reserva |
-| Pantallas de 404, error y carga | Mis reservas y detalle |
-| Tipos generados del contrato y cliente HTTP | Pantallas de administración |
+| Header con menú de mobile y menús por rol | Formulario de reserva |
+| Pie, logo y favicon | Mis reservas y detalle |
+| Pantallas de 404, error y carga | Pantallas de administración |
+| Tipos generados del contrato y cliente HTTP | Landing (Inicio, El club, Contacto) |
 | Página `/estilos` para revisar la identidad | |
+| Canchas y precios y Disponibilidad (PR de 1.2) | |
 
 La home (`app/page.tsx`) sigue siendo la plantilla por defecto de Next: la reemplaza 1.5.
 
