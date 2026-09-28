@@ -155,6 +155,23 @@ Cada funcionalidad empieza por su especificación:
 
 La protección de `main` exige los tres checks en verde y una aprobación antes de mergear, sin excepciones para los administradores. El detalle está en [`docs/arquitectura.md`](docs/arquitectura.md), secciones 6 y 7.
 
+Este es el estado real del *ruleset*, leído de la API de GitHub el 27/09/2026. Va como tabla y no como captura a propósito: una captura no se puede verificar y envejece sin que nadie se entere, y cualquiera puede reproducir esta:
+
+```bash
+gh api repos/rociobazan/club-deportivo-deploy/rulesets/23795821
+```
+
+| Qué | Cómo está |
+|---|---|
+| Estado | `active` sobre la rama por defecto (`main`) |
+| Quién puede saltearla | **Nadie**: la lista de *bypass* está vacía, ni siquiera los administradores |
+| Pull request | Obligatorio, con **1 aprobación** |
+| Checks requeridos | `specs`, `api` y `web`, los tres en verde |
+| Rama al día | Obligatorio: hay que actualizar con `main` antes de mergear |
+| Borrar `main` | Bloqueado |
+| Reescribir la historia | Bloqueado (no se admite *force push*) |
+| Cambios sin atribuir | Piden una aprobación extra |
+
 ## Equipo
 
 | Integrante | GitHub |
