@@ -129,11 +129,11 @@ La home dejó de ser la plantilla por defecto de Next en el PR de 1.5.
 `openspec/specs/` tiene las siete capacidades vigentes: `administracion`, `autenticacion`,
 `catalogo`, `disponibilidad`, `institucional`, `notificaciones` y `reservas`.
 
-**Quedan tres cambios sin archivar en `openspec/changes/`**, con sus tareas al 100% y su código
-ya en `main`: `implementar-autenticacion` (1.1), `implementar-catalogo-y-disponibilidad` (1.2) e
-`implementar-landing-y-contacto` (1.5). Se archivan con `/opsx:archive <cambio>` desde `main`, de
-a uno y avisando por el grupo, y ahí los deltas pasan a `openspec/specs/`. **Es lo primero que
-hay que hacer**, porque hasta que no pase, `openspec/specs/` no refleja lo que la API hace.
+**No hay cambios en curso en `openspec/changes/`.** Los tres de Jeremías se archivaron el 28/09
+—`implementar-autenticacion` (1.1), `implementar-catalogo-y-disponibilidad` (1.2) e
+`implementar-landing-y-contacto` (1.5)— y sus deltas pasaron a `openspec/specs/`: siete requisitos
+nuevos, cuatro en `autenticacion` y uno en `catalogo`, `disponibilidad` e `institucional`. **Las
+specs ya describen lo que la API y el sitio hacen.**
 
 Cada feature del hito 1 arranca con su propio `/opsx:propose`, que los cuatro revisan antes del
 `/opsx:apply`.
@@ -144,13 +144,19 @@ Cada feature del hito 1 arranca con su propio `/opsx:propose`, que los cuatro re
 
 ### CI
 
-Tres checks obligatorios en cada PR a `main` y en cada push a `main`:
+Cuatro jobs en cada PR a `main` y en cada push a `main`. Los tres primeros son los checks
+**obligatorios** del ruleset; `e2e` todavía no lo es:
 
 | Check | Qué corre |
 |---|---|
 | `specs` | OpenSpec en modo estricto y lint del contrato |
 | `api` | Migraciones contra `postgres:17`, lint, build y tests de la API |
 | `web` | Lint y build del front, que además verifica los tipos |
+| `e2e` | 14 tests de navegador con Playwright contra la pila entera: Postgres, la API y el front servido en producción ([ADR 0002](adr/0002-tests-e2e-con-playwright.md)) |
+
+**`e2e` no bloquea todavía.** Corre e informa, pero sumarlo como cuarto check obligatorio lo tiene
+que hacer `rociobazan`, la única cuenta con admin. Hasta entonces, un PR con los e2e en rojo se
+puede mergear igual.
 
 ### Protección de `main` — activa desde el 24/09
 
@@ -217,24 +223,23 @@ Dos cosas que conviene mirar de frente:
 
 1. **Agregar a Renzo** como colaborador. Es lo único que bloquea al resto.
 
-### Lo primero, sin depender del reparto
-
-2. **Archivar los tres cambios de OpenSpec** desde `main`, de a uno y avisando por el grupo:
-   `implementar-autenticacion`, `implementar-catalogo-y-disponibilidad` e
-   `implementar-landing-y-contacto`. Hasta que no pase, `openspec/specs/` no refleja lo que la
-   API ya hace.
+> También suyo, pero sin apuro: **sumar `e2e` a los checks obligatorios** del ruleset, cuando el
+> job lleve unas corridas estables. Hoy corre e informa, así que un PR con los tests de navegador
+> en rojo se puede mergear igual.
 
 ### Los cuatro
 
-3. **Repartirse 1.3, 1.4 y 1.6** y poner los nombres en las tres tablas. Es lo que equilibra la
+2. **Repartirse 1.3, 1.4 y 1.6** y poner los nombres en las tres tablas. Es lo que equilibra la
    participación, que hoy está muy despareja.
-4. **Confirmar** si Jeremías se lleva el front completo, propuesta abierta desde el 23/09.
-5. **Confirmar** que la administración (1.6) va a dos personas.
+3. **Confirmar** si Jeremías se lleva el front completo, propuesta abierta desde el 23/09.
+4. **Confirmar** que la administración (1.6) va a dos personas.
 
 ### Cuando el reparto esté hecho
 
-6. Cada quien: `/opsx:propose` de su feature, revisión de los cuatro, `/opsx:apply`.
-7. Al abrir los PRs, **base `main` siempre**, incluso si la rama se apila sobre otra feature.
+5. Cada quien: `/opsx:propose` de su feature, revisión de los cuatro, `/opsx:apply`.
+6. Al abrir los PRs, **base `main` siempre**, incluso si la rama se apila sobre otra feature.
+7. Al mergear, `/opsx:archive <cambio>` desde `main`: ahí los deltas pasan a `openspec/specs/`.
+   Si no se hace, las specs dejan de describir lo que el código hace.
 
 ---
 

@@ -52,3 +52,9 @@ Thumbs.db
 
 # Artefactos de las herramientas de navegador (snapshots y logs de Playwright)
 .playwright-mcp/
+
+# Salida de los tests e2e de navegador (reporte, traces y capturas de fallos)
+playwright-report/
+test-results/
+blob-report/
+.playwright/
