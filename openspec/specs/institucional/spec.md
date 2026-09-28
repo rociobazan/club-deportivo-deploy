@@ -58,11 +58,15 @@ Las páginas del sitio institucional MUST poder usarse en pantallas de celular s
 - **THEN** la página se muestra sin animaciones
 
 ### Requirement: Formulario de contacto
-`POST /contacto` MUST ser público y, ante datos válidos, MUST reenviar el mensaje por mail a la casilla del club usando el mismo proveedor de notificaciones, respondiendo 202. El nombre, el mail y el mensaje MUST ser obligatorios; el mensaje MUST tener como máximo 1000 caracteres. El campo trampa `sitioWeb` MUST llegar vacío: si viene completo, la solicitud MUST responderse igual con 202 pero sin enviar nada.
+`POST /contacto` MUST ser público y, ante datos válidos, MUST reenviar el mensaje por mail a la casilla del club usando el mismo proveedor de notificaciones, respondiendo 202. El nombre, el mail, el teléfono y el mensaje MUST ser obligatorios; el teléfono MUST tener como máximo 30 caracteres y el mensaje como máximo 1000. El campo trampa `sitioWeb` MUST llegar vacío: si viene completo, la solicitud MUST responderse igual con 202 pero sin enviar nada.
 
 #### Scenario: Mensaje válido
-- **WHEN** se envía `POST /contacto` con nombre, mail válido y un mensaje de 200 caracteres
+- **WHEN** se envía `POST /contacto` con nombre, mail válido, teléfono y un mensaje de 200 caracteres
 - **THEN** se devuelve 202 con un `mensaje` de confirmación y se envía un mail a la casilla del club con el contenido
+
+#### Scenario: Teléfono ausente
+- **WHEN** se envía `POST /contacto` sin `telefono`
+- **THEN** se devuelve 400 con `tipo` `SOLICITUD_INVALIDA` y no se envía nada
 
 #### Scenario: Mail mal formado
 - **WHEN** se envía `POST /contacto` con `email` `ana@`

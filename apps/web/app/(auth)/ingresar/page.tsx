@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
-import { Card, CardTitle } from "@/components/ui/card";
 import { destinoSeguro } from "@/lib/sesion";
 import { FormularioIngreso } from "../formulario-ingreso";
 
@@ -16,24 +16,30 @@ export default async function PaginaIngresar({ searchParams }: Props) {
   const { volver } = await searchParams;
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 py-16">
-      <Card>
-        <CardTitle className="text-2xl">Ingresar</CardTitle>
-        <p className="mt-1 text-sm text-text-muted">
-          Con el mail y la contraseña de tu cuenta de socio.
-        </p>
+    <main className="fondo-mezcla flex flex-1 flex-col items-center justify-center px-6 py-16">
+      <div className="w-full max-w-sm rounded-3xl border border-border-strong bg-surface p-8 shadow-2xl">
+        <div className="flex flex-col items-center">
+          <span className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 shadow-lg">
+            <Image src="/logo-deploy.png" alt="" width={28} height={28} />
+          </span>
+
+          <h1 className="font-display text-2xl font-semibold">Ingresar</h1>
+          <p className="mt-1 text-center text-sm text-text-muted">
+            Con el mail y la contraseña de tu cuenta de socio.
+          </p>
+        </div>
 
         <div className="mt-6">
           <FormularioIngreso volver={destinoSeguro(volver)} />
         </div>
 
-        <p className="mt-6 text-sm text-text-muted">
+        <p className="mt-6 text-center text-xs text-text-subtle">
           ¿Todavía no tenés cuenta?{" "}
           <Link href="/registro" className="font-semibold text-accent hover:underline">
-            Crear cuenta de socio
+            Creá la tuya, es gratis
           </Link>
         </p>
-      </Card>
+      </div>
     </main>
   );
 }

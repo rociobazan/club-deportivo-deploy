@@ -90,6 +90,17 @@ function traducir(excepcion: unknown): Omit<CuerpoDeError, 'instancia'> {
           estado,
           detalle,
         };
+      // Red de seguridad genérica: quien aplica un límite lanza su propio
+      // `ErrorDeApi` con el texto y el número que le corresponden (ver
+      // `contacto/guard-de-limite.ts`), y ese cae en la rama de arriba. Acá
+      // llega solo un 429 que nadie personalizó, así que el detalle interno de
+      // la excepción no se le muestra a nadie.
+      case 429:
+        return {
+          tipo: 'DEMASIADAS_SOLICITUDES',
+          titulo: 'Hiciste demasiadas solicitudes',
+          estado,
+        };
       default:
         return {
           tipo: 'ERROR_HTTP',

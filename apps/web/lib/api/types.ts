@@ -19,4 +19,6 @@ export type SlotDisponible = Schemas["SlotDisponible"];
 export type Reserva = Schemas["Reserva"];
 export type EstadoReserva = Schemas["EstadoReserva"];
 export type PanelAdmin = Schemas["PanelAdmin"];
+export type ContactoRequest = Schemas["ContactoRequest"];
+export type ContactoResponse = Schemas["ContactoResponse"];
 export type ApiError = Schemas["Error"];
