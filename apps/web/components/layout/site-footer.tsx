@@ -1,13 +1,14 @@
 import { Logo } from "@/components/layout/logo";
+import { CLUB, HORARIO } from "@/lib/club-datos";
 
 const columnas = [
   {
     titulo: "Horarios",
-    lineas: ["Todos los días de 8 a 23", "Buffet hasta el último turno"],
+    lineas: [HORARIO, CLUB.buffet],
   },
   {
     titulo: "Dónde estamos",
-    lineas: ["Rivadeo 1480", "Barrio General Paz, Córdoba"],
+    lineas: [CLUB.direccion, CLUB.barrio],
   },
 ];
 
@@ -17,10 +18,7 @@ export function SiteFooter() {
       <div className="mx-auto grid w-full max-w-5xl gap-8 sm:grid-cols-2 lg:grid-cols-4">
         <div className="flex flex-col gap-3">
           <Logo />
-          <p className="text-sm text-text-muted">
-            Club deportivo de barrio. Tenis, pádel y fútbol 5 en General Paz,
-            Córdoba.
-          </p>
+          <p className="text-sm text-text-muted">{CLUB.descripcion}</p>
         </div>
 
         {columnas.map((columna) => (
@@ -39,16 +37,16 @@ export function SiteFooter() {
         <div className="flex flex-col gap-2">
           <h2 className="font-display text-sm font-semibold">Contacto</h2>
           <a
-            href="tel:+543514827719"
+            href={CLUB.telefonoLink}
             className="text-sm text-text-muted hover:text-accent"
           >
-            351 482 7719
+            {CLUB.telefono}
           </a>
           <a
-            href="mailto:hola@clubdeploy.com.ar"
+            href={`mailto:${CLUB.email}`}
             className="text-sm text-text-muted hover:text-accent"
           >
-            hola@clubdeploy.com.ar
+            {CLUB.email}
           </a>
         </div>
       </div>

@@ -107,7 +107,9 @@ Los carga el seed, solo para desarrollo local.
 | Administrador | `admin@club.test` | `clave1234` |
 | Socio | `socio@club.test` | `clave1234` |
 
-Para probar el ingreso desde el sitio: <http://localhost:3001/ingresar> con cualquiera de los dos. En <http://localhost:3001/registro> se crea un socio nuevo. El catálogo está en <http://localhost:3001/canchas> y los turnos libres en <http://localhost:3001/disponibilidad>. Los tests e2e crean datos propios (`e2e …`, usuarios `@e2e.test`) y borran solo esos.
+Para probar el ingreso desde el sitio: <http://localhost:3001/ingresar> con cualquiera de los dos. En <http://localhost:3001/registro> se crea un socio nuevo. El sitio público es <http://localhost:3001/> (inicio), <http://localhost:3001/el-club> y <http://localhost:3001/contacto>; el catálogo está en <http://localhost:3001/canchas> y los turnos libres en <http://localhost:3001/disponibilidad>. Los tests e2e crean datos propios (`e2e …`, usuarios `@e2e.test`) y borran solo esos.
+
+**Mail.** `MAIL_FROM` (`turnos@clubdeploy.com.ar`) es el remitente del sistema y `MAIL_CONTACTO` (`hola@clubdeploy.com.ar`) la casilla que recibe el formulario de contacto; las dos tienen valor por defecto. **Sin `RESEND_API_KEY` no se envía ningún mail**: el cliente de mail es un doble que deja en el log lo que se habría enviado, así se puede probar `/contacto` sin pedir una clave. Si la definís, los mails salen de verdad desde tu máquina a `MAIL_CONTACTO`. En producción la clave es obligatoria y el arranque corta si falta.
 
 **Horario y zona del club.** `HORA_APERTURA` (`08:00`), `HORA_CIERRE` (`23:00`) y `ZONA_HORARIA_CLUB` (`America/Argentina/Cordoba`) tienen valor por defecto, así que no hace falta definirlas. Si las cambiás, van **en los dos** `.env`: la API calcula la grilla con ellas y el sitio la dibuja.
 

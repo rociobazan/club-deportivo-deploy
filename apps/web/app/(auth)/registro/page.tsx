@@ -16,7 +16,8 @@ export default async function PaginaRegistro({ searchParams }: Props) {
   const { volver } = await searchParams;
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 py-16">
+    <main className="fondo-mezcla flex flex-1 flex-col justify-center px-6 py-16">
+      <div className="mx-auto w-full max-w-md">
       <Card>
         <CardTitle className="text-2xl">Crear cuenta de socio</CardTitle>
         <p className="mt-1 text-sm text-text-muted">
@@ -34,6 +35,7 @@ export default async function PaginaRegistro({ searchParams }: Props) {
           </Link>
         </p>
       </Card>
+      </div>
     </main>
   );
 }

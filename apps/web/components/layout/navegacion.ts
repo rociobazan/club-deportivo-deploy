@@ -11,6 +11,7 @@ export type ItemDeNavegacion = { href: string; label: string };
 
 /** Sin sesión, según la spec de `institucional`. */
 const PUBLICA: ItemDeNavegacion[] = [
+  { href: "/", label: "Inicio" },
   { href: "/el-club", label: "El club" },
   { href: "/canchas", label: "Canchas y precios" },
   { href: "/disponibilidad", label: "Disponibilidad" },
@@ -19,6 +20,7 @@ const PUBLICA: ItemDeNavegacion[] = [
 
 /** Socio: lo público más sus reservas. */
 const SOCIO: ItemDeNavegacion[] = [
+  { href: "/", label: "Inicio" },
   { href: "/disponibilidad", label: "Disponibilidad" },
   { href: "/mis-reservas", label: "Mis reservas" },
   { href: "/el-club", label: "El club" },

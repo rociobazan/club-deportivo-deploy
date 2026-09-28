@@ -26,12 +26,24 @@ export type Configuracion = {
   horaCierre: string;
   /** Zona IANA en la que se evalúan "hoy" y "ahora" (design archivado, decisión 5). */
   zonaHoraria: string;
+  /** Remitente de todos los mails que manda el sistema. */
+  mailFrom: string;
+  /** Casilla del club que recibe los mensajes del formulario de contacto. */
+  mailContacto: string;
+  /**
+   * Clave de Resend. Sin ella el cliente de mail es un doble, así cualquiera
+   * puede levantar la API sin pedir una clave (design.md, decisión 1). En
+   * producción es obligatoria.
+   */
+  resendApiKey?: string;
 };
 
 const FRONTEND_URL_DESARROLLO = 'http://localhost:3001';
 const HORA_APERTURA_POR_DEFECTO = '08:00';
 const HORA_CIERRE_POR_DEFECTO = '23:00';
 const ZONA_HORARIA_POR_DEFECTO = 'America/Argentina/Cordoba';
+const MAIL_FROM_POR_DEFECTO = 'turnos@clubdeploy.com.ar';
+const MAIL_CONTACTO_POR_DEFECTO = 'hola@clubdeploy.com.ar';
 
 const HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -50,6 +62,20 @@ function zonaHoraria(valor: string | undefined): string {
   } catch {
     throw new Error(
       `ZONA_HORARIA_CLUB tiene un valor inválido ("${v}"): usá un nombre IANA como America/Argentina/Cordoba.`,
+    );
+  }
+  return v;
+}
+
+// Alcanza para atajar una dirección mal tipeada al arrancar; la validación fina
+// la hace el proveedor de mail cuando envía.
+const MAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function mail(nombre: string, valor: string | undefined, porDefecto: string): string {
+  const v = valor?.trim() || porDefecto;
+  if (!MAIL.test(v)) {
+    throw new Error(
+      `${nombre} tiene un valor inválido ("${v}"): tiene que ser una dirección de mail, por ejemplo ${porDefecto}.`,
     );
   }
   return v;
@@ -104,6 +130,11 @@ export function leerConfiguracion(
     horaApertura,
     horaCierre,
     zonaHoraria: zonaHoraria(entorno.ZONA_HORARIA_CLUB),
+    mailFrom: mail('MAIL_FROM', entorno.MAIL_FROM, MAIL_FROM_POR_DEFECTO),
+    mailContacto: mail('MAIL_CONTACTO', entorno.MAIL_CONTACTO, MAIL_CONTACTO_POR_DEFECTO),
+    resendApiKey: enProduccion
+      ? obligatoria('RESEND_API_KEY')
+      : entorno.RESEND_API_KEY?.trim() || undefined,
   };
 }
 
