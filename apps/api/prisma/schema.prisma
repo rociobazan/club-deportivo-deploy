@@ -70,6 +70,10 @@ model Cancha {
   disciplina Disciplina @relation(fields: [disciplinaId], references: [id])
   reservas   Reserva[]
 
+  // Dos canchas de la misma disciplina no pueden llamarse igual: el nombre es
+  // como las distingue quien reserva. Ademas le da al seed una clave natural
+  // para hacer upsert en vez de cargar solo si la base esta vacia.
+  @@unique([disciplinaId, nombre])
   @@map("cancha")
 }
 
@@ -84,6 +88,9 @@ model Equipamiento {
   disciplina Disciplina            @relation(fields: [disciplinaId], references: [id])
   reservas   ReservaEquipamiento[]
 
+  // Mismo motivo que en cancha. Lo que sirve para varias disciplinas va
+  // repetido con un nombre por disciplina (RN-08), asi que no choca.
+  @@unique([disciplinaId, nombre])
   @@map("equipamiento")
 }
 

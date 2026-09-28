@@ -1,8 +1,9 @@
 name: CI
 
 on:
+  # Todo PR, apunte a la rama que apunte: los PRs apilados sobre otra rama
+  # también tienen que pasar el CI. La protección de main exige los checks solo ahí.
   pull_request:
-    branches: [main]
   push:
     branches: [main]
 
