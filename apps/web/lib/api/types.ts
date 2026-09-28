@@ -8,6 +8,9 @@ export type Schemas = components["schemas"];
 
 export type Usuario = Schemas["Usuario"];
 export type RolUsuario = Schemas["RolUsuario"];
+export type RegistroRequest = Schemas["RegistroRequest"];
+export type LoginRequest = Schemas["LoginRequest"];
+export type LoginResponse = Schemas["LoginResponse"];
 export type Disciplina = Schemas["Disciplina"];
 export type Cancha = Schemas["Cancha"];
 export type Equipamiento = Schemas["Equipamiento"];

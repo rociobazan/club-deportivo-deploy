@@ -96,6 +96,8 @@ npm run dev:web      # front en http://localhost:3001
 
 Los puertos 3000, 3001 y 5434 tienen que estar libres: si otra aplicación usa el 3000, la API no arranca (`EADDRINUSE`).
 
+**La API no arranca sin `JWT_SECRET` y `JWT_EXPIRES_IN`** en `apps/api/.env`: en desarrollo sirve cualquier texto largo como secreto y `1h` como vigencia. Si falta alguna, el arranque corta diciendo cuál.
+
 ### Usuarios de prueba
 
 Los carga el seed, solo para desarrollo local.
@@ -104,6 +106,8 @@ Los carga el seed, solo para desarrollo local.
 |---|---|---|
 | Administrador | `admin@club.test` | `clave1234` |
 | Socio | `socio@club.test` | `clave1234` |
+
+Para probar el ingreso desde el sitio: <http://localhost:3001/ingresar> con cualquiera de los dos. En <http://localhost:3001/registro> se crea un socio nuevo. Los tests e2e crean usuarios `@e2e.test` y borran solo esos.
 
 ### Comandos útiles
 

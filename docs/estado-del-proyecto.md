@@ -7,7 +7,7 @@
 el historial viven en [`memoria-proyecto.md`](memoria-proyecto.md). Este documento no repite
 esas decisiones: las enlaza.
 
-**Última verificación:** 2026-09-24, contra el código y la API de GitHub, no contra lo que
+**Última verificación:** 2026-09-25, contra el código y la API de GitHub, no contra lo que
 dice la memoria. Los comandos que producen cada número están en la última sección, para que
 cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla.
 
@@ -18,9 +18,9 @@ cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla.
 | Medida | Estado |
 |---|---|
 | Ítems del reparto cerrados | **5 de 11** (4 cerrados; el 1.7 espera la captura) |
-| Requisitos funcionales implementados | **0 de 15** (RF-00 a RF-14) |
-| Operaciones del contrato con endpoint | **0 de 18** |
-| Pantallas de producto | **0** |
+| Requisitos funcionales implementados | **0 de 15** en `main`; **RF-00 completo en el PR #19** |
+| Operaciones del contrato con endpoint | **0 de 18** en `main`; 3 de 18 en el PR #19 |
+| Pantallas de producto | **0** en `main`; ingreso y registro en el PR #19 |
 | Protección de `main` | ✅ **activa**: 1 aprobación y los tres checks |
 
 Los dos números importan y dicen cosas distintas. Lo cerrado es **toda la infraestructura**:
@@ -51,7 +51,7 @@ pantalla en Next que la consume.
 
 | # | Qué | Requisitos | Responsable | Estado |
 |---|---|---|---|---|
-| 1.1 | Autenticación: registro, login, JWT, guards | RF-00 | **Jeremías** | ❌ sin empezar |
+| 1.1 | Autenticación: registro, login, JWT, guards | RF-00 | **Jeremías** | 🟡 **implementado en el PR #19**, esperando revisión |
 | 1.1b | Login con Google | — | **Jeremías** | ❌ decidido ([ADR 0001](adr/0001-login-con-google.md)), entra después de 1.1 |
 | 1.2 | Catálogo y disponibilidad | RF-01 a RF-03 | **Jeremías** | ❌ sin empezar |
 | 1.3 | Crear reserva | RF-04 | **sin asignar (C)** | ❌ **depende de 1.1 y 1.2** |
@@ -80,13 +80,13 @@ Dos cosas a tener en cuenta al repartir:
 ### API (`apps/api`)
 
 Solo el andamiaje de Nest: `app.controller.ts`, `app.service.ts`, `app.module.ts` y `main.ts`.
-**Ningún módulo de negocio.** Lo que sí está listo alrededor:
+**Ningún módulo de negocio en `main`.** El PR #19 trae el módulo `auth` y la base que las demás features reutilizan: guards globales con `@Publico()` y `@Roles()`, `ErrorDeApi`, el filtro con el schema `Error` y `PrismaModule`. Lo que sí está listo alrededor:
 
 - Esquema completo en `prisma/schema.prisma`, con las siete tablas, y migraciones aplicadas.
 - Seed con disciplinas, canchas, equipamiento y usuarios de prueba.
 - Tests corriendo en verde (Node 24 con `--experimental-vm-modules`).
 
-**0 de 18 operaciones del contrato tienen endpoint.** El contrato define 15 rutas.
+**0 de 18 operaciones del contrato tienen endpoint en `main`**; el PR #19 suma `POST /auth/registro`, `POST /auth/login` y `GET /auth/perfil`. El contrato define 15 rutas.
 
 ### Front (`apps/web`)
 
@@ -95,7 +95,7 @@ Está la base que van a usar todas las pantallas, y ninguna pantalla de producto
 | Hay | No hay |
 |---|---|
 | Identidad visual y tokens (`globals.css`) | Landing (Inicio, El club, Contacto) |
-| Primitivas: `Button`, `Card`, `Input`, `Badge` | Registro e ingreso |
+| Primitivas: `Button`, `Card`, `Input`, `Badge` | Registro e ingreso (en el PR #19) |
 | Header con menú de mobile y menús por rol | Disponibilidad |
 | Pie, logo y favicon | Formulario de reserva |
 | Pantallas de 404, error y carga | Mis reservas y detalle |
