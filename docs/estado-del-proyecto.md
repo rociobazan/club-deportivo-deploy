@@ -61,16 +61,16 @@ pantalla en Next que la consume.
 | 1.1b | Login con Google | — | — | ⛔ **descartado el 27/09**: el equipo decidió no hacerlo ([ADR 0001](adr/0001-login-con-google.md), marcada como descartada) |
 | 1.2 | Catálogo y disponibilidad | RF-01 a RF-03 | **Jeremías** | ✅ en `main` (PR #25, 28/09) |
 | 1.3 | Crear reserva | RF-04 | **sin asignar (C)** | ❌ sus dos dependencias (1.1 y 1.2) ya están en `main`: puede arrancar |
-| 1.4 | Mis reservas, cancelación y mails | RF-05 a RF-08 | **sin asignar (D)** | ❌ puede arrancar |
+| 1.4 | Mis reservas, cancelación y mails | RF-05 a RF-08 | **Rocío** | ❌ rama abierta, sin propuesta de spec todavía |
 | 1.5 | Sitio institucional y contacto | RF-09, RF-10 | **Jeremías** | ✅ en `main` (PR #26, 28/09) |
 | 1.6 | Administración | RF-11 a RF-14 | **sin asignar (C + D)** | ❌ puede arrancar |
 | 1.7 | README | — | Jeremías | ✅ hecho el 27/09: la captura de la protección se reemplazó por una tabla con el estado real del ruleset, leída de la API de GitHub y reproducible con un comando |
 
 ### Lo que falta repartir
 
-Jeremías tomó **1.1, 1.2 y 1.5** el 24/09. Quedan **1.3, 1.4 y 1.6** sin dueño, y son tres
-ítems para tres personas: Adrián, Rocío y Renzo. Quien tome una rama reemplaza la letra por su
-nombre acá, en `memoria-proyecto.md` y en `requisitos.md` §8, en el mismo PR.
+Jeremías tomó **1.1, 1.2 y 1.5** el 24/09; Rocío tomó **1.4** el 28/09. Quedan **1.3 y 1.6**
+sin dueño, para Adrián y Renzo. Quien tome una rama reemplaza la letra por su nombre acá, en
+`memoria-proyecto.md` y en `requisitos.md` §8, en el mismo PR.
 
 Dos cosas a tener en cuenta al repartir:
 
