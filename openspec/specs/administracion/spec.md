@@ -36,7 +36,7 @@ El panel MUST informar, para la fecha consultada: la cantidad de reservas no can
 - **THEN** el panel informa 2 cancelaciones, 1 de ellas dentro del plazo
 
 ### Requirement: Ocupación de las canchas
-El panel MUST informar la ocupación del día, la ocupación promedio de los 7 días que terminan en la fecha consultada y la ocupación de cada cancha activa en esos 7 días. La ocupación MUST calcularse como turnos con reserva no cancelada sobre turnos ofrecidos por las canchas activas según el horario de atención, expresada como porcentaje entero redondeado al más cercano.
+El panel MUST informar la ocupación del día, la ocupación promedio de los 7 días que terminan en la fecha consultada y la ocupación de cada cancha activa en esos 7 días. La ocupación MUST calcularse como turnos con reserva no cancelada sobre turnos ofrecidos por las canchas activas según el horario de atención de ese día, expresada como porcentaje entero redondeado al más cercano. Un día en el que el club no abre no ofrece turnos: su ocupación MUST informarse como 0 y MUST NOT contarse en el promedio de los 7 días.
 
 #### Scenario: Ocupación del día
 - **WHEN** hay 6 canchas activas (2 de tenis y 1 de fútbol 5 con 15 turnos, 3 de pádel con 10 turnos; 75 turnos en total) y las únicas reservas no canceladas del día son 5 en Pádel 1

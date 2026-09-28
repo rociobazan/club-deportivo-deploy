@@ -23,7 +23,12 @@ export type Configuracion = {
   frontendUrl: string;
   /** Horario de atención, `HH:MM`. La grilla de turnos arranca en la apertura. */
   horaApertura: string;
+  /** Cierre de lunes a viernes. */
   horaCierre: string;
+  /** Los sábados el club cierra antes. */
+  horaCierreSabado: string;
+  /** Días en los que no abre, 0 domingo a 6 sábado. */
+  diasCerrados: readonly number[];
   /** Zona IANA en la que se evalúan "hoy" y "ahora" (design archivado, decisión 5). */
   zonaHoraria: string;
   /** Remitente de todos los mails que manda el sistema. */
@@ -41,6 +46,8 @@ export type Configuracion = {
 const FRONTEND_URL_DESARROLLO = 'http://localhost:3001';
 const HORA_APERTURA_POR_DEFECTO = '08:00';
 const HORA_CIERRE_POR_DEFECTO = '23:00';
+const HORA_CIERRE_SABADO_POR_DEFECTO = '18:00';
+const DIAS_CERRADOS_POR_DEFECTO = '0';
 const ZONA_HORARIA_POR_DEFECTO = 'America/Argentina/Cordoba';
 const MAIL_FROM_POR_DEFECTO = 'turnos@clubdeploy.com.ar';
 const MAIL_CONTACTO_POR_DEFECTO = 'hola@clubdeploy.com.ar';
@@ -53,6 +60,30 @@ function hora(nombre: string, valor: string | undefined, porDefecto: string): st
     throw new Error(`${nombre} tiene un valor inválido ("${v}"): usá el formato HH:MM, por ejemplo 08:00.`);
   }
   return v;
+}
+
+/**
+ * "0" o "0,6": los días en los que el club no abre, 0 domingo a 6 sábado. Vacío
+ * significa que abre todos los días, y por eso se distingue de no definirla.
+ */
+function diasCerrados(valor: string | undefined): number[] {
+  const v = valor?.trim() ?? DIAS_CERRADOS_POR_DEFECTO;
+  if (v === '') return [];
+
+  const dias = v.split(',').map((parte) => {
+    const n = Number(parte.trim());
+    if (!Number.isInteger(n) || n < 0 || n > 6) {
+      throw new Error(
+        `DIAS_CERRADOS tiene un valor inválido ("${v}"): usá números de 0 (domingo) a 6 (sábado) separados por coma, por ejemplo 0.`,
+      );
+    }
+    return n;
+  });
+
+  if (new Set(dias).size === 7) {
+    throw new Error('DIAS_CERRADOS no puede incluir los siete días: el club no abriría nunca.');
+  }
+  return [...new Set(dias)].sort((a, b) => a - b);
 }
 
 function zonaHoraria(valor: string | undefined): string {
@@ -121,6 +152,17 @@ export function leerConfiguracion(
     );
   }
 
+  const horaCierreSabado = hora(
+    'HORA_CIERRE_SABADO',
+    entorno.HORA_CIERRE_SABADO,
+    HORA_CIERRE_SABADO_POR_DEFECTO,
+  );
+  if (horaApertura >= horaCierreSabado) {
+    throw new Error(
+      `HORA_APERTURA (${horaApertura}) tiene que ser anterior a HORA_CIERRE_SABADO (${horaCierreSabado}).`,
+    );
+  }
+
   return {
     jwtSecret: obligatoria('JWT_SECRET'),
     jwtExpiresIn: vigencia(obligatoria('JWT_EXPIRES_IN')),
@@ -129,6 +171,8 @@ export function leerConfiguracion(
       : entorno.FRONTEND_URL?.trim() || FRONTEND_URL_DESARROLLO,
     horaApertura,
     horaCierre,
+    horaCierreSabado,
+    diasCerrados: diasCerrados(entorno.DIAS_CERRADOS),
     zonaHoraria: zonaHoraria(entorno.ZONA_HORARIA_CLUB),
     mailFrom: mail('MAIL_FROM', entorno.MAIL_FROM, MAIL_FROM_POR_DEFECTO),
     mailContacto: mail('MAIL_CONTACTO', entorno.MAIL_CONTACTO, MAIL_CONTACTO_POR_DEFECTO),

@@ -7,7 +7,8 @@ import { EstadoError } from "@/components/ui/estado-error";
 import { Input } from "@/components/ui/input";
 import { apiFetch, ApiHttpError } from "@/lib/api/client";
 import type { Cancha, Disciplina, DisponibilidadResponse } from "@/lib/api/types";
-import { ahoraEnElClub, esFechaValida, fechaLegible } from "@/lib/club";
+import { ahoraEnElClub, esFechaValida, fechaLegible, ventanaDelDia } from "@/lib/club";
+import { HORARIO_LINEAS } from "@/lib/club-datos";
 import { aMinutos } from "@/lib/grilla";
 import { obtenerUsuario } from "@/lib/sesion";
 import { AvisoSocio } from "./aviso-socio";
@@ -94,6 +95,9 @@ export default async function PaginaDisponibilidad({ searchParams }: Props) {
     return primero ? aMinutos(primero.horaFin) - aMinutos(primero.horaInicio) : undefined;
   };
   const esHoy = fecha === ahora.fecha;
+  // Un día cerrado no tiene turnos en ninguna cancha: se dice una vez, en lugar
+  // de repetir seis tarjetas vacías.
+  const cerrado = ventanaDelDia(fecha) === null;
 
   const grilla = disponibilidad.canchas.map((cancha) => {
     const duracionMin = duracionDe(cancha);
@@ -167,7 +171,15 @@ export default async function PaginaDisponibilidad({ searchParams }: Props) {
 
       <h2 className="mb-4 font-display text-xl font-semibold capitalize">{fechaLegible(fecha)}</h2>
 
-      {disponibilidad.canchas.length === 0 ? (
+      {cerrado ? (
+        <Card>
+          <CardTitle>El club no abre este día</CardTitle>
+          <p className="mt-1 text-sm text-text-muted">
+            {HORARIO_LINEAS.join(" · ")}. Elegí otra fecha y te mostramos los turnos
+            libres.
+          </p>
+        </Card>
+      ) : disponibilidad.canchas.length === 0 ? (
         <p className="text-text-muted">No hay canchas activas para esa consulta.</p>
       ) : usuarioConSesion ? (
         <div className="flex flex-col gap-6">{grilla}</div>

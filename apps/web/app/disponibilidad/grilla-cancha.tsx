@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { Card, CardTitle } from "@/components/ui/card";
 import type { DisponibilidadResponse } from "@/lib/api/types";
-import { HORA_APERTURA, HORA_CIERRE, precioLegible } from "@/lib/club";
+import { precioLegible, ventanaDelDia } from "@/lib/club";
 import { estadoDeBloque, generarGrilla, type EstadoDeBloque } from "@/lib/grilla";
 
 /** La forma del contrato, donde `disciplina` es opcional. */
@@ -46,7 +46,13 @@ export function GrillaCancha({
   conSesion: boolean;
 }) {
   const libres = new Set(cancha.slots.map((s) => s.horaInicio));
-  const bloques = generarGrilla(HORA_APERTURA, HORA_CIERRE, duracionMin);
+  // Un día cerrado no tiene grilla: la página ya avisa y esto no llega a
+  // dibujarse, pero dejarlo acotado evita una grilla fantasma si alguna vez se
+  // renderiza esta tarjeta sola.
+  const ventana = ventanaDelDia(fecha);
+  const bloques = ventana
+    ? generarGrilla(ventana.apertura, ventana.cierre, duracionMin)
+    : [];
   const cantidadLibres = libres.size;
 
   return (
