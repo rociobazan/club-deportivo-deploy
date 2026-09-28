@@ -144,13 +144,19 @@ Cada feature del hito 1 arranca con su propio `/opsx:propose`, que los cuatro re
 
 ### CI
 
-Tres checks obligatorios en cada PR a `main` y en cada push a `main`:
+Cuatro jobs en cada PR a `main` y en cada push a `main`. Los tres primeros son los checks
+**obligatorios** del ruleset; `e2e` todavía no lo es:
 
 | Check | Qué corre |
 |---|---|
 | `specs` | OpenSpec en modo estricto y lint del contrato |
 | `api` | Migraciones contra `postgres:17`, lint, build y tests de la API |
 | `web` | Lint y build del front, que además verifica los tipos |
+| `e2e` | 14 tests de navegador con Playwright contra la pila entera: Postgres, la API y el front servido en producción ([ADR 0002](adr/0002-tests-e2e-con-playwright.md)) |
+
+**`e2e` no bloquea todavía.** Corre e informa, pero sumarlo como cuarto check obligatorio lo tiene
+que hacer `rociobazan`, la única cuenta con admin. Hasta entonces, un PR con los e2e en rojo se
+puede mergear igual.
 
 ### Protección de `main` — activa desde el 24/09
 
@@ -216,6 +222,10 @@ Dos cosas que conviene mirar de frente:
 ### Rocío (bloquea al resto)
 
 1. **Agregar a Renzo** como colaborador. Es lo único que bloquea al resto.
+
+> También suyo, pero sin apuro: **sumar `e2e` a los checks obligatorios** del ruleset, cuando el
+> job lleve unas corridas estables. Hoy corre e informa, así que un PR con los tests de navegador
+> en rojo se puede mergear igual.
 
 ### Los cuatro
 

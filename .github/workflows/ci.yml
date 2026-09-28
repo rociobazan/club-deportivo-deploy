@@ -88,3 +88,86 @@ jobs:
       # front genera desde el contrato.
       - name: Build
         run: npm run build --workspace web
+
+  # Tests de navegador sobre el sitio construido (ADR 0002). Necesita la pila
+  # entera: el front llama a la API del lado del servidor, así que sin API de
+  # Nest y sin base estos tests no probarían nada.
+  e2e:
+    name: e2e
+    runs-on: ubuntu-latest
+    needs: [api, web]
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: club
+          POSTGRES_PASSWORD: club
+          POSTGRES_DB: club_reservas_e2e
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://club:club@localhost:5432/club_reservas_e2e
+      JWT_SECRET: secreto-solo-para-el-ci
+      JWT_EXPIRES_IN: 1h
+      # El front habla con la API por acá, desde su proceso de servidor.
+      API_URL: http://localhost:3000/api/v1
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+
+      - name: Generar el cliente de Prisma
+        run: npm exec --workspace api -- prisma generate
+      - name: Aplicar las migraciones en una base vacía
+        run: npm exec --workspace api -- prisma migrate deploy
+      # A diferencia del job `api`, acá el seed sí corre: sin catálogo, la
+      # pantalla de disponibilidad no tendría canchas que mostrar y el test
+      # pasaría sin comprobar que el front consume la API.
+      - name: Cargar el catálogo de prueba
+        run: npm exec --workspace api -- prisma db seed
+
+      - name: Build de la API
+        run: npm run build --workspace api
+      # `nohup` y redirección: sin eso el proceso queda atado al shell del paso
+      # y el log se pierde, que es justo lo que hace falta si no arranca.
+      - name: Levantar la API
+        run: nohup npm run start:prod --workspace api > api.log 2>&1 &
+      - name: Esperar a que la API responda
+        run: |
+          for intento in $(seq 1 30); do
+            if curl -fsS http://localhost:3000/api/v1 > /dev/null; then
+              echo "API arriba en el intento $intento"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "La API no respondió en 60 segundos. Su log:"
+          cat api.log
+          exit 1
+
+      # El front lo levanta Playwright con `next start` (playwright.config.ts),
+      # pero el build tiene que existir antes.
+      - name: Build del front
+        run: npm run build --workspace web
+      - name: Instalar Chromium
+        run: npm exec --workspace web -- playwright install chromium --with-deps
+      - name: Tests e2e de navegador
+        run: npm run e2e --workspace web
+
+      - name: Guardar el reporte si algo falló
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            apps/web/playwright-report/
+            apps/web/test-results/
+            api.log
+          retention-days: 7
