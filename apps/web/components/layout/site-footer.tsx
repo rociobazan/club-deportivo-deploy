@@ -1,10 +1,10 @@
 import { Logo } from "@/components/layout/logo";
-import { CLUB, HORARIO } from "@/lib/club-datos";
+import { CLUB, HORARIO_LINEAS } from "@/lib/club-datos";
 
 const columnas = [
   {
     titulo: "Horarios",
-    lineas: [HORARIO, CLUB.buffet],
+    lineas: [...HORARIO_LINEAS, CLUB.buffet],
   },
   {
     titulo: "Dónde estamos",

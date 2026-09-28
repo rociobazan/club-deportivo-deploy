@@ -32,7 +32,7 @@ export type Foto = {
 export const HERO = {
   titulo: "Salí a jugar.",
   bajada:
-    "Deploy es un club de barrio con seis canchas de tenis, pádel y fútbol 5 en Rivadeo 1480. Abierto todos los días de 8 a 23.",
+    "Deploy es un club de barrio con seis canchas de tenis, pádel y fútbol 5 en Rivadeo 1480. Abierto de lunes a sábado.",
   /** La tarjeta flotante del hero, que lleva a la disponibilidad por disciplina. */
   atajo: {
     titulo: "Reservá directo",
@@ -83,8 +83,8 @@ export const DISCIPLINAS: DisciplinaInstitucional[] = [
       alt: "Cancha de tenis de polvo de ladrillo al atardecer, con las luces encendidas",
     },
     canchas: [
-      { nombre: "Cancha 1", detalle: "Polvo de ladrillo" },
-      { nombre: "Cancha 2", detalle: "Cemento" },
+      { nombre: "Polvo", detalle: "Al aire libre, con luces" },
+      { nombre: "Cemento", detalle: "Al aire libre, con luces" },
     ],
   },
   {
@@ -99,9 +99,9 @@ export const DISCIPLINAS: DisciplinaInstitucional[] = [
       alt: "Cancha de pádel panorámica y techada, con las paredes de vidrio iluminadas",
     },
     canchas: [
-      { nombre: "Pádel 1", detalle: "Techada" },
-      { nombre: "Pádel 2", detalle: "Techada" },
-      { nombre: "Pádel 3", detalle: "Descubierta" },
+      { nombre: "Panorámica 1", detalle: "Techada" },
+      { nombre: "Panorámica 2", detalle: "Techada" },
+      { nombre: "Descubierta", detalle: "Paredes de vidrio" },
     ],
   },
   {
@@ -115,7 +115,7 @@ export const DISCIPLINAS: DisciplinaInstitucional[] = [
       src: "/fotos/futbol5.webp",
       alt: "Cancha de fútbol 5 de césped sintético, con los arcos y las luces encendidas",
     },
-    canchas: [{ nombre: "Cancha Sur", detalle: "Césped sintético" }],
+    canchas: [{ nombre: "Sintética", detalle: "Césped sintético, con luces" }],
   },
 ];
 
@@ -153,7 +153,7 @@ export const SERVICIOS = [
   {
     icono: "ducha",
     titulo: "Vestuarios con agua caliente",
-    descripcion: "Abiertos de 8 a 23, con lockers y secadores.",
+    descripcion: "Abiertos todo el día, con lockers y secadores.",
   },
   {
     icono: "parrilla",
@@ -186,7 +186,7 @@ export const COMO_RESERVAR = {
     {
       icono: "calendario",
       titulo: "Elegí el día",
-      detalle: "Cualquier día de la semana, de 8 a 23.",
+      detalle: "De lunes a sábado. Los domingos el club no abre.",
     },
     {
       icono: "tocar",

@@ -3,6 +3,7 @@ import { aNumero } from '../catalogo/mapeadores';
 import { ErrorDeApi } from '../common/error-de-api';
 import { aFechaDb, comparar } from '../common/fechas';
 import { Bloque, generarGrilla } from '../common/grilla';
+import { ventanaDelDia } from '../common/horario';
 import { Reloj } from '../common/reloj';
 import { CONFIGURACION } from '../configuracion';
 import type { Configuracion } from '../configuracion';
@@ -78,13 +79,25 @@ export class DisponibilidadService {
     }
 
     const esHoy = filtros.fecha === hoy.fecha;
-    const { horaApertura, horaCierre } = this.configuracion;
+    const { horaApertura, horaCierre, horaCierreSabado, diasCerrados } = this.configuracion;
+
+    // Un día cerrado no ofrece ningún turno: la grilla queda vacía y todas las
+    // canchas salen sin slots, sin necesidad de un caso especial más abajo.
+    const ventana = ventanaDelDia(filtros.fecha, {
+      apertura: horaApertura,
+      cierre: horaCierre,
+      cierreSabado: horaCierreSabado,
+      diasCerrados,
+    });
 
     return {
       fecha: filtros.fecha,
       canchas: canchas.map((cancha) => {
         const ocupado = ocupadoPorCancha.get(cancha.id) ?? new Set<string>();
-        const slots = generarGrilla(horaApertura, horaCierre, cancha.disciplina.duracionTurnoMin).filter(
+        const bloques = ventana
+          ? generarGrilla(ventana.apertura, ventana.cierre, cancha.disciplina.duracionTurnoMin)
+          : [];
+        const slots = bloques.filter(
           (bloque) =>
             !ocupado.has(bloque.horaInicio) &&
             (!esHoy || comparar(bloque.horaInicio, hoy.hora) >= 0),
