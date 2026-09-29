@@ -16,7 +16,8 @@
     "spec:view": "openspec view",
     "contrato:lint": "redocly lint contratos/openapi.yaml",
     "generate:api-types": "openapi-typescript contratos/openapi.yaml -o apps/web/lib/api/schema.d.ts",
-    "test:api": "npm run test --workspace api"
+    "test:api": "npm run test --workspace api",
+    "test:e2e:web": "npm run e2e --workspace web"
   },
   "devDependencies": {
     "@fission-ai/openspec": "^1.13.1",
