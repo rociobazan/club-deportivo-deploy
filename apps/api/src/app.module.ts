@@ -15,6 +15,7 @@ import { crearPipeDeValidacion } from './common/validacion';
 import { CONFIGURACION, Configuracion } from './configuracion';
 import { ConfiguracionModule } from './configuracion.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ReservasModule } from './reservas/reservas.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { PrismaModule } from './prisma/prisma.module';
     ContactoModule,
     DisponibilidadModule,
     PrismaModule,
+    ReservasModule,
     // Global para que el guard de JWT, que también es global, pueda inyectar JwtService.
     JwtModule.registerAsync({
       global: true,
