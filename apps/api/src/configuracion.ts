@@ -31,6 +31,8 @@ export type Configuracion = {
   diasCerrados: readonly number[];
   /** Zona IANA en la que se evalúan "hoy" y "ahora" (design archivado, decisión 5). */
   zonaHoraria: string;
+  /** Minutos mínimos de anticipación para que un SOCIO cancele su reserva (RN-04). Un ADMIN no está sujeto a este límite. */
+  cancelacionMinutosMinimos: number;
   /** Remitente de todos los mails que manda el sistema. */
   mailFrom: string;
   /** Casilla del club que recibe los mensajes del formulario de contacto. */
@@ -51,6 +53,7 @@ const DIAS_CERRADOS_POR_DEFECTO = '0';
 const ZONA_HORARIA_POR_DEFECTO = 'America/Argentina/Cordoba';
 const MAIL_FROM_POR_DEFECTO = 'turnos@clubdeploy.com.ar';
 const MAIL_CONTACTO_POR_DEFECTO = 'hola@clubdeploy.com.ar';
+const CANCELACION_MINUTOS_MINIMOS_POR_DEFECTO = 120;
 
 const HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -84,6 +87,17 @@ function diasCerrados(valor: string | undefined): number[] {
     throw new Error('DIAS_CERRADOS no puede incluir los siete días: el club no abriría nunca.');
   }
   return [...new Set(dias)].sort((a, b) => a - b);
+}
+
+/** Entero positivo desde una variable de entorno, con un valor por defecto. */
+function entero(nombre: string, valor: string | undefined, porDefecto: number): number {
+  const v = valor?.trim();
+  if (!v) return porDefecto;
+  const n = Number(v);
+  if (!Number.isInteger(n) || n <= 0) {
+    throw new Error(`${nombre} tiene un valor inválido ("${v}"): usá un entero mayor que 0.`);
+  }
+  return n;
 }
 
 function zonaHoraria(valor: string | undefined): string {
@@ -174,6 +188,11 @@ export function leerConfiguracion(
     horaCierreSabado,
     diasCerrados: diasCerrados(entorno.DIAS_CERRADOS),
     zonaHoraria: zonaHoraria(entorno.ZONA_HORARIA_CLUB),
+    cancelacionMinutosMinimos: entero(
+      'CANCELACION_MINUTOS_MINIMOS',
+      entorno.CANCELACION_MINUTOS_MINIMOS,
+      CANCELACION_MINUTOS_MINIMOS_POR_DEFECTO,
+    ),
     mailFrom: mail('MAIL_FROM', entorno.MAIL_FROM, MAIL_FROM_POR_DEFECTO),
     mailContacto: mail('MAIL_CONTACTO', entorno.MAIL_CONTACTO, MAIL_CONTACTO_POR_DEFECTO),
     resendApiKey: enProduccion

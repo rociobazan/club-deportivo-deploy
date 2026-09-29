@@ -16,6 +16,7 @@ describe('leerConfiguracion', () => {
       mailFrom: 'turnos@clubdeploy.com.ar',
       mailContacto: 'hola@clubdeploy.com.ar',
       resendApiKey: undefined,
+      cancelacionMinutosMinimos: 120,
     });
   });
 
@@ -160,6 +161,20 @@ describe('leerConfiguracion', () => {
     expect(leerConfiguracion({ ...completo, RESEND_API_KEY: 're_algo' }).resendApiKey).toBe(
       're_algo',
     );
+  });
+
+  it('toma CANCELACION_MINUTOS_MINIMOS del entorno', () => {
+    expect(
+      leerConfiguracion({ ...completo, CANCELACION_MINUTOS_MINIMOS: '60' }),
+    ).toMatchObject({ cancelacionMinutosMinimos: 60 });
+  });
+
+  it('corta el arranque si CANCELACION_MINUTOS_MINIMOS no es un entero positivo', () => {
+    for (const valor of ['0', '-5', 'dos horas', '1.5']) {
+      expect(() =>
+        leerConfiguracion({ ...completo, CANCELACION_MINUTOS_MINIMOS: valor }),
+      ).toThrow('CANCELACION_MINUTOS_MINIMOS');
+    }
   });
 
   it('en producción exige RESEND_API_KEY', () => {
