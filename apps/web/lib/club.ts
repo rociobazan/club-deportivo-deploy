@@ -24,6 +24,11 @@ export const DIAS_CERRADOS: readonly number[] = (process.env.DIAS_CERRADOS ?? "0
 
 export const SABADO = 6;
 
+/** Anticipación mínima para cancelar una reserva (RN-04), mismo default que la API. */
+const cancelacionEnv = Number(process.env.CANCELACION_MINUTOS_MINIMOS?.trim());
+export const CANCELACION_MINUTOS_MINIMOS =
+  Number.isInteger(cancelacionEnv) && cancelacionEnv > 0 ? cancelacionEnv : 120;
+
 /** La ventana de atención de un día, o `null` si ese día el club no abre. */
 export type VentanaDelDia = { apertura: string; cierre: string } | null;
 
@@ -110,6 +115,18 @@ export function fechaLegible(fecha: string): string {
     day: "numeric",
     month: "long",
   }).format(new Date(Date.UTC(anio, mes - 1, dia)));
+}
+
+/**
+ * Minutos entre `ahora` y el inicio de un turno; negativo si ya empezó. Copia
+ * consciente del cálculo de `apps/api/src/reservas/reservas.service.ts`, para
+ * decidir en la pantalla si todavía se puede cancelar (RN-04) sin esperar la
+ * respuesta de la API. La API es la fuente de verdad: esto es solo para no
+ * mostrar un botón que sabemos que va a rechazar.
+ */
+export function minutosHastaElTurno(fecha: string, horaInicio: string, ahora: Momento): number {
+  const comoInstante = (f: string, h: string) => new Date(`${f}T${h}:00.000Z`).getTime();
+  return Math.round((comoInstante(fecha, horaInicio) - comoInstante(ahora.fecha, ahora.hora)) / 60_000);
 }
 
 export const precioLegible = (monto: number) =>

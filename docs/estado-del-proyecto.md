@@ -61,7 +61,7 @@ pantalla en Next que la consume.
 | 1.1b | Login con Google | — | — | ⛔ **descartado el 27/09**: el equipo decidió no hacerlo ([ADR 0001](adr/0001-login-con-google.md), marcada como descartada) |
 | 1.2 | Catálogo y disponibilidad | RF-01 a RF-03 | **Jeremías** | ✅ en `main` (PR #25, 28/09) |
 | 1.3 | Crear reserva | RF-04 | **sin asignar (C)** | ❌ sus dos dependencias (1.1 y 1.2) ya están en `main`: puede arrancar |
-| 1.4 | Mis reservas, cancelación y mails | RF-05 a RF-08 | **Rocío** | ❌ rama abierta, sin propuesta de spec todavía |
+| 1.4 | Mis reservas, cancelación y mails | RF-05 a RF-08 | **Rocío** | 🟡 implementado en `feature/spec-reservas-notificaciones` (29/09), esperando PR y revisión |
 | 1.5 | Sitio institucional y contacto | RF-09, RF-10 | **Jeremías** | ✅ en `main` (PR #26, 28/09) |
 | 1.6 | Administración | RF-11 a RF-14 | **sin asignar (C + D)** | ❌ puede arrancar |
 | 1.7 | README | — | Jeremías | ✅ hecho el 27/09: la captura de la protección se reemplazó por una tabla con el estado real del ruleset, leída de la API de GitHub y reproducible con un comando |
@@ -84,6 +84,12 @@ Dos cosas a tener en cuenta al repartir:
 Jeremías se mergeó con las bases apiladas puestas y cuatro PRs terminaron adentro de su rama
 base en vez de en `main`; hubo que rehacerlos como #25 a #28. La nota "retargetear antes de
 mergear" en el cuerpo del PR no alcanza, porque quien la tiene que ejecutar es quien mergea.
+
+**1.4 quedó implementado el 29/09** (módulos `reservas` y `notificaciones`, pantalla
+`/mis-reservas`), con 24 unitarios de `ReservasService` y 30 e2e propios en verde, más lint y
+build de `web` en verde. Falta abrir el PR contra `main` y conseguir la aprobación; los números
+de la sección 1 y 4 de este documento siguen describiendo lo que hay en `main` hoy, y se
+actualizan cuando el PR entre.
 
 ---
 
