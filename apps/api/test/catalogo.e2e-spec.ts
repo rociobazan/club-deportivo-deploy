@@ -35,7 +35,16 @@ describe('catalogo (e2e)', () => {
   let contador = 0;
 
   async function limpiar() {
-    await prisma.reserva.deleteMany({ where: { codigo: { startsWith: 'E2E-' } } });
+    // Las propias, con código E2E-, y las que dejó cualquier otra suite para un
+    // usuario de este dominio: si quedan, el borrado de usuarios viola la FK.
+    await prisma.reserva.deleteMany({
+      where: {
+        OR: [
+          { codigo: { startsWith: 'E2E-' } },
+          { usuario: { email: { endsWith: '@e2e.test' } } },
+        ],
+      },
+    });
     await prisma.equipamiento.deleteMany({ where: { nombre: { startsWith: 'e2e ' } } });
     await prisma.cancha.deleteMany({ where: { nombre: { startsWith: 'e2e ' } } });
     await prisma.disciplina.deleteMany({ where: { nombre: { startsWith: 'e2e ' } } });
