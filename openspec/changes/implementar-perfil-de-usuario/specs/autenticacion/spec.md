@@ -19,7 +19,7 @@ El titular de una cuenta MUST poder modificar su nombre, su apellido, su teléfo
 
 #### Scenario: Mail ya usado por otra cuenta
 - **WHEN** un socio envía un mail que ya pertenece a otra cuenta
-- **THEN** se devuelve 409 con `tipo` `MAIL_YA_REGISTRADO` y ningún dato cambia
+- **THEN** se devuelve 409 con `tipo` `EMAIL_YA_REGISTRADO` y ningún dato cambia
 
 #### Scenario: Intento de cambiar el rol o el estado de la cuenta
 - **WHEN** la solicitud incluye `rol` o `activo`

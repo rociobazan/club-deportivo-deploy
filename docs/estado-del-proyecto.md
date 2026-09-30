@@ -23,8 +23,8 @@ cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla.
 |---|---|
 | Ítems del reparto cerrados | **8 de 11**: todo el hito 0, más 1.1, 1.2, 1.5 y 1.7 |
 | Requisitos funcionales implementados | **7 de 15**: RF-00, RF-01, RF-02, RF-03, RF-07, RF-09 y RF-10 |
-| Operaciones del contrato con endpoint | **8 de 18** |
-| Pantallas de producto | **7**: inicio, El club, contacto, canchas, disponibilidad, ingreso y registro |
+| Operaciones del contrato con endpoint | **10 de 20**: el contrato crecio con `PATCH /auth/perfil` y `PUT /auth/password` |
+| Pantallas de producto | **8**: inicio, El club, contacto, canchas, disponibilidad, ingreso, registro y mi perfil |
 | Protección de `main` | ✅ **activa**: 1 aprobación y los tres checks |
 
 **El producto arrancó.** Un visitante ya puede entrar al sitio, ver el club y los precios,
@@ -114,6 +114,7 @@ Siete pantallas de producto y la base que usan todas:
 | Inicio, El club y Contacto | Formulario de reserva |
 | Canchas y precios, y Disponibilidad | Mis reservas y detalle |
 | Registro e ingreso, con sesión en cookie | Pantallas de administración |
+| Mi perfil: datos y cambio de contraseña | |
 | Identidad visual y tokens (`globals.css`) | |
 | Primitivas: `Button`, `Card`, `Input`, `Textarea`, `Badge` | |
 | Header con menú de mobile y menús por rol | |

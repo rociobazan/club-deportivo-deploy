@@ -19,5 +19,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/mis-reservas", "/reservar", "/admin/:path*"],
+  matcher: ["/mis-reservas", "/perfil", "/reservar", "/admin/:path*"],
 };

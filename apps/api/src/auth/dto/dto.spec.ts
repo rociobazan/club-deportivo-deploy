@@ -1,5 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { crearPipeDeValidacion } from '../../common/validacion';
+import { ActualizarPerfilDto } from './actualizar-perfil.dto';
+import { CambiarPasswordDto } from './cambiar-password.dto';
 import { LoginDto } from './login.dto';
 import { RegistroDto } from './registro.dto';
 
@@ -68,5 +70,65 @@ describe('LoginDto', () => {
     ]) {
       await expect(validar(LoginDto, caso)).rejects.toBeInstanceOf(BadRequestException);
     }
+  });
+});
+
+describe('ActualizarPerfilDto', () => {
+  it('acepta un cambio parcial de un solo campo', async () => {
+    await expect(
+      validar(ActualizarPerfilDto, { telefono: '351 000 0000' }),
+    ).resolves.toBeInstanceOf(ActualizarPerfilDto);
+  });
+
+  it('acepta telefono nulo, que es como se borra', async () => {
+    await expect(validar(ActualizarPerfilDto, { telefono: null })).resolves.toBeInstanceOf(
+      ActualizarPerfilDto,
+    );
+  });
+
+  it('Intento de cambiar el rol o el estado de la cuenta: 400 por el pipe', async () => {
+    for (const caso of [
+      { nombre: 'Ana', rol: 'ADMIN' },
+      { nombre: 'Ana', activo: false },
+      { nombre: 'Ana', password: 'otraClave123' },
+    ]) {
+      await expect(validar(ActualizarPerfilDto, caso)).rejects.toBeInstanceOf(BadRequestException);
+    }
+  });
+
+  it('rechaza un mail mal formado o un nombre vacío', async () => {
+    for (const caso of [{ email: 'no-es-un-mail' }, { nombre: '' }]) {
+      await expect(validar(ActualizarPerfilDto, caso)).rejects.toBeInstanceOf(BadRequestException);
+    }
+  });
+
+  /*
+   * El cuerpo vacío pasa el pipe a propósito y lo rechaza el servicio: con
+   * todos los campos opcionales, `@IsOptional()` corta la validación de cada
+   * propiedad y no queda dónde colgar la regla. El 400 igual llega, y su test
+   * está en `auth.service.spec.ts`.
+   */
+  it('un cuerpo vacío pasa el pipe: lo rechaza el servicio', async () => {
+    await expect(validar(ActualizarPerfilDto, {})).resolves.toBeInstanceOf(ActualizarPerfilDto);
+  });
+});
+
+describe('CambiarPasswordDto', () => {
+  it('acepta la actual y una nueva de al menos 8 caracteres', async () => {
+    await expect(
+      validar(CambiarPasswordDto, { actual: 'clave1234', nueva: 'claveNueva9' }),
+    ).resolves.toBeInstanceOf(CambiarPasswordDto);
+  });
+
+  it('Contraseña nueva demasiado corta: 400', async () => {
+    await expect(
+      validar(CambiarPasswordDto, { actual: 'clave1234', nueva: '1234567' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rechaza si falta la actual', async () => {
+    await expect(validar(CambiarPasswordDto, { nueva: 'claveNueva9' })).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
   });
 });

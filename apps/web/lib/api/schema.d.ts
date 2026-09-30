@@ -55,6 +55,34 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
+        /**
+         * Modificar los datos del usuario autenticado
+         * @description El usuario afectado es siempre el del token: no hay forma de pedir el
+         *     perfil de otra persona. Actualización parcial, con al menos un campo.
+         *     El rol y el estado de alta no se modifican acá.
+         */
+        patch: operations["actualizarPerfil"];
+        trace?: never;
+    };
+    "/auth/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Cambiar la contraseña del usuario autenticado
+         * @description Exige la contraseña actual. Las sesiones ya emitidas siguen siendo
+         *     válidas hasta que vencen: el token es autocontenido y no hay forma de
+         *     revocarlo.
+         */
+        put: operations["cambiarPassword"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
         patch?: never;
         trace?: never;
     };
@@ -403,6 +431,41 @@ export interface components {
             password: string;
             /** @example +5493541000000 */
             telefono?: string;
+        };
+        /**
+         * @description Todos los campos son opcionales, pero el cuerpo MUST traer al menos uno:
+         *     una solicitud vacía se rechaza con 400 en lugar de responder como si
+         *     hubiera guardado algo.
+         */
+        ActualizarPerfilRequest: {
+            /** @example Jeremías */
+            nombre?: string;
+            /** @example Gómez */
+            apellido?: string;
+            /**
+             * Format: email
+             * @description Con esto se inicia sesión a partir del cambio.
+             * @example socio@club.com
+             */
+            email?: string;
+            /**
+             * @description Se envía `null` para borrarlo.
+             * @example +5493541000000
+             */
+            telefono?: string | null;
+        };
+        CambiarPasswordRequest: {
+            /**
+             * Format: password
+             * @description La contraseña vigente. Si no coincide, 401.
+             * @example unaClaveSegura123
+             */
+            actual: string;
+            /**
+             * Format: password
+             * @example otraClaveSegura456
+             */
+            nueva: string;
         };
         LoginRequest: {
             /**
@@ -1026,6 +1089,73 @@ export interface operations {
                 };
             };
             401: components["responses"]["NoAutenticado"];
+        };
+    };
+    actualizarPerfil: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActualizarPerfilRequest"];
+            };
+        };
+        responses: {
+            /** @description Perfil actualizado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Usuario"];
+                };
+            };
+            400: components["responses"]["SolicitudInvalida"];
+            401: components["responses"]["NoAutenticado"];
+            /** @description Ya existe otro usuario con ese mail */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    cambiarPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CambiarPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Contraseña cambiada */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["SolicitudInvalida"];
+            /** @description La contraseña actual no coincide, o falta el token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     listarDisciplinas: {
