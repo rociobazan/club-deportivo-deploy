@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 jobs:
-  # Los ids `specs`, `api` y `web` son los checks obligatorios de la protección
+  # Los ids `specs`, `api`, `web` y `e2e` son los checks obligatorios de la protección
   # de main: si se renombran, hay que actualizar la regla.
   specs:
     name: specs
