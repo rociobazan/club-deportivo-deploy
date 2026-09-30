@@ -21,17 +21,17 @@ cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla.
 
 | Medida | Estado |
 |---|---|
-| Ítems del reparto cerrados | **8 de 12**: todo el hito 0, más 1.1, 1.2, 1.5 y 1.7 |
-| Requisitos funcionales implementados | **8 de 16**: RF-00, RF-01, RF-02, RF-03, RF-07, RF-09, RF-10 y RF-15 |
-| Operaciones del contrato con endpoint | **10 de 20**: el contrato crecio con `PATCH /auth/perfil` y `PUT /auth/password` |
-| Pantallas de producto | **8**: inicio, El club, contacto, canchas, disponibilidad, ingreso, registro y mi perfil |
+| Ítems del reparto cerrados | **9 de 12**: todo el hito 0, más 1.1, 1.2, 1.4, 1.5 y 1.7 |
+| Requisitos funcionales implementados | **11 de 16**: RF-00 a RF-03, RF-05 a RF-10 y RF-15 |
+| Operaciones del contrato con endpoint | **14 de 20**: el contrato creció con `PATCH /auth/perfil` y `PUT /auth/password` |
+| Pantallas de producto | **10**: inicio, El club, contacto, canchas, disponibilidad, ingreso, registro, mis reservas con su detalle, y mi perfil |
 | Protección de `main` | ✅ **activa**: 1 aprobación y los tres checks |
 
 **El producto arrancó.** Un visitante ya puede entrar al sitio, ver el club y los precios,
 consultar qué turnos hay libres, escribir por el formulario de contacto, registrarse e iniciar
-sesión. Lo que todavía no puede es **reservar**: eso es 1.3, que tiene la propuesta aprobada y la
-implementación sin empezar. Con 1.4 —implementada y en revisión en el PR #32— y 1.6 son los tres
-ítems que faltan.
+sesión, ver sus reservas y cancelarlas. Lo que todavía no puede es **crear** una reserva: eso es
+1.3, que tiene la propuesta aprobada y la implementación sin empezar. Con 1.6 son los dos ítems
+que faltan.
 
 La infraestructura estaba lista desde el hito 0 —contrato, specs, base de datos, CI, tests,
 README y la base del front—, que era la condición para trabajar en paralelo.
@@ -62,11 +62,11 @@ pantalla en Next que la consume.
 | 1.1b | Login con Google | — | — | ⛔ **descartado el 27/09**: el equipo decidió no hacerlo ([ADR 0001](adr/0001-login-con-google.md), marcada como descartada) |
 | 1.2 | Catálogo y disponibilidad | RF-01 a RF-03 | **Jeremías** | ✅ en `main` (PR #25, 28/09) |
 | 1.3 | Crear reserva | RF-04 | **Adrián** | 🟡 propuesta de OpenSpec en `main` (PR #31, 30/09); **las 30 tareas sin empezar** |
-| 1.4 | Mis reservas, cancelación y mails | RF-05 a RF-08 | **Rocío** | 🟡 implementada, en revisión (PR #32) |
+| 1.4 | Mis reservas, cancelación y mails | RF-05 a RF-08 | **Rocío** | ✅ en `main` (PR #32, 30/09) |
 | 1.5 | Sitio institucional y contacto | RF-09, RF-10 | **Jeremías** | ✅ en `main` (PR #26, 28/09) |
 | 1.6 | Administración | RF-11 a RF-14 | **Renzo** | ❌ sin propuesta todavía: puede arrancar |
 | 1.7 | README | — | Jeremías | ✅ hecho el 27/09: la captura de la protección se reemplazó por una tabla con el estado real del ruleset, leída de la API de GitHub y reproducible con un comando |
-| 1.8 | Mi perfil: datos de la cuenta | RF-15 | Jeremías | 🟡 implementada, en revisión (PR #34) |
+| 1.8 | Mi perfil: datos de la cuenta | RF-15 | Jeremías | 🟡 implementada y **aprobada**, en el PR #34 |
 
 ### El reparto, ya cerrado
 
@@ -77,16 +77,22 @@ Dos cosas a tener en cuenta:
 
 - **Ya no hay camino crítico.** 1.1 lo era, porque 1.3 y 1.4 dependen de los guards; está en
   `main`, así que nadie necesita mockear el token.
-- **1.3 y 1.4 comparten el módulo `reservas`, y conviene que 1.4 entre primero.** El PR #32 ya
-  crea `reservas.service.ts`, `reservas.controller.ts`, `reservas.module.ts`, `mapeadores.ts` y
-  `dto/dto.spec.ts`, que son cinco de los archivos que el `tasks.md` de 1.3 manda **crear**. Si
-  #32 entra antes, 1.3 les agrega su método y su ruta en vez de crearlos, y el conflicto pasa de
-  cinco archivos enteros a unas líneas. Al revés obligaría a rehacer un PR ya terminado.
+- **1.3 arranca sobre un módulo `reservas` que ya existe.** El #32 entró el 30/09 y trajo
+  `reservas.service.ts`, `reservas.controller.ts`, `reservas.module.ts`, `mapeadores.ts` y
+  `dto/dto.spec.ts`, que son cinco de los archivos que el `tasks.md` de 1.3 manda **crear**.
+  **Adrián tiene que ajustar esas cinco tareas antes de empezar**: ahora son "agregar a", no
+  "crear". Salió bien de casualidad y por el orden de merge, no porque estuviera planificado.
 
 **Al abrir un PR apilado, ponele `main` de base, no la rama de abajo.** El 28/09 la pila de
 Jeremías se mergeó con las bases apiladas puestas y cuatro PRs terminaron adentro de su rama
 base en vez de en `main`; hubo que rehacerlos como #25 a #28. La nota "retargetear antes de
 mergear" en el cuerpo del PR no alcanza, porque quien la tiene que ejecutar es quien mergea.
+
+**1.4 quedó implementado el 29/09** (módulos `reservas` y `notificaciones`, pantalla
+`/mis-reservas`), con 24 unitarios de `ReservasService` y 30 e2e propios en verde, más lint y
+build de `web` en verde. Falta abrir el PR contra `main` y conseguir la aprobación; los números
+de la sección 1 y 4 de este documento siguen describiendo lo que hay en `main` hoy, y se
+actualizan cuando el PR entre.
 
 ---
 
@@ -94,7 +100,8 @@ mergear" en el cuerpo del PR no alcanza, porque quien la tiene que ejecutar es q
 
 ### API (`apps/api`)
 
-Cuatro módulos de negocio: `auth`, `catalogo`, `disponibilidad` y `contacto`, más la base
+Seis módulos de negocio: `auth`, `catalogo`, `disponibilidad`, `contacto`, `reservas` y
+`notificaciones`, más la base
 transversal que las features nuevas reutilizan sin volver a decidir nada:
 
 - **`common/`**: guards globales con `@Publico()`, `@Roles()` y `@UsuarioActual()`, `ErrorDeApi`
@@ -102,21 +109,23 @@ transversal que las features nuevas reutilizan sin volver a decidir nada:
   (todo lo que compara contra el presente pasa por ahí) y el cliente de mail `Correo`.
 - Esquema completo en `prisma/schema.prisma`, con las siete tablas, y migraciones aplicadas.
 - Seed idempotente con disciplinas, canchas, equipamiento y usuarios de prueba.
-- Tests en verde (Node 24 con `--experimental-vm-modules`): 158 unitarios y 80 e2e en serie.
+- Tests en verde (Node 24 con `--experimental-vm-modules`): 218 unitarios y 111 e2e en serie.
 
-**10 de 20 operaciones del contrato tienen endpoint**: las cinco de `auth` (registro, login, ver
-el perfil, editarlo y cambiar la contraseña), las de catálogo y disponibilidad, y `POST /contacto`.
-Faltan las de reservas (1.3 y 1.4) y las de administración (1.6).
+**14 de 20 operaciones del contrato tienen endpoint**: las cinco de `auth` (registro, login, ver
+el perfil, editarlo y cambiar la contraseña), las de catálogo y disponibilidad, `POST /contacto` y
+las cuatro que trajo 1.4 (listar reservas, ver una, cancelarla y reenviar el mail). **Faltan
+seis**: `POST /reservas`, que es 1.3, y las cinco de administración (1.6).
 
 ### Front (`apps/web`)
 
-Ocho pantallas de producto y la base que usan todas:
+Diez pantallas de producto y la base que usan todas:
 
 | Hay | No hay |
 |---|---|
 | Inicio, El club y Contacto | Formulario de reserva |
-| Canchas y precios, y Disponibilidad | Mis reservas y detalle |
-| Registro e ingreso, con sesión en cookie | Pantallas de administración |
+| Canchas y precios, y Disponibilidad | Pantallas de administración |
+| Registro e ingreso, con sesión en cookie | |
+| Mis reservas y su detalle, con cancelación | |
 | Mi perfil: datos y cambio de contraseña | |
 | Identidad visual y tokens (`globals.css`) | |
 | Primitivas: `Button`, `Card`, `Input`, `Textarea`, `Badge` | |
@@ -133,8 +142,11 @@ La home dejó de ser la plantilla por defecto de Next en el PR de 1.5.
 `openspec/specs/` tiene las siete capacidades vigentes: `administracion`, `autenticacion`,
 `catalogo`, `disponibilidad`, `institucional`, `notificaciones` y `reservas`.
 
-**Hay un cambio en curso en `openspec/changes/`:** `implementar-creacion-de-reserva`, la propuesta
-de 1.3 que Adrián mergeó el 30/09 en el PR #31 y que todavía no tiene ninguna tarea hecha.
+**Hay dos cambios en curso en `openspec/changes/`:** `implementar-creacion-de-reserva`, la propuesta
+de 1.3 que Adrián mergeó el 30/09 en el PR #31 y que todavía no tiene ninguna tarea hecha, y
+`implementar-reservas-notificaciones`, el de 1.4, que **ya está implementado y falta archivar**:
+hasta que no se corra `/opsx:archive` desde `main`, sus deltas no pasan a `openspec/specs/` y las
+specs dejan de describir lo que la API hace.
 
 Los tres de Jeremías se archivaron el 28/09
 —`implementar-autenticacion` (1.1), `implementar-catalogo-y-disponibilidad` (1.2) e
@@ -207,9 +219,9 @@ Cuenta para la evaluación: la lista de *Contributors* es parte de lo que se mir
 
 | Persona | Commits en `main` | PRs mergeados |
 |---|---|---|
-| Jeremías | 81 | 28 |
+| Jeremías | 84 | 29 |
 | Adrián | 18 | 3 |
-| Rocío | 2 | 0 |
+| Rocío | 6 | 1 |
 | Renzo | **0** | **0** |
 
 Dos cosas que conviene mirar de frente:
@@ -230,12 +242,14 @@ Dos cosas que conviene mirar de frente:
 
 ## 7. Qué falta, por quién lo destraba
 
-### Lo más urgente: tres PRs esperando una aprobación
+### Lo que quedó abierto
 
-1. **#32** (1.4, Rocío), **#33** (exposiciones del repo público) y **#34** (RF-15). Los tres con
-   el CI entero en verde y las tres ramas al día con `main`: lo único que los separa del merge es
-   la aprobación. **Ninguno tiene *reviewer* pedido en GitHub** —avisar por el grupo no crea la
-   solicitud— y nadie puede aprobar su propio PR.
+1. **Archivar `implementar-reservas-notificaciones`** con `/opsx:archive` desde `main`. El #32 ya
+   entró, así que el cambio está implementado pero sus deltas siguen sin pasar a `openspec/specs/`.
+   Es de Rocío, y cuanto antes se haga menos chance hay de que se olvide.
+1. **1.4 entró sin un solo test de navegador.** La suite de Playwright sigue en 20, los mismos de
+   antes del #32: `/mis-reservas` y su detalle no tienen cobertura e2e. Conviene sumarlos antes de
+   que `e2e` pase a ser check obligatorio.
 
 ### Cada quien con su ítem
 

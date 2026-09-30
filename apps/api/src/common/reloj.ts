@@ -39,4 +39,14 @@ export class Reloj {
       hora: `${partes.hour}:${partes.minute}`,
     };
   }
+
+  /**
+   * El instante real, para ventanas de tiempo que no son de calendario (por
+   * ejemplo "los últimos 60 minutos" de RN-16): `ahora()` pierde los segundos
+   * y no sirve para eso. Un método propio, y no `new Date()` suelto, para que
+   * los tests puedan fijarlo reemplazando este provider como con `ahora()`.
+   */
+  instante(): Date {
+    return new Date();
+  }
 }
