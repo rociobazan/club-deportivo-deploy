@@ -31,6 +31,8 @@ export type Configuracion = {
   diasCerrados: readonly number[];
   /** Zona IANA en la que se evalúan "hoy" y "ahora" (design archivado, decisión 5). */
   zonaHoraria: string;
+  /** Minutos mínimos de anticipación para que un SOCIO cancele su reserva (RN-04). Un ADMIN no está sujeto a este límite. */
+  cancelacionMinutosMinimos: number;
   /** Remitente de todos los mails que manda el sistema. */
   mailFrom: string;
   /** Casilla del club que recibe los mensajes del formulario de contacto. */
@@ -41,12 +43,6 @@ export type Configuracion = {
   maxReservasActivasSocio: number;
   /** Prefijo del código de reserva: `<prefijo>-XXXXXX`. Máximo 5 letras, porque la columna es VarChar(12). */
   prefijoCodigoReserva: string;
-  /**
-   * Anticipación mínima con la que un SOCIO puede cancelar (RN-04). La lee el
-   * ítem 1.4, que implementa la cancelación; acá se valida y se expone para que
-   * no tenga que volver a tocar este archivo.
-   */
-  cancelacionMinutosMinimos: number;
   /**
    * Clave de Resend. Sin ella el cliente de mail es un doble, así cualquiera
    * puede levantar la API sin pedir una clave (design.md, decisión 1). En
@@ -243,7 +239,9 @@ export function leerConfiguracion(
       'CANCELACION_MINUTOS_MINIMOS',
       entorno.CANCELACION_MINUTOS_MINIMOS,
       CANCELACION_MINUTOS_MINIMOS_POR_DEFECTO,
-      0,
+      // Mínimo 1 y no 0: un plazo de cero significaría poder cancelar en el
+      // segundo en que arranca el turno, que es quedarse sin regla (RN-04).
+      1,
     ),
     resendApiKey: enProduccion
       ? obligatoria('RESEND_API_KEY')

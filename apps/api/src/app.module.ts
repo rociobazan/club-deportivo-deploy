@@ -7,6 +7,8 @@ import { AuthModule } from './auth/auth.module';
 import { CatalogoModule } from './catalogo/catalogo.module';
 import { ContactoModule } from './contacto/contacto.module';
 import { DisponibilidadModule } from './disponibilidad/disponibilidad.module';
+import { NotificacionesModule } from './notificaciones/notificaciones.module';
+import { ReservasModule } from './reservas/reservas.module';
 import { CorreoModule } from './common/correo/correo.module';
 import { FiltroDeErrores } from './common/filtro-de-errores';
 import { JwtAuthGuard } from './common/jwt-auth.guard';
@@ -15,7 +17,6 @@ import { crearPipeDeValidacion } from './common/validacion';
 import { CONFIGURACION, Configuracion } from './configuracion';
 import { ConfiguracionModule } from './configuracion.module';
 import { PrismaModule } from './prisma/prisma.module';
-import { ReservasModule } from './reservas/reservas.module';
 
 @Module({
   imports: [
@@ -25,8 +26,9 @@ import { ReservasModule } from './reservas/reservas.module';
     CatalogoModule,
     ContactoModule,
     DisponibilidadModule,
-    PrismaModule,
+    NotificacionesModule,
     ReservasModule,
+    PrismaModule,
     // Global para que el guard de JWT, que también es global, pueda inyectar JwtService.
     JwtModule.registerAsync({
       global: true,

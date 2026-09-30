@@ -219,4 +219,136 @@ describe('autenticacion (e2e)', () => {
         .expect(401);
     });
   });
+  describe('Datos de la cuenta modificables por su titular', () => {
+    /** Registra, ingresa y devuelve el token de una cuenta recién creada. */
+    const sesionNueva = async (datos: object = registro) => {
+      await registrar(datos).expect(201);
+      const credenciales = datos as { email: string; password: string };
+      const { body } = await ingresar(credenciales.email, credenciales.password).expect(200);
+      return body.accessToken as string;
+    };
+
+    const actualizar = (token: string, cambios: object) =>
+      api().patch('/api/v1/auth/perfil').set('Authorization', `Bearer ${token}`).send(cambios);
+
+    const cambiarPassword = (token: string, datos: object) =>
+      api().put('/api/v1/auth/password').set('Authorization', `Bearer ${token}`).send(datos);
+
+    it('Cambio de datos de contacto: 200 con el perfil actualizado', async () => {
+      const token = await sesionNueva();
+
+      const { body } = await actualizar(token, {
+        apellido: 'Corregida',
+        telefono: '351 000 0000',
+      }).expect(200);
+
+      expect(body).toMatchObject({ apellido: 'Corregida', telefono: '351 000 0000' });
+      expect(body).not.toHaveProperty('passwordHash');
+    });
+
+    it('Cambio de mail: 200 y a partir de ahí ingresa con el mail nuevo', async () => {
+      const token = await sesionNueva();
+      const nuevo = `ana-nueva${DOMINIO}`;
+
+      await actualizar(token, { email: nuevo }).expect(200);
+
+      await ingresar(nuevo, registro.password).expect(200);
+      await ingresar(registro.email, registro.password).expect(401);
+    });
+
+    /*
+     * Sostiene la decisión de no reemitir el token: lleva el id y el rol, no el
+     * mail, así que la sesión no se rompe. Si algún día se metiera el mail en el
+     * payload, este test lo detecta.
+     */
+    it('La sesión sobrevive al cambio de mail: el mismo token sigue sirviendo', async () => {
+      const token = await sesionNueva();
+
+      await actualizar(token, { email: `otra-direccion${DOMINIO}` }).expect(200);
+
+      const { body } = await api()
+        .get('/api/v1/auth/perfil')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      expect(body.email).toBe(`otra-direccion${DOMINIO}`);
+    });
+
+    it('Mail ya usado por otra cuenta: 409 EMAIL_YA_REGISTRADO y ningún dato cambia', async () => {
+      const ocupado = `ocupado${DOMINIO}`;
+      await registrar({ ...registro, email: ocupado }).expect(201);
+      const token = await sesionNueva();
+
+      const { body } = await actualizar(token, { email: ocupado }).expect(409);
+
+      expect(body).toMatchObject({ tipo: 'EMAIL_YA_REGISTRADO', estado: 409 });
+      const { body: perfil } = await api()
+        .get('/api/v1/auth/perfil')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      expect(perfil.email).toBe(registro.email);
+    });
+
+    it('Intento de cambiar el rol o el estado de la cuenta: 400 y sigue siendo SOCIO', async () => {
+      const token = await sesionNueva();
+
+      await actualizar(token, { rol: 'ADMIN' }).expect(400);
+      await actualizar(token, { activo: false }).expect(400);
+
+      const { body: perfil } = await api()
+        .get('/api/v1/auth/perfil')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      expect(perfil.rol).toBe('SOCIO');
+    });
+
+    it('Solicitud sin ningún campo: 400 SOLICITUD_INVALIDA', async () => {
+      const token = await sesionNueva();
+
+      const { body } = await actualizar(token, {}).expect(400);
+
+      expect(body).toMatchObject({ tipo: 'SOLICITUD_INVALIDA', estado: 400 });
+    });
+
+    /*
+     * Las dos mitades: que la vieja deje de servir y que la nueva sirva.
+     * Comprobar solo el 204 dejaría pasar una implementación que no persiste.
+     */
+    it('Cambio de contraseña: 204, la anterior deja de servir y la nueva sirve', async () => {
+      const token = await sesionNueva();
+      const nueva = 'otraClaveSegura456';
+
+      await cambiarPassword(token, { actual: registro.password, nueva }).expect(204);
+
+      await ingresar(registro.email, registro.password).expect(401);
+      await ingresar(registro.email, nueva).expect(200);
+    });
+
+    it('Contraseña actual incorrecta: 401 y la contraseña no cambia', async () => {
+      const token = await sesionNueva();
+
+      const { body } = await cambiarPassword(token, {
+        actual: 'la-que-no-es',
+        nueva: 'otraClaveSegura456',
+      }).expect(401);
+
+      expect(body).toMatchObject({ tipo: 'CREDENCIALES_INVALIDAS', estado: 401 });
+      await ingresar(registro.email, registro.password).expect(200);
+    });
+
+    it('Contraseña nueva demasiado corta: 400 y la contraseña no cambia', async () => {
+      const token = await sesionNueva();
+
+      await cambiarPassword(token, { actual: registro.password, nueva: '1234567' }).expect(400);
+
+      await ingresar(registro.email, registro.password).expect(200);
+    });
+
+    it('Sin sesión: las dos operaciones responden 401', async () => {
+      await api().patch('/api/v1/auth/perfil').send({ nombre: 'Ana' }).expect(401);
+      await api()
+        .put('/api/v1/auth/password')
+        .send({ actual: 'clave1234', nueva: 'otraClaveSegura456' })
+        .expect(401);
+    });
+  });
 });

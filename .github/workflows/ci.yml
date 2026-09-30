@@ -47,11 +47,16 @@ jobs:
           --health-retries 5
     env:
       DATABASE_URL: postgresql://club:club@localhost:5432/club_reservas_test
-      # Solo para los tests del CI; el valor real vive en apps/api/.env de cada integrante.
-      JWT_SECRET: secreto-solo-para-el-ci
       JWT_EXPIRES_IN: 1h
     steps:
       - uses: actions/checkout@v7
+      # El secreto con el que se firman las sesiones no se escribe acá. El CI
+      # solo necesita *uno válido* para que la app arranque, así que se genera
+      # al azar en cada corrida: un valor literal en un repo público invita a
+      # copiarlo a producción, y ahí cualquiera podría firmarse un token de
+      # ADMIN. Los e2e de la API ni lo usan: fijan el suyo en base.e2e-spec.ts.
+      - name: Generar el JWT_SECRET de esta corrida
+        run: echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
@@ -111,12 +116,15 @@ jobs:
           --health-retries 5
     env:
       DATABASE_URL: postgresql://club:club@localhost:5432/club_reservas_e2e
-      JWT_SECRET: secreto-solo-para-el-ci
       JWT_EXPIRES_IN: 1h
       # El front habla con la API por acá, desde su proceso de servidor.
       API_URL: http://localhost:3000/api/v1
     steps:
       - uses: actions/checkout@v7
+      # Igual que en el job `api`: se genera al azar y no se escribe en el repo.
+      # Acá sí se usa de verdad, porque este job levanta la API con `start:prod`.
+      - name: Generar el JWT_SECRET de esta corrida
+        run: echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc

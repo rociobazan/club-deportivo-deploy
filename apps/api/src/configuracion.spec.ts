@@ -166,6 +166,20 @@ describe('leerConfiguracion', () => {
     );
   });
 
+  it('toma CANCELACION_MINUTOS_MINIMOS del entorno', () => {
+    expect(
+      leerConfiguracion({ ...completo, CANCELACION_MINUTOS_MINIMOS: '60' }),
+    ).toMatchObject({ cancelacionMinutosMinimos: 60 });
+  });
+
+  it('corta el arranque si CANCELACION_MINUTOS_MINIMOS no es un entero positivo', () => {
+    for (const valor of ['0', '-5', 'dos horas', '1.5']) {
+      expect(() =>
+        leerConfiguracion({ ...completo, CANCELACION_MINUTOS_MINIMOS: valor }),
+      ).toThrow('CANCELACION_MINUTOS_MINIMOS');
+    }
+  });
+
   it('en producción exige RESEND_API_KEY', () => {
     const produccion = {
       ...completo,
@@ -184,13 +198,13 @@ describe('leerConfiguracion', () => {
       HORIZONTE_RESERVA_DIAS: '45',
       MAX_RESERVAS_ACTIVAS_SOCIO: '5',
       PREFIJO_CODIGO_RESERVA: 'CUM',
-      CANCELACION_MINUTOS_MINIMOS: '0',
+      CANCELACION_MINUTOS_MINIMOS: '60',
     });
     expect(configuracion).toMatchObject({
       horizonteReservaDias: 45,
       maxReservasActivasSocio: 5,
       prefijoCodigoReserva: 'CUM',
-      cancelacionMinutosMinimos: 0,
+      cancelacionMinutosMinimos: 60,
     });
   });
 
@@ -209,11 +223,11 @@ describe('leerConfiguracion', () => {
     );
   });
 
-  it('acepta cero minutos de anticipación para cancelar, pero no un negativo', () => {
-    expect(leerConfiguracion({ ...completo, CANCELACION_MINUTOS_MINIMOS: '0' })).toMatchObject({
-      cancelacionMinutosMinimos: 0,
+  it('el mínimo de anticipación para cancelar es 1 minuto, no 0', () => {
+    expect(leerConfiguracion({ ...completo, CANCELACION_MINUTOS_MINIMOS: '1' })).toMatchObject({
+      cancelacionMinutosMinimos: 1,
     });
-    expect(() => leerConfiguracion({ ...completo, CANCELACION_MINUTOS_MINIMOS: '-1' })).toThrow(
+    expect(() => leerConfiguracion({ ...completo, CANCELACION_MINUTOS_MINIMOS: '0' })).toThrow(
       'CANCELACION_MINUTOS_MINIMOS',
     );
   });

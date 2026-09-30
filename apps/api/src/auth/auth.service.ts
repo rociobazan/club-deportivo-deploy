@@ -6,6 +6,8 @@ import { Rol } from '../common/decoradores';
 import { ErrorDeApi } from '../common/error-de-api';
 import { noAutenticado } from '../common/usuario-actual';
 import { PrismaService } from '../prisma/prisma.service';
+import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
+import { CambiarPasswordDto } from './dto/cambiar-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegistroDto } from './dto/registro.dto';
 
@@ -133,5 +135,79 @@ export class AuthService {
     // El token era válido pero el usuario ya no existe: para el cliente es no estar autenticado.
     if (!usuario) throw noAutenticado();
     return usuario;
+  }
+
+  /**
+   * Modifica los datos del usuario del token. El id lo pone el controlador
+   * desde `@UsuarioActual()`: no hay forma de expresar "el perfil de otro".
+   */
+  async actualizarPerfil(id: number, datos: ActualizarPerfilDto): Promise<UsuarioPublico> {
+    /*
+     * Un cuerpo sin ningún campo devuelve 400 y no 200: responder que sí
+     * habiendo guardado nada es un éxito silencioso, y quien lo mandó se va
+     * creyendo que cambió algo.
+     *
+     * Se cuentan los valores distintos de `undefined` y no las claves: la
+     * instancia que arma el pipe trae las cuatro propiedades declaradas, con
+     * `undefined` las que no vinieron, así que `Object.keys` nunca da cero.
+     * `null` sí cuenta como enviado, porque es como se borra el teléfono.
+     */
+    const enviados = Object.values(datos).filter((valor) => valor !== undefined);
+    if (enviados.length === 0) {
+      throw new ErrorDeApi(
+        400,
+        'SOLICITUD_INVALIDA',
+        'No hay nada para cambiar',
+        'Mandá al menos uno de nombre, apellido, email o telefono.',
+      );
+    }
+
+    // Solo lo que vino: `undefined` deja el campo como está, `null` borra el teléfono.
+    const cambios: Prisma.UsuarioUpdateInput = {};
+    if (datos.nombre !== undefined) cambios.nombre = datos.nombre.trim();
+    if (datos.apellido !== undefined) cambios.apellido = datos.apellido.trim();
+    if (datos.email !== undefined) cambios.email = normalizarEmail(datos.email);
+    if (datos.telefono !== undefined) cambios.telefono = datos.telefono?.trim() || null;
+
+    try {
+      return await this.prisma.usuario.update({
+        where: { id },
+        data: cambios,
+        select: SELECCION_PUBLICA,
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        /*
+         * El mail ya es de otra cuenta. Lo decide el índice único de la
+         * columna y no un `findUnique` previo: entre el SELECT y el UPDATE
+         * entra otra solicitud, y la base ya tiene la restricción.
+         */
+        if (error.code === 'P2002') throw emailYaRegistrado();
+        // El token era válido pero el usuario ya no existe, igual que en `perfil`.
+        if (error.code === 'P2025') throw noAutenticado();
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Cambia la contraseña previa verificación de la actual.
+   *
+   * No reemite ni revoca nada: el token es autocontenido, así que las sesiones
+   * abiertas en otros dispositivos siguen valiendo hasta que vencen. Está
+   * declarado en la spec como límite conocido.
+   */
+  async cambiarPassword(id: number, datos: CambiarPasswordDto): Promise<void> {
+    const encontrado = await this.prisma.usuario.findUnique({
+      where: { id },
+      select: { passwordHash: true },
+    });
+    if (!encontrado) throw noAutenticado();
+
+    const coincide = await bcrypt.compare(datos.actual, encontrado.passwordHash);
+    if (!coincide) throw credencialesInvalidas();
+
+    const passwordHash = await bcrypt.hash(datos.nueva, COSTO_BCRYPT);
+    await this.prisma.usuario.update({ where: { id }, data: { passwordHash } });
   }
 }

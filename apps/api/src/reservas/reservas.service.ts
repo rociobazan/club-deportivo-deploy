@@ -1,34 +1,57 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import type { TipoNotificacion } from '@prisma/client';
 import { ErrorDeApi } from '../common/error-de-api';
-import { aFechaDb, comparar, sumarDias } from '../common/fechas';
+import { aFechaDb, comparar, deFechaDb, sumarDias } from '../common/fechas';
 import { Bloque, generarGrilla } from '../common/grilla';
 import { ventanaDelDia } from '../common/horario';
 import { Reloj } from '../common/reloj';
 import type { UsuarioAutenticado } from '../common/usuario-actual';
 import { CONFIGURACION } from '../configuracion';
 import type { Configuracion } from '../configuracion';
+import { NotificacionesService } from '../notificaciones/notificaciones.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { generarCodigo } from './codigo';
+import { CancelarReservaDto } from './dto/cancelar-reserva.dto';
 import { CrearReservaDto, ItemEquipamientoDto } from './dto/crear-reserva.dto';
+import { ListarReservasDto } from './dto/listar-reservas.dto';
 import { COLUMNAS_CODIGO, COLUMNAS_SLOT_ACTIVO, esViolacionDe } from './errores-de-prisma';
-import { aReserva, ReservaPublica } from './mapeadores';
+import { aReserva, ReservaConDetalle, ReservaPublica, turnoTermino } from './mapeadores';
 
 /**
- * Creación de reservas: los ocho requisitos de creación de la spec `reservas`.
+ * El ciclo de vida completo de una reserva: creación (RF-04, ítem 1.3), listado
+ * y detalle (RF-05), cancelación (RF-06) y reenvío del mail (spec
+ * `notificaciones`, ítem 1.4).
  *
- * El orden de las validaciones está fijado en design.md §1 y no es casual,
- * porque decide qué código HTTP gana cuando fallan dos cosas a la vez: primero
- * lo que se contesta sin tocar la base, después lo que depende de una consulta,
- * y al final lo que depende del estado de **otras** reservas, que es lo único
- * que puede cambiar entre que se valida y se escribe.
+ * Las cinco operaciones comparten el `INCLUDE` de abajo y el mismo mapeador, así
+ * que todas devuelven la misma forma de `Reserva`.
  *
- * Esas últimas tres validaciones (RN-07, RN-05 y RN-01) viven adentro de la
- * transacción, después de los locks. Afuera, el lock no protegería nada.
+ * En la creación, el orden de las validaciones está fijado en el design de 1.3
+ * §1 y no es casual, porque decide qué código HTTP gana cuando fallan dos cosas
+ * a la vez: primero lo que se contesta sin tocar la base, después lo que depende
+ * de una consulta, y al final lo que depende del estado de **otras** reservas,
+ * que es lo único que puede cambiar entre que se valida y se escribe. Esas
+ * últimas tres (RN-07, RN-05 y RN-01) viven adentro de la transacción, después
+ * de los locks: afuera, el lock no protegería nada.
  */
+
+/** `ReenvioMailResponse` del contrato. */
+export type ReenvioMailRespuesta = { mensaje: string; tipo: TipoNotificacion; destinatario: string };
+
+const MAXIMO_REENVIOS_POR_HORA = 3;
+const VENTANA_REENVIO_MS = 60 * 60 * 1000;
 
 /** Colisiones de código: con 36^6 combinaciones, tres intentos sobran. */
 const INTENTOS_POR_CODIGO = 3;
+
+const INCLUDE = {
+  usuario: { select: { nombre: true, apellido: true, email: true } },
+  cancha: { include: { disciplina: { select: { nombre: true } } } },
+  equipamiento: { include: { equipamiento: { select: { nombre: true } } } },
+} as const;
+
+const noEncontrada = (id: number) =>
+  new ErrorDeApi(404, 'NO_ENCONTRADO', 'No encontramos lo que pediste', `No existe una reserva con id ${id}.`);
 
 type CanchaDelTurno = Prisma.CanchaGetPayload<{
   include: { disciplina: { select: { id: true; nombre: true; duracionTurnoMin: true } } };
@@ -52,13 +75,6 @@ type DatosDeReserva = {
   montoEquipamiento: Prisma.Decimal;
 };
 
-const INCLUDE_DETALLE = {
-  cancha: { select: { nombre: true } },
-  equipamiento: { include: { equipamiento: { select: { nombre: true } } } },
-} as const;
-
-type ReservaConDetalle = Prisma.ReservaGetPayload<{ include: typeof INCLUDE_DETALLE }>;
-
 @Injectable()
 export class ReservasService {
   private readonly logger = new Logger(ReservasService.name);
@@ -66,8 +82,13 @@ export class ReservasService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly reloj: Reloj,
+    private readonly notificaciones: NotificacionesService,
     @Inject(CONFIGURACION) private readonly configuracion: Configuracion,
   ) {}
+
+  // ---------------------------------------------------------------------------
+  // Creación (RF-04, ítem 1.3)
+  // ---------------------------------------------------------------------------
 
   async crear(dto: CrearReservaDto, usuario: UsuarioAutenticado): Promise<ReservaPublica> {
     // Pasos 2 a 5: nada de esto depende de otras reservas, así que va afuera de
@@ -79,7 +100,7 @@ export class ReservasService {
 
     const montoCancha = cancha.precioPorTurno;
     const montoEquipamiento = pedidos.reduce(
-      // Aritmética de Decimal y no de number: es dinero (design.md §5).
+      // Aritmética de Decimal y no de number: es dinero (design de 1.3 §5).
       (total, pedido) => total.add(pedido.precioUnitario.mul(pedido.cantidad)),
       new Prisma.Decimal(0),
     );
@@ -94,15 +115,15 @@ export class ReservasService {
     });
 
     /*
-     * Punto de enganche del ítem 1.4 (RF-08): el mail de confirmación va acá,
-     * con la transacción ya commiteada y antes del return. Tiene que ser
-     * después del commit porque RN-14 exige que una falla del proveedor no
-     * revierta la reserva ni cambie la respuesta.
-     *
-     * Este cambio no manda mails: la capacidad `notificaciones` es del ítem 1.4.
+     * El mail de confirmación va acá, con la transacción ya commiteada y antes
+     * del return: RN-14 exige que una falla del proveedor no revierta la reserva
+     * ni cambie la respuesta, y `NotificacionesService` no propaga, devuelve el
+     * estado del envío. Este es el punto de enganche que 1.3 dejó marcado y que
+     * 1.4 llenó al traer la capacidad `notificaciones`.
      */
+    await this.notificaciones.enviarConfirmacion(reserva);
 
-    return aReserva(reserva);
+    return aReserva(reserva, this.reloj.ahora());
   }
 
   /** Paso 2: existencia. No se puede opinar del horario de una cancha que no existe. */
@@ -127,8 +148,8 @@ export class ReservasService {
    * Paso 3 (RN-09): la hora pedida tiene que ser el inicio de un turno de la
    * grilla **de ese día**, y de ahí sale la hora de fin. Un día cerrado no tiene
    * ventana, así que no tiene bloques y cae en el mismo 422, sin un caso
-   * especial (design.md §4). Que la reserva y la disponibilidad deriven de las
-   * mismas dos funciones es lo que hace que no puedan discrepar.
+   * especial. Que la reserva y la disponibilidad deriven de las mismas dos
+   * funciones es lo que hace que no puedan discrepar.
    */
   private bloqueDelTurno(fecha: string, horaInicio: string, cancha: CanchaDelTurno): Bloque {
     const { horaApertura, horaCierre, horaCierreSabado, diasCerrados } = this.configuracion;
@@ -269,12 +290,12 @@ export class ReservasService {
   }
 
   /**
-   * Paso previo a todo conteo (design.md §3). Sin esto, con el aislamiento
-   * *read committed* que usa PostgreSQL por defecto, dos transacciones
-   * simultáneas no ven las filas no commiteadas de la otra y las dos concluyen
-   * que hay stock —o que el socio está bajo el límite—. RN-05 y RN-07 no tienen
-   * ninguna restricción en la base que las ataje, así que el lock es la única
-   * garantía. RN-01 sí la tiene, y por eso no necesita lock.
+   * Paso previo a todo conteo. Sin esto, con el aislamiento *read committed* que
+   * usa PostgreSQL por defecto, dos transacciones simultáneas no ven las filas
+   * no commiteadas de la otra y las dos concluyen que hay stock —o que el socio
+   * está bajo el límite—. RN-05 y RN-07 no tienen ninguna restricción en la base
+   * que las ataje, así que el lock es la única garantía. RN-01 sí la tiene, y por
+   * eso no necesita lock.
    *
    * El lock es por socio y por ítem: dos personas reservando cosas distintas no
    * se cruzan nunca. El `ORDER BY id` evita que dos solicitudes con ítems en
@@ -422,7 +443,7 @@ export class ReservasService {
             })),
           },
         },
-        include: INCLUDE_DETALLE,
+        include: INCLUDE,
       });
     } catch (error) {
       if (esViolacionDe(error, COLUMNAS_SLOT_ACTIVO)) throw this.slotNoDisponible(dto);
@@ -438,5 +459,182 @@ export class ReservasService {
       'El horario solicitado ya está reservado',
       `La cancha ${dto.canchaId} ya tiene una reserva activa el ${dto.fecha} a las ${dto.horaInicio}.`,
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Listado, detalle, cancelación y reenvío (RF-05, RF-06, ítem 1.4)
+  // ---------------------------------------------------------------------------
+
+  /** Un SOCIO recibe siempre las propias, ignorando un `clienteId` ajeno (RN-13). */
+  async listar(filtros: ListarReservasDto, usuario: UsuarioAutenticado): Promise<ReservaPublica[]> {
+    const clienteId = usuario.rol === 'SOCIO' ? usuario.id : filtros.clienteId;
+    // COMPLETADA no se persiste (decisión 9): se pide CONFIRMADA y se filtra ya mapeada.
+    const estadoEnLaBase = filtros.estado === undefined || filtros.estado === 'COMPLETADA' ? 'CONFIRMADA' : filtros.estado;
+
+    const reservas = await this.prisma.reserva.findMany({
+      where: {
+        ...(clienteId === undefined ? {} : { usuarioId: clienteId }),
+        ...(filtros.fecha === undefined ? {} : { fecha: aFechaDb(filtros.fecha) }),
+        ...(filtros.estado === undefined ? {} : { estado: estadoEnLaBase }),
+      },
+      include: INCLUDE,
+      orderBy: [{ fecha: 'desc' }, { horaInicio: 'desc' }],
+    });
+
+    const ahora = this.reloj.ahora();
+    const mapeadas = reservas.map((reserva) => aReserva(reserva, ahora));
+    return filtros.estado === undefined ? mapeadas : mapeadas.filter((r) => r.estado === filtros.estado);
+  }
+
+  /** 404 idéntico si no existe o pertenece a otro SOCIO (RN-13). */
+  async obtener(id: number, usuario: UsuarioAutenticado): Promise<ReservaPublica> {
+    const reserva = await this.buscar(id, usuario);
+    return aReserva(reserva, this.reloj.ahora());
+  }
+
+  async cancelar(
+    id: number,
+    usuario: UsuarioAutenticado,
+    { motivo }: CancelarReservaDto,
+  ): Promise<ReservaPublica> {
+    const reserva = await this.buscar(id, usuario);
+    const ahora = this.reloj.ahora();
+
+    if (reserva.estado === 'CANCELADA') {
+      throw new ErrorDeApi(
+        409,
+        'RESERVA_NO_CANCELABLE',
+        'Esta reserva ya no se puede cancelar',
+        `La reserva ${reserva.codigo} ya está cancelada.`,
+      );
+    }
+    if (turnoTermino(deFechaDb(reserva.fecha), reserva.horaFin, ahora)) {
+      throw new ErrorDeApi(
+        409,
+        'RESERVA_NO_CANCELABLE',
+        'Esta reserva ya no se puede cancelar',
+        `La reserva ${reserva.codigo} ya se jugó.`,
+      );
+    }
+    // Un ADMIN cancela sin plazo, incluso reservas de otros usuarios (RN-04).
+    if (usuario.rol === 'SOCIO' && this.minutosHastaElTurno(reserva, ahora) < this.configuracion.cancelacionMinutosMinimos) {
+      throw new ErrorDeApi(
+        422,
+        'PLAZO_CANCELACION_VENCIDO',
+        'Ya no es posible cancelar esta reserva',
+        `La cancelación debe hacerse con al menos ${this.configuracion.cancelacionMinutosMinimos / 60} horas de anticipación.`,
+      );
+    }
+
+    /*
+     * La condición `estado: 'CONFIRMADA'` va en el `where` y no solo en el
+     * chequeo de arriba: entre que se leyó la reserva y se escribe puede entrar
+     * otra cancelación. Sin esto, dos solicitudes simultáneas actualizaban las
+     * dos, mandaban dos mails y se pisaban `canceladaPorId` y el motivo, que es
+     * justo el registro que RN-10 pide conservar. Es el mismo criterio que la
+     * spec exige para RN-01: la garantía la da la base, no la validación previa.
+     */
+    const { count } = await this.prisma.reserva.updateMany({
+      where: { id: reserva.id, estado: 'CONFIRMADA' },
+      data: {
+        estado: 'CANCELADA',
+        canceladaEn: this.reloj.instante(),
+        canceladaPorId: usuario.id,
+        motivoCancelacion: motivo ?? null,
+      },
+    });
+    if (count === 0) {
+      throw new ErrorDeApi(
+        409,
+        'RESERVA_NO_CANCELABLE',
+        'Esta reserva ya no se puede cancelar',
+        `La reserva ${reserva.codigo} ya está cancelada.`,
+      );
+    }
+
+    const cancelada = await this.prisma.reserva.findUniqueOrThrow({
+      where: { id: reserva.id },
+      include: INCLUDE,
+    });
+
+    // Después de persistir, fuera de la transacción (RN-14): un fallo del
+    // proveedor no revierte la cancelación ni cambia esta respuesta, porque
+    // `NotificacionesService.enviarCancelacion` no propaga: devuelve el estado.
+    await this.notificaciones.enviarCancelacion(cancelada);
+
+    return aReserva(cancelada, this.reloj.ahora());
+  }
+
+  async reenviarMail(id: number, usuario: UsuarioAutenticado): Promise<ReenvioMailRespuesta> {
+    const reserva = await this.buscar(id, usuario);
+    const ahora = this.reloj.ahora();
+
+    if (turnoTermino(deFechaDb(reserva.fecha), reserva.horaFin, ahora)) {
+      throw new ErrorDeApi(
+        409,
+        'REENVIO_NO_DISPONIBLE',
+        'No hay mail para reenviar',
+        `El turno de la reserva ${reserva.codigo} ya terminó.`,
+      );
+    }
+
+    /*
+     * Solo cuentan los reenvíos que **salieron**. El límite existe para frenar
+     * el abuso de quien pide, no para castigar a quien no recibió el mail
+     * porque el proveedor estaba caído: sin este filtro, tres intentos fallidos
+     * dejaban a la persona una hora sin poder pedirlo de nuevo, sin haber
+     * recibido nada.
+     */
+    const reenviosEnLaUltimaHora = await this.prisma.notificacion.count({
+      where: {
+        reservaId: reserva.id,
+        reenvio: true,
+        estado: 'ENVIADA',
+        enviadaEn: { gte: new Date(this.reloj.instante().getTime() - VENTANA_REENVIO_MS) },
+      },
+    });
+    if (reenviosEnLaUltimaHora >= MAXIMO_REENVIOS_POR_HORA) {
+      throw new ErrorDeApi(
+        429,
+        'DEMASIADAS_SOLICITUDES',
+        'Ya reenviamos este mail varias veces',
+        `Se admiten hasta ${MAXIMO_REENVIOS_POR_HORA} reenvíos por hora. Volvé a intentar más tarde.`,
+      );
+    }
+
+    const activa = reserva.estado !== 'CANCELADA';
+    const resultado = await this.notificaciones.reenviar(reserva, activa);
+
+    /*
+     * La respuesta sigue siendo 202 aunque el proveedor falle (RN-14), pero el
+     * mensaje dice lo que pasó de verdad. Antes afirmaba siempre que el mail
+     * había salido, así que ante un proveedor caído la persona leía tres
+     * confirmaciones seguidas y nunca recibía nada.
+     */
+    return {
+      mensaje:
+        resultado === 'ENVIADA'
+          ? `Te reenviamos el mail a ${reserva.usuario.email}.`
+          : 'No pudimos entregar el mail en este momento. Lo registramos y podés volver a intentar en un rato.',
+      tipo: activa ? 'CONFIRMACION' : 'CANCELACION',
+      destinatario: reserva.usuario.email,
+    };
+  }
+
+  /** 404, no 403: una reserva ajena no se distingue de una inexistente (RN-13). */
+  private async buscar(id: number, usuario: UsuarioAutenticado): Promise<ReservaConDetalle> {
+    const reserva = await this.prisma.reserva.findUnique({ where: { id }, include: INCLUDE });
+    if (!reserva || (usuario.rol === 'SOCIO' && reserva.usuarioId !== usuario.id)) {
+      throw noEncontrada(id);
+    }
+    return reserva;
+  }
+
+  /** Minutos entre ahora y el inicio del turno; negativo si ya empezó. */
+  private minutosHastaElTurno(reserva: { fecha: Date; horaInicio: string }, ahora: { fecha: string; hora: string }): number {
+    const comoInstante = (fecha: string, hora: string) => new Date(`${fecha}T${hora}:00.000Z`).getTime();
+    const turno = comoInstante(deFechaDb(reserva.fecha), reserva.horaInicio);
+    const actual = comoInstante(ahora.fecha, ahora.hora);
+    return Math.round((turno - actual) / 60_000);
   }
 }
