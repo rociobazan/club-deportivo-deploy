@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { buttonClasses } from "@/components/ui/button";
 import { EstadoError } from "@/components/ui/estado-error";
@@ -22,7 +23,18 @@ export default async function PaginaMisReservas() {
   try {
     reservas = await apiFetch<Reserva[]>("/reservas", { token, timeoutMs: 2000 });
   } catch (error) {
+    // Lo que no vino de la API es un bug y va al error boundary.
     if (!(error instanceof ApiHttpError)) throw error;
+
+    /*
+     * Una sesión vencida o inválida no es un problema pasajero: `proxy.ts` mira
+     * si la cookie existe, no si el token sigue vivo, así que se llega hasta
+     * acá y la API contesta 401. Ofrecer "reintentar" sería mandar a la persona
+     * a un bucle que nunca va a funcionar; lo que necesita es volver a ingresar.
+     */
+    if (error.estado === 401 || error.estado === 403) {
+      redirect(`/ingresar?volver=${encodeURIComponent("/mis-reservas")}`);
+    }
     return (
       <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-16">
         <EstadoError
