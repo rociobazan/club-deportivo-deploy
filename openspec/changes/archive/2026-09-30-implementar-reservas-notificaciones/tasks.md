@@ -34,7 +34,7 @@ Referencias: requisitos de la API en `openspec/specs/reservas/spec.md` y `opensp
 
 ## 5. Coordinación, documentación y PR
 
-- [ ] 5.1 Avisar por el grupo que `NotificacionesService.enviarConfirmacion()` queda disponible para que el ítem 1.3 (Adrián) la invoque al crear la reserva, con la firma que quedó en `design.md`.
+- [x] 5.1 Avisar por el grupo que `NotificacionesService.enviarConfirmacion()` queda disponible para que el ítem 1.3 (Adrián) la invoque al crear la reserva, con la firma que quedó en `design.md`.
 - [x] 5.2 Actualizar `docs/memoria-proyecto.md` con la decisión de este cambio (módulo `notificaciones` separado de `reservas`, límite de reenvío contado con `Reloj`) y su línea en el historial; actualizar `docs/estado-del-proyecto.md` (ítem 1.4 cerrado, operaciones del contrato con endpoint, pantallas de producto). Verificar que ambos documentos citan el mismo número de decisión.
 - [x] 5.3 Correr `npm run spec:validate`, `npm run test --workspace api`, `npm run test:e2e --workspace api`, lint y build de `web`, y una revisión de código sobre el diff contra `main`; corregir lo que salga. Verificar que todo termina sin errores ni hallazgos abiertos.
-- [ ] 5.4 Abrir el PR desde `feature/spec-reservas-notificaciones` hacia `main`, con la lista de escenarios verificados en la descripción. Verificar que el CI muestra `specs`, `api` y `web` en verde y esperar al menos una aprobación antes de mergear.
+- [x] 5.4 Abrir el PR desde `feature/spec-reservas-notificaciones` hacia `main`, con la lista de escenarios verificados en la descripción. Verificar que el CI muestra `specs`, `api` y `web` en verde y esperar al menos una aprobación antes de mergear.

@@ -82,9 +82,9 @@ más, cada una tocando el header y las rutas privadas, deja de escalar.
 - El job `e2e` es el más frágil del CI: depende de que la API arranque, de que el build del front
   exista y de tiempos. Por eso espera el health check de la API antes de empezar y sube el
   reporte, los traces y el log de la API como artefactos cuando algo falla.
-- **`e2e` todavía no es un check obligatorio** del ruleset de `main`. Agregarlo lo tiene que
-  hacer `rociobazan`, la única cuenta con admin. Hasta entonces el job corre e informa, pero no
-  bloquea un merge.
+- **`e2e` es check obligatorio** del ruleset de `main` desde el 2026-09-30 (lo sumó
+  `rociobazan`, la única cuenta con admin). Hasta esa fecha el job corría e informaba, pero no
+  bloqueaba un merge.
 - Los tests dependen del texto de la interfaz ("Enviar mensaje", "El club no abre este día"). Un
   cambio de copy los rompe. Es deliberado: se busca por rol y por etiqueta accesible, no por
   clases de CSS, así que lo que se rompe es lo que también cambiaría para quien usa el sitio.
