@@ -283,15 +283,16 @@ feature entera. Con eso se cierra la *Open Question* "quién implementa la admin
 > **El estado al día está en [`estado-del-proyecto.md`](estado-del-proyecto.md).** Acá quedan solo las preguntas abiertas del equipo, no el avance.
 
 - **Cada integrante pasa a Node 24.21** (`nvm install 24.21.0`): con Node 20, los tests de la API no corren (decisión 16).
-- **Aprobar cada PR en GitHub antes de mergear**: #4 a #7 entraron sin aprobación registrada, y la consigna evalúa al menos una por PR. Con la protección activa, GitHub lo exige solo.
+- ~~**Aprobar cada PR en GitHub antes de mergear**: #4 a #7 entraron sin aprobación registrada.~~ **Resuelto**: desde el 2026-09-24 la protección de `main` exige una aprobación y GitHub no deja mergear sin ella. Lo que sí hay que hacer a mano es **pedir la review**: avisar por el grupo no crea la solicitud en GitHub.
 - ~~**El cuarto integrante, Renzo Bazán, no figura como colaborador del repo.**~~ **Ya es colaborador**, pero sigue **sin ningún commit ni PR**. Desde el 2026-09-30 tiene el ítem **1.6** (decisión 31), así que no queda nada que lo bloquee.
-- **`prisma generate` en el CI**: npm 11 no ejecuta el `postinstall` de `@prisma/client`. Cuando la API importe `PrismaClient`, hay que sumar `prisma generate` al job `api`.
+- ~~**`prisma generate` en el CI**: npm 11 no ejecuta el `postinstall` de `@prisma/client`.~~ **Resuelto**: el job `api` ya lo corre (`ci.yml`, en el paso de migraciones y en el de tests).
 - **`test:debug` de `apps/api`** apunta a `node_modules/.bin/jest`, que no existe dentro del workspace porque Jest se instala en la raíz; quedó como estaba.
 - ~~**Asignar RF-11 a RF-14** a uno o dos integrantes.~~ **Resuelto el 2026-09-30**: va entero a Renzo (decisión 31), y `requisitos.md` §8 ya lo dice.
 - **Propuesta abierta: que JereDev se lleve el front completo** (2026-09-23), porque tiene más disponibilidad. Cada integrante seguiría siendo dueño de su spec, su endpoint y sus tests, y revisaría la pantalla de su feature. **La tienen que aprobar los otros tres**, y si sale, se actualizan este reparto y `requisitos.md` §8 en el mismo PR. A tener en cuenta: `requisitos.md` §8 desaconseja repartir por capas, porque desbalancea los commits y eso se evalúa. El front no depende del back: las pantallas se arman contra el contrato y se conectan cuando cada endpoint existe. **Al 2026-09-30 quedó sin efecto en los hechos**: el reparto se cerró con una feature completa por cabeza (decisión 31), que es justo lo contrario de repartir por capas. Si el equipo la quiere retomar, hay que reabrirla explícitamente.
 - **`trust proxy` en Express**: el límite por IP de `POST /contacto` lee `req.ip`. Detrás de un balanceador o un proxy, todas las solicitudes llegan con la misma IP y el límite se aplicaría a todo el mundo junto. Hay que activar `trust proxy` **cuando se defina el despliegue**; en local no hace falta.
 - **Usuarios inactivos**: si pueden iniciar sesión lo define el cambio de autenticación.
 - **Prefijo del código**: `RES` por defecto; el equipo puede cambiarlo por configuración.
+- **Subir Prisma de 6 a 7** (2026-09-30). Las **tres vulnerabilidades altas** que quedan en `npm audit` son todas de Prisma 6 (`prisma`, `@prisma/config` y `deepmerge-ts`) y **no hay arreglo sin cambiar de mayor**. Ojo con dos cosas: el `latest` de npm apunta hoy a un **release candidate** (`8.0.0-rc.19`), así que el último estable es el **7.10.0**; y Prisma 7 deprecia la configuración en `package.json#prisma`, que es la que usa el seed. Es un cambio con su propia propuesta, no un `npm audit fix`.
 
 ## Historial
 
