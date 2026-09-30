@@ -28,13 +28,47 @@ export function FormularioReserva({ turno, precioCancha, equipamiento }: Props) 
   const [estado, accion, enviando] = useActionState<EstadoReserva, FormData>(crearReserva, {});
 
   /*
-   * Lo único que el cliente calcula es el total a la vista, para que elegir
-   * equipamiento tenga respuesta inmediata. Es **cosmético**: el monto que vale
-   * es el que confirma la API (RN-06), y la pantalla lo aclara abajo del número.
+   * Los campos son controlados y no `defaultValue`, por dos razones que se
+   * descubrieron probando: React 19 resetea un form no controlado después de que
+   * la action termina, y `defaultValue` solo se aplica al montar, así que no
+   * alcanza para repoblar. Sin esto, un 409 de la API borraba el equipamiento
+   * elegido, que es justo lo que el escenario pide conservar.
+   *
+   * Y de paso el total a la vista sigue siendo correcto después del error. Ese
+   * total es **cosmético**: el monto que vale es el que confirma la API (RN-06),
+   * y la pantalla lo aclara abajo del número.
    */
+  const cantidadesDe = (valores: EstadoReserva["valores"]) =>
+    Object.fromEntries(
+      equipamiento.map((item) => [item.id, valores?.equipamiento?.[item.id] ?? 0]),
+    ) as Record<number, number>;
+
   const [cantidades, setCantidades] = useState<Record<number, number>>(() =>
-    Object.fromEntries(equipamiento.map((item) => [item.id, 0])),
+    cantidadesDe(estado.valores),
   );
+  const [jugadores, setJugadores] = useState(estado.valores?.cantidadJugadores ?? "");
+
+  /*
+   * Repoblar cuando vuelve un estado nuevo de la action, con el patrón de React
+   * de ajustar estado en el render en vez de un efecto: así no hay un parpadeo
+   * con los valores viejos.
+   *
+   * `intento` va como `key` del form, y eso no es cosmético: React 19 resetea el
+   * form cuando la action termina, y lo hace sobre el DOM, por fuera de lo que el
+   * reconciliador cree que hay. Para un `<select>` controlado eso deja el nodo en
+   * la primera opción y React no lo corrige, porque para él el valor no cambió.
+   * Cambiar la `key` remonta el form y los valores del estado se vuelven a
+   * aplicar. Se vio probando: el total seguía diciendo 19.000 mientras el
+   * selector mostraba 0.
+   */
+  const [ultimosValores, setUltimosValores] = useState(estado.valores);
+  const [intento, setIntento] = useState(0);
+  if (estado.valores !== ultimosValores) {
+    setUltimosValores(estado.valores);
+    setCantidades(cantidadesDe(estado.valores));
+    setJugadores(estado.valores?.cantidadJugadores ?? "");
+    setIntento((anterior) => anterior + 1);
+  }
 
   const totalEquipamiento = equipamiento.reduce(
     (total, item) => total + item.precioPorTurno * (cantidades[item.id] ?? 0),
@@ -47,7 +81,7 @@ export function FormularioReserva({ turno, precioCancha, equipamiento }: Props) 
   }
 
   return (
-    <form action={accion} noValidate className="mt-8 flex flex-col gap-6">
+    <form key={intento} action={accion} noValidate className="mt-8 flex flex-col gap-6">
       <input type="hidden" name="canchaId" value={turno.canchaId} />
       <input type="hidden" name="fecha" value={turno.fecha} />
       <input type="hidden" name="horaInicio" value={turno.horaInicio} />
@@ -68,7 +102,8 @@ export function FormularioReserva({ turno, precioCancha, equipamiento }: Props) 
               step={1}
               inputMode="numeric"
               placeholder="Sin informar"
-              defaultValue={estado.valores?.cantidadJugadores}
+              value={jugadores}
+              onChange={(evento) => setJugadores(evento.target.value)}
             />
           </Campo>
         </div>
@@ -104,7 +139,7 @@ export function FormularioReserva({ turno, precioCancha, equipamiento }: Props) 
                     id={idCampo}
                     name={idCampo}
                     disabled={agotado}
-                    defaultValue={String(estado.valores?.equipamiento?.[item.id] ?? 0)}
+                    value={String(cantidades[item.id] ?? 0)}
                     onChange={(evento) =>
                       setCantidades((anterior) => ({
                         ...anterior,
