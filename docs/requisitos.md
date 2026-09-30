@@ -28,6 +28,7 @@ Especificación funcional y modelo de datos. Documento base para el contrato Ope
 - Administración de canchas y equipamiento: alta, edición y baja.
 - Sitio institucional público (Inicio, El club y Contacto) con la identidad del prototipo de Claude Design.
 - Formulario de contacto desde el sitio.
+- Edición de los datos de la propia cuenta y cambio de contraseña estando con sesión iniciada. **No** incluye recuperar una contraseña olvidada, que sigue fuera del MVP.
 
 ### Fuera del MVP (declarado explícitamente)
 
@@ -385,6 +386,26 @@ Reenvía el mail que corresponde al estado actual de la reserva: el de confirmac
 
 ---
 
+### RF-15 — Datos de la cuenta
+
+`PATCH /auth/perfil` · `PUT /auth/password` — el titular de la cuenta
+
+El titular modifica su nombre, apellido, teléfono y mail, y cambia su contraseña. El usuario afectado es siempre el de la sesión: no existe forma de modificar la cuenta de otra persona, y por eso las rutas cuelgan de `/auth` y no llevan un id. El `rol` y el estado de alta no se modifican acá; eso es de la administración (RF-11 a RF-14).
+
+**Límite conocido**: cambiar la contraseña **no** revoca las sesiones abiertas en otros dispositivos. El JWT es autocontenido y no hay almacén de sesiones, así que un token ya emitido sigue valiendo hasta que vence.
+
+**Criterios de aceptación**
+- DADO un socio con sesión, CUANDO modifica su nombre, apellido o teléfono, ENTONCES se devuelve 200 con el perfil actualizado.
+- DADO un mail que no usa ninguna otra cuenta, CUANDO el titular lo cambia, ENTONCES se devuelve 200 y a partir de ahí inicia sesión con el mail nuevo.
+- DADO un cambio de mail, CUANDO se sigue navegando con el mismo token, ENTONCES las solicitudes se siguen aceptando, porque el token lleva el id y el rol, no el mail.
+- DADO un mail que ya pertenece a otra cuenta, CUANDO se intenta el cambio, ENTONCES 409 y ningún dato cambia.
+- DADO una solicitud que incluye `rol` o `activo`, CUANDO se envía, ENTONCES 400 y ningún dato cambia.
+- DADO una solicitud sin ningún campo, CUANDO se envía, ENTONCES 400, en lugar de responder como si hubiera guardado algo.
+- DADO la contraseña actual correcta y una nueva de al menos 8 caracteres, CUANDO se pide el cambio, ENTONCES 204, la anterior deja de servir para ingresar y la nueva sirve.
+- DADO una contraseña actual incorrecta, CUANDO se pide el cambio, ENTONCES 401 y la contraseña no cambia.
+
+---
+
 ## 6. Modelo de datos (PostgreSQL)
 
 ### Diagrama de relaciones
@@ -661,8 +682,9 @@ Cada integrante se lleva su feature **completa**: contrato, endpoint en Nest, te
 | D | RF-05, RF-06, RF-07, RF-08 + pantalla de mis reservas | `feature/spec-reservas-notificaciones` | A |
 | Jeremías (A + B) | RF-09, RF-10 sitio institucional y contacto | `feature/landing-institucional` | Cualquiera de los otros tres |
 | A asignar | RF-11 a RF-14, administración y reenvío + pantallas de admin | `feature/spec-administracion` | A definir |
+| Jeremías | RF-15 datos de la cuenta + pantalla de perfil | `feature/spec-perfil-de-usuario` | Cualquiera de los otros tres |
 
-**A y B son Jeremías**, que tomó 1.1, 1.2 y 1.5 el 2026-09-24. Quedan 1.3, 1.4 y 1.6 para
+**A y B son Jeremías**, que tomó 1.1, 1.2 y 1.5 el 2026-09-24, y después el RF-15. Quedan 1.3, 1.4 y 1.6 para
 Adrián, Rocío y Renzo: son tres ítems y tres personas, así que sale uno por cabeza.
 
 El PR del contrato base va primero y lo aprueban los cuatro. Recién después se abren las ramas en paralelo. A tiene el camino crítico: hasta que los guards no estén, C y D testean con un mock del token.

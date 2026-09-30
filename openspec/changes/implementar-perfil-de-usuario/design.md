@@ -74,7 +74,7 @@ Los campos de contraseña se vacían después de cada intento, salga bien o mal.
 - **[Cambiar la contraseña no cierra las sesiones abiertas en otros dispositivos]** → El JWT es autocontenido y no hay almacén de sesiones, así que un token ya emitido sigue valiendo hasta que vence (`JWT_EXPIRES_IN`). Quien cambia su contraseña porque sospecha que alguien la tiene **no** está expulsando a esa persona. Cerrarlo de verdad exige una lista de revocación o versionar el token por usuario, que es un cambio de modelo y no entra acá. Se declara en la spec y se documenta; la mitigación práctica es que la vigencia del token sea corta.
 - **[El front deja de ofrecer El club a quien tiene sesión]** → Es la consecuencia buscada del menú acotado, pero es una página que existe y pierde su única vía de acceso desde la interfaz. Si molesta, la alternativa barata es dejarla en el pie, que ya aparece en las páginas públicas.
 - **[Es la primera ampliación del contrato del proyecto]** → Hasta acá todos los ítems implementaron operaciones ya definidas. Sumar dos obliga a regenerar `apps/web/lib/api/schema.d.ts` y a que `contrato:lint` pase, y conviene que los cuatro revisen los schemas nuevos antes de implementar.
-- **[Alcance nuevo, fuera de los quince RF]** → Decidido a propósito. El riesgo real no es técnico: es de reparto, porque suma trabajo a quien ya tiene la mayor parte de los commits.
+- **[Alcance nuevo, fuera de los quince RF]** → **Resuelto el 2026-09-30**: el equipo lo incorporó como `RF-15`, así que deja de ser alcance por fuera. El riesgo que queda no es técnico sino de reparto, porque suma trabajo a quien ya tiene la mayor parte de los commits.
 
 ## Migration Plan
 
@@ -82,4 +82,4 @@ No hay migración de base: todos los campos editables ya existen en `Usuario`. E
 
 ## Open Questions
 
-- **¿El equipo quiere numerar esto como un requisito funcional nuevo en `docs/requisitos.md`?** No hace falta para implementar, pero cambia cómo se presenta el TP. Se decide antes del PR.
+- ~~¿El equipo quiere numerar esto como un requisito funcional nuevo en `docs/requisitos.md`?~~ **Resuelta el 2026-09-30: sí.** Entró como `RF-15`, agregado al final para no renumerar. No quedan preguntas abiertas.

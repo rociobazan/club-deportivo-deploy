@@ -6,7 +6,7 @@ Hoy un socio no puede corregir **ningún** dato propio después de registrarse. 
 
 Además, el menú del socio logueado sigue siendo casi el del visitante —Inicio, Disponibilidad, Mis reservas, El club, Contacto—, cuando quien ya entró viene a otra cosa: ver turnos, mirar sus reservas y escribirle al club.
 
-**Aclaración de alcance, para que quede escrita:** ninguno de los quince requisitos funcionales del TP pide esto. Es alcance nuevo, decidido a propósito por su valor para el usuario final, no una corrección de algo que faltaba. Conviene que los cuatro lo revisen sabiendo eso.
+**Aclaración de alcance, para que quede escrita:** cuando se escribió esta propuesta, ninguno de los quince requisitos funcionales del TP pedía esto: era alcance nuevo, decidido a propósito por su valor para el usuario final. **El 2026-09-30 el equipo lo incorporó como `RF-15`**, así que ya está dentro de los requisitos y estos pasan de 15 a 16.
 
 ## What Changes
 

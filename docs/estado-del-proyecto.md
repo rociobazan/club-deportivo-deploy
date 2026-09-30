@@ -22,7 +22,7 @@ cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla.
 | Medida | Estado |
 |---|---|
 | Ítems del reparto cerrados | **8 de 11**: todo el hito 0, más 1.1, 1.2, 1.5 y 1.7 |
-| Requisitos funcionales implementados | **7 de 15**: RF-00, RF-01, RF-02, RF-03, RF-07, RF-09 y RF-10 |
+| Requisitos funcionales implementados | **8 de 16**: RF-00, RF-01, RF-02, RF-03, RF-07, RF-09, RF-10 y RF-15 |
 | Operaciones del contrato con endpoint | **10 de 20**: el contrato crecio con `PATCH /auth/perfil` y `PUT /auth/password` |
 | Pantallas de producto | **8**: inicio, El club, contacto, canchas, disponibilidad, ingreso, registro y mi perfil |
 | Protección de `main` | ✅ **activa**: 1 aprobación y los tres checks |
