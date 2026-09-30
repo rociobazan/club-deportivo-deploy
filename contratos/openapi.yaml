@@ -119,6 +119,64 @@ paths:
                 $ref: '#/components/schemas/Usuario'
         '401':
           $ref: '#/components/responses/NoAutenticado'
+    patch:
+      tags: [Autenticacion]
+      summary: Modificar los datos del usuario autenticado
+      description: |
+        El usuario afectado es siempre el del token: no hay forma de pedir el
+        perfil de otra persona. Actualización parcial, con al menos un campo.
+        El rol y el estado de alta no se modifican acá.
+      operationId: actualizarPerfil
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarPerfilRequest'
+      responses:
+        '200':
+          description: Perfil actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '409':
+          description: Ya existe otro usuario con ese mail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/password:
+    put:
+      tags: [Autenticacion]
+      summary: Cambiar la contraseña del usuario autenticado
+      description: |
+        Exige la contraseña actual. Las sesiones ya emitidas siguen siendo
+        válidas hasta que vencen: el token es autocontenido y no hay forma de
+        revocarlo.
+      operationId: cambiarPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CambiarPasswordRequest'
+      responses:
+        '204':
+          description: Contraseña cambiada
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          description: La contraseña actual no coincide, o falta el token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /disciplinas:
     get:
@@ -865,6 +923,49 @@ components:
           type: string
           maxLength: 30
           example: '+5493541000000'
+
+    ActualizarPerfilRequest:
+      type: object
+      description: |
+        Todos los campos son opcionales, pero el cuerpo MUST traer al menos uno:
+        una solicitud vacía se rechaza con 400 en lugar de responder como si
+        hubiera guardado algo.
+      minProperties: 1
+      properties:
+        nombre:
+          type: string
+          maxLength: 60
+          example: Jeremías
+        apellido:
+          type: string
+          maxLength: 60
+          example: Gómez
+        email:
+          type: string
+          format: email
+          description: Con esto se inicia sesión a partir del cambio.
+          example: socio@club.com
+        telefono:
+          type: string
+          maxLength: 30
+          nullable: true
+          description: Se envía `null` para borrarlo.
+          example: '+5493541000000'
+
+    CambiarPasswordRequest:
+      type: object
+      required: [actual, nueva]
+      properties:
+        actual:
+          type: string
+          format: password
+          description: La contraseña vigente. Si no coincide, 401.
+          example: unaClaveSegura123
+        nueva:
+          type: string
+          format: password
+          minLength: 8
+          example: otraClaveSegura456
 
     LoginRequest:
       type: object

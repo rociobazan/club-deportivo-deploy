@@ -13,6 +13,14 @@ import { defineConfig, devices } from "@playwright/test";
 
 const BASE_URL = process.env.E2E_BASE_URL?.trim() || "http://localhost:3001";
 
+/*
+ * El puerto sale de la URL y no de una constante: si el 3001 está ocupado por
+ * otro proyecto, `E2E_BASE_URL=http://localhost:3010` alcanza para correr la
+ * suite sin tocar nada más. Con el puerto fijo, Playwright reusaba lo que
+ * hubiera ahí y los tests fallaban contra una aplicación ajena.
+ */
+const PUERTO = new URL(BASE_URL).port || "3001";
+
 export default defineConfig({
   testDir: "./e2e",
 
@@ -62,7 +70,7 @@ export default defineConfig({
     command: "npm run start",
     url: BASE_URL,
     env: {
-      PORT: "3001",
+      PORT: PUERTO,
       /*
        * `next start` corre en modo producción y ahí `lib/api/client.ts` corta
        * el arranque si falta `API_URL`. Se pasa con el mismo default que el

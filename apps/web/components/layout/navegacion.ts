@@ -18,13 +18,17 @@ const PUBLICA: ItemDeNavegacion[] = [
   { href: "/contacto", label: "Contacto" },
 ];
 
-/** Socio: lo público más sus reservas. */
+/**
+ * Socio: lo que le sirve a quien ya entró, no el recorrido de quien está
+ * conociendo el club. Inicio y El club salen del menú pero **no del sitio**:
+ * las dos páginas siguen respondiendo, e Inicio queda a un clic del logo del
+ * header, que enlaza a `/`.
+ */
 const SOCIO: ItemDeNavegacion[] = [
-  { href: "/", label: "Inicio" },
   { href: "/disponibilidad", label: "Disponibilidad" },
   { href: "/mis-reservas", label: "Mis reservas" },
-  { href: "/el-club", label: "El club" },
   { href: "/contacto", label: "Contacto" },
+  { href: "/perfil", label: "Mi perfil" },
 ];
 
 /** Administrador: las pantallas de RF-11 a RF-13. */
