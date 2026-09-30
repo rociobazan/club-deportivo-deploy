@@ -175,7 +175,7 @@ Cuatro jobs en cada PR a `main` y en cada push a `main`. Los tres primeros son l
 | `specs` | OpenSpec en modo estricto y lint del contrato |
 | `api` | Migraciones contra `postgres:17`, lint, build y tests de la API |
 | `web` | Lint y build del front, que además verifica los tipos |
-| `e2e` | 20 tests de navegador con Playwright contra la pila entera: Postgres, la API y el front servido en producción ([ADR 0002](adr/0002-tests-e2e-con-playwright.md)) |
+| `e2e` | 25 tests de navegador con Playwright contra la pila entera: Postgres, la API y el front servido en producción ([ADR 0002](adr/0002-tests-e2e-con-playwright.md)) |
 
 **`e2e` no bloquea todavía.** Corre e informa, pero sumarlo como cuarto check obligatorio lo tiene
 que hacer `rociobazan`: editar un *ruleset* pide permiso de admin, y es la única cuenta que lo
@@ -251,9 +251,11 @@ Dos cosas que conviene mirar de frente:
 1. **Archivar `implementar-reservas-notificaciones`** con `/opsx:archive` desde `main`. El #32 ya
    entró, así que el cambio está implementado pero sus deltas siguen sin pasar a `openspec/specs/`.
    Es de Rocío, y cuanto antes se haga menos chance hay de que se olvide.
-1. **1.4 entró sin un solo test de navegador.** La suite de Playwright sigue en 20, los mismos de
-   antes del #32: `/mis-reservas` y su detalle no tienen cobertura e2e. Conviene sumarlos antes de
-   que `e2e` pase a ser check obligatorio.
+1. ~~**1.4 entró sin un solo test de navegador.**~~ **Resuelto el 30/09**: `mis-reservas.spec.ts`
+   suma cinco casos y la suite pasa de 20 a **25**. Queda un hueco declarado: la lista **con**
+   reservas, las pestañas con contenido y la cancelación no se pueden cubrir hasta que exista
+   `POST /reservas`, porque no hay forma de crearle una reserva a un socio desde el navegador. Van
+   con 1.3.
 
 ### Cada quien con su ítem
 
