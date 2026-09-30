@@ -657,13 +657,13 @@ Cada integrante se lleva su feature **completa**: contrato, endpoint en Nest, te
 | Todos | Contrato base, schema Prisma, seed | `feature/spec-contrato-base` | — |
 | Jeremías (A) | RF-00 auth + guards de rol + login/registro en Next | `feature/spec-autenticacion` | Cualquiera de los otros tres |
 | Jeremías (B) | RF-01, RF-02, RF-03 + pantalla de disponibilidad | `feature/spec-disponibilidad` | Cualquiera de los otros tres |
-| C | RF-04 (RN-01, 05, 06) + formulario de reserva | `feature/spec-creacion-reserva` | D |
-| D | RF-05, RF-06, RF-07, RF-08 + pantalla de mis reservas | `feature/spec-reservas-notificaciones` | A |
+| C | RF-04 (RN-01, 05, 06) + formulario de reserva | `feature/spec-creacion-reserva` | Rocío |
+| Rocío | RF-05, RF-06, RF-07, RF-08 + pantalla de mis reservas | `feature/spec-reservas-notificaciones` | A |
 | Jeremías (A + B) | RF-09, RF-10 sitio institucional y contacto | `feature/landing-institucional` | Cualquiera de los otros tres |
 | A asignar | RF-11 a RF-14, administración y reenvío + pantallas de admin | `feature/spec-administracion` | A definir |
 
-**A y B son Jeremías**, que tomó 1.1, 1.2 y 1.5 el 2026-09-24. Quedan 1.3, 1.4 y 1.6 para
-Adrián, Rocío y Renzo: son tres ítems y tres personas, así que sale uno por cabeza.
+**A y B son Jeremías**, que tomó 1.1, 1.2 y 1.5 el 2026-09-24. **Rocío tomó el 1.4** el
+2026-09-28. Quedan 1.3 y 1.6 para Adrián y Renzo.
 
 El PR del contrato base va primero y lo aprueban los cuatro. Recién después se abren las ramas en paralelo. A tiene el camino crítico: hasta que los guards no estén, C y D testean con un mock del token.
 

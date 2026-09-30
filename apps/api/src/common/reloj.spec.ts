@@ -35,4 +35,11 @@ describe('Reloj', () => {
     expect(fecha).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(hora).toMatch(/^\d{2}:\d{2}$/);
   });
+
+  it('instante() da un Date real, con segundos', () => {
+    const antes = Date.now();
+    const resultado = con('UTC').instante();
+    expect(resultado).toBeInstanceOf(Date);
+    expect(resultado.getTime()).toBeGreaterThanOrEqual(antes);
+  });
 });
