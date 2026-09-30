@@ -53,6 +53,39 @@ describe('RegistroDto', () => {
       validar(RegistroDto, { ...registroValido, telefono: '1'.repeat(31) }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
+
+  it('Solo espacios: rechaza en vez de guardar el nombre vacío', async () => {
+    for (const campo of ['nombre', 'apellido']) {
+      await expect(
+        validar(RegistroDto, { ...registroValido, [campo]: '   ' }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    }
+  });
+
+  it('recorta los espacios de los extremos antes de validar', async () => {
+    const dto = (await validar(RegistroDto, {
+      ...registroValido,
+      nombre: '  Ana  ',
+      apellido: '  Socia ',
+      email: ' ana@club.test ',
+      telefono: ' 3511234567 ',
+    })) as RegistroDto;
+
+    expect(dto.nombre).toBe('Ana');
+    expect(dto.apellido).toBe('Socia');
+    expect(dto.email).toBe('ana@club.test');
+    expect(dto.telefono).toBe('3511234567');
+  });
+
+  it('no recorta la contraseña: los espacios son parte de ella', async () => {
+    const clave = '  con espacios  ';
+    const dto = (await validar(RegistroDto, {
+      ...registroValido,
+      password: clave,
+    })) as RegistroDto;
+
+    expect(dto.password).toBe(clave);
+  });
 });
 
 describe('LoginDto', () => {
@@ -70,6 +103,15 @@ describe('LoginDto', () => {
     ]) {
       await expect(validar(LoginDto, caso)).rejects.toBeInstanceOf(BadRequestException);
     }
+  });
+
+  it('acepta un mail pegado con espacios, que es como llega del portapapeles', async () => {
+    const dto = (await validar(LoginDto, {
+      email: ' ana@club.test ',
+      password: 'x',
+    })) as LoginDto;
+
+    expect(dto.email).toBe('ana@club.test');
   });
 });
 
