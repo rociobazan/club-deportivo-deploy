@@ -260,6 +260,39 @@ describe('reservas (e2e)', () => {
       expect(body.tipo).toBe('NO_ENCONTRADO');
     });
 
+    /*
+     * La spec pide que las dos respuestas sean indistinguibles salvo
+     * `instancia`. Compararlas entre sí, y no cada una contra un `tipo`
+     * esperado, es lo único que impide que alguien agregue después un detalle
+     * servicial tipo "esta reserva no es tuya": eso convertiría la API en un
+     * oráculo para averiguar qué ids existen, y los tests seguirían en verde.
+     */
+    it('Reserva ajena y reserva inexistente devuelven el mismo cuerpo', async () => {
+      const ajena = await reservar({ usuarioId: otro.id, horaInicio: '19:00', horaFin: '20:30' });
+
+      const respuestaAjena = await api()
+        .get(`/api/v1/reservas/${ajena.id}`)
+        .set('Authorization', bearer(titular.id, 'SOCIO'))
+        .expect(404);
+      const respuestaInexistente = await api()
+        .get('/api/v1/reservas/999999')
+        .set('Authorization', bearer(titular.id, 'SOCIO'))
+        .expect(404);
+
+      /*
+       * Se normalizan `instancia` y el id que aparece en `detalle`: los dos
+       * salen de lo que el solicitante mandó, así que no le revelan nada que no
+       * supiera. Lo que no puede diferir es el resto.
+       */
+      const comparable = (cuerpo: Record<string, unknown>) => ({
+        ...cuerpo,
+        instancia: undefined,
+        detalle: typeof cuerpo.detalle === 'string' ? cuerpo.detalle.replace(/\d+/g, '<id>') : cuerpo.detalle,
+      });
+
+      expect(comparable(respuestaAjena.body)).toEqual(comparable(respuestaInexistente.body));
+    });
+
     it('Administrador consulta una reserva ajena', async () => {
       const reserva = await reservar({ usuarioId: otro.id, horaInicio: '19:00', horaFin: '20:30' });
 

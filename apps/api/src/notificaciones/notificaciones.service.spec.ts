@@ -74,7 +74,7 @@ describe('NotificacionesService', () => {
     it('Proveedor caído al crear: no lanza y persiste FALLIDA con el error', async () => {
       correo.enviar.mockRejectedValue(new CorreoNoEnviadoError('el proveedor rechazó el envío'));
 
-      await expect(servicio.enviarConfirmacion(reserva)).resolves.toBeUndefined();
+      await expect(servicio.enviarConfirmacion(reserva)).resolves.toBe('FALLIDA');
       expect(prisma.notificacion.create).toHaveBeenCalledWith({
         data: {
           reservaId: 128,
@@ -87,9 +87,31 @@ describe('NotificacionesService', () => {
       });
     });
 
-    it('un error que no es CorreoNoEnviadoError se relanza', async () => {
+    it('un error inesperado del proveedor tampoco se propaga: devuelve FALLIDA y lo registra', async () => {
       correo.enviar.mockRejectedValue(new Error('otra falla'));
-      await expect(servicio.enviarConfirmacion(reserva)).rejects.toThrow('otra falla');
+
+      await expect(servicio.enviarConfirmacion(reserva)).resolves.toBe('FALLIDA');
+      expect(prisma.notificacion.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ estado: 'FALLIDA', error: expect.stringContaining('otra falla') }),
+      });
+    });
+
+    /*
+     * RN-14: quien llama ya persistió su operación. Si además de fallar el mail
+     * falla la escritura de la notificación, lo único que queda es el log; lo
+     * que no puede pasar es que el error suba y convierta un 200 en un 500.
+     */
+    it('si tampoco se puede registrar la notificación, no se propaga nada', async () => {
+      correo.enviar.mockRejectedValue(new CorreoNoEnviadoError('el proveedor rechazó el envío'));
+      prisma.notificacion.create.mockRejectedValue(new Error('la base no responde'));
+
+      await expect(servicio.enviarConfirmacion(reserva)).resolves.toBe('FALLIDA');
+    });
+
+    it('un fallo al registrar un envío exitoso tampoco se propaga', async () => {
+      prisma.notificacion.create.mockRejectedValue(new Error('la base no responde'));
+
+      await expect(servicio.enviarConfirmacion(reserva)).resolves.toBe('ENVIADA');
     });
   });
 
@@ -109,7 +131,7 @@ describe('NotificacionesService', () => {
 
     it('Proveedor caído al cancelar: no lanza y persiste FALLIDA', async () => {
       correo.enviar.mockRejectedValue(new CorreoNoEnviadoError('caído'));
-      await expect(servicio.enviarCancelacion(reserva)).resolves.toBeUndefined();
+      await expect(servicio.enviarCancelacion(reserva)).resolves.toBe('FALLIDA');
       expect(prisma.notificacion.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ estado: 'FALLIDA' }) }),
       );
@@ -141,7 +163,7 @@ describe('NotificacionesService', () => {
 
     it('Proveedor caído al reenviar: no lanza y persiste FALLIDA', async () => {
       correo.enviar.mockRejectedValue(new CorreoNoEnviadoError('caído'));
-      await expect(servicio.reenviar(reserva, true)).resolves.toBeUndefined();
+      await expect(servicio.reenviar(reserva, true)).resolves.toBe('FALLIDA');
       expect(prisma.notificacion.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ estado: 'FALLIDA', reenvio: true }) }),
       );

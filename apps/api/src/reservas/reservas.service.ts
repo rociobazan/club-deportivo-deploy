@@ -102,19 +102,40 @@ export class ReservasService {
       );
     }
 
-    const cancelada = await this.prisma.reserva.update({
-      where: { id: reserva.id },
+    /*
+     * La condición `estado: 'CONFIRMADA'` va en el `where` y no solo en el
+     * chequeo de arriba: entre que se leyó la reserva y se escribe puede entrar
+     * otra cancelación. Sin esto, dos solicitudes simultáneas actualizaban las
+     * dos, mandaban dos mails y se pisaban `canceladaPorId` y el motivo, que es
+     * justo el registro que RN-10 pide conservar. Es el mismo criterio que la
+     * spec exige para RN-01: la garantía la da la base, no la validación previa.
+     */
+    const { count } = await this.prisma.reserva.updateMany({
+      where: { id: reserva.id, estado: 'CONFIRMADA' },
       data: {
         estado: 'CANCELADA',
-        canceladaEn: new Date(),
+        canceladaEn: this.reloj.instante(),
         canceladaPorId: usuario.id,
         motivoCancelacion: motivo ?? null,
       },
+    });
+    if (count === 0) {
+      throw new ErrorDeApi(
+        409,
+        'RESERVA_NO_CANCELABLE',
+        'Esta reserva ya no se puede cancelar',
+        `La reserva ${reserva.codigo} ya está cancelada.`,
+      );
+    }
+
+    const cancelada = await this.prisma.reserva.findUniqueOrThrow({
+      where: { id: reserva.id },
       include: INCLUDE,
     });
 
     // Después de persistir, fuera de la transacción (RN-14): un fallo del
-    // proveedor no revierte la cancelación (NotificacionesService lo garantiza).
+    // proveedor no revierte la cancelación ni cambia esta respuesta, porque
+    // `NotificacionesService.enviarCancelacion` no propaga: devuelve el estado.
     await this.notificaciones.enviarCancelacion(cancelada);
 
     return aReserva(cancelada, this.reloj.ahora());
@@ -133,10 +154,18 @@ export class ReservasService {
       );
     }
 
+    /*
+     * Solo cuentan los reenvíos que **salieron**. El límite existe para frenar
+     * el abuso de quien pide, no para castigar a quien no recibió el mail
+     * porque el proveedor estaba caído: sin este filtro, tres intentos fallidos
+     * dejaban a la persona una hora sin poder pedirlo de nuevo, sin haber
+     * recibido nada.
+     */
     const reenviosEnLaUltimaHora = await this.prisma.notificacion.count({
       where: {
         reservaId: reserva.id,
         reenvio: true,
+        estado: 'ENVIADA',
         enviadaEn: { gte: new Date(this.reloj.instante().getTime() - VENTANA_REENVIO_MS) },
       },
     });
@@ -150,10 +179,19 @@ export class ReservasService {
     }
 
     const activa = reserva.estado !== 'CANCELADA';
-    await this.notificaciones.reenviar(reserva, activa);
+    const resultado = await this.notificaciones.reenviar(reserva, activa);
 
+    /*
+     * La respuesta sigue siendo 202 aunque el proveedor falle (RN-14), pero el
+     * mensaje dice lo que pasó de verdad. Antes afirmaba siempre que el mail
+     * había salido, así que ante un proveedor caído la persona leía tres
+     * confirmaciones seguidas y nunca recibía nada.
+     */
     return {
-      mensaje: 'Te reenviamos el mail de tu reserva.',
+      mensaje:
+        resultado === 'ENVIADA'
+          ? `Te reenviamos el mail a ${reserva.usuario.email}.`
+          : 'No pudimos entregar el mail en este momento. Lo registramos y podés volver a intentar en un rato.',
       tipo: activa ? 'CONFIRMACION' : 'CANCELACION',
       destinatario: reserva.usuario.email,
     };

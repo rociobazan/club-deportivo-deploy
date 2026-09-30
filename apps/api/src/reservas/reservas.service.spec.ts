@@ -8,7 +8,12 @@ import { ReservaConDetalle } from './mapeadores';
 import { ReservasService } from './reservas.service';
 
 type PrismaFalso = {
-  reserva: { findMany: jest.Mock; findUnique: jest.Mock; update: jest.Mock };
+  reserva: {
+    findMany: jest.Mock;
+    findUnique: jest.Mock;
+    findUniqueOrThrow: jest.Mock;
+    updateMany: jest.Mock;
+  };
   notificacion: { count: jest.Mock };
 };
 
@@ -60,12 +65,25 @@ describe('ReservasService', () => {
 
   const AHORA = { fecha: '2026-09-15', hora: '10:00' };
 
+  /** Lo último que `updateMany` escribió, para que la relectura lo devuelva. */
+  let ultimaEscritura: Record<string, unknown> = {};
+
   beforeEach(() => {
+    ultimaEscritura = {};
     prisma = {
       reserva: {
         findMany: jest.fn().mockResolvedValue([]),
         findUnique: jest.fn().mockResolvedValue(reservaDe()),
-        update: jest.fn().mockImplementation((args) => Promise.resolve(reservaDe(args.data))),
+        /*
+         * `cancelar` escribe con `updateMany` condicionado al estado y después
+         * relee: el mock guarda lo escrito para que la relectura lo devuelva,
+         * igual que hacía el `update` que devolvía la fila actualizada.
+         */
+        updateMany: jest.fn().mockImplementation((args) => {
+          ultimaEscritura = args.data;
+          return Promise.resolve({ count: 1 });
+        }),
+        findUniqueOrThrow: jest.fn().mockImplementation(() => Promise.resolve(reservaDe(ultimaEscritura))),
       },
       notificacion: { count: jest.fn().mockResolvedValue(0) },
     };
@@ -74,8 +92,8 @@ describe('ReservasService', () => {
       instante: jest.fn().mockReturnValue(new Date('2026-09-15T13:00:00.000Z')),
     };
     notificaciones = {
-      enviarCancelacion: jest.fn().mockResolvedValue(undefined),
-      reenviar: jest.fn().mockResolvedValue(undefined),
+      enviarCancelacion: jest.fn().mockResolvedValue('ENVIADA'),
+      reenviar: jest.fn().mockResolvedValue('ENVIADA'),
     };
     servicio = new ReservasService(
       prisma as unknown as PrismaService,
@@ -171,7 +189,7 @@ describe('ReservasService', () => {
         estado: 422,
         tipo: 'PLAZO_CANCELACION_VENCIDO',
       });
-      expect(prisma.reserva.update).not.toHaveBeenCalled();
+      expect(prisma.reserva.updateMany).not.toHaveBeenCalled();
     });
 
     it('Límite exacto: a exactamente 120 minutos se permite', async () => {
@@ -205,19 +223,58 @@ describe('ReservasService', () => {
     it('Socio cancela una reserva ajena: 404 y no cambia nada', async () => {
       prisma.reserva.findUnique.mockResolvedValue(reservaDe({ usuarioId: otroSocio.id }));
       await expect(servicio.cancelar(128, socio, {})).rejects.toMatchObject({ estado: 404 });
-      expect(prisma.reserva.update).not.toHaveBeenCalled();
+      expect(prisma.reserva.updateMany).not.toHaveBeenCalled();
     });
 
     it('persiste el motivo y quién canceló', async () => {
       prisma.reserva.findUnique.mockResolvedValue(reservaDe({ horaInicio: '13:00' }));
       await servicio.cancelar(128, socio, { motivo: 'Se suspendió por lluvia' });
-      expect(prisma.reserva.update).toHaveBeenCalledWith(
+      expect(prisma.reserva.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             estado: 'CANCELADA',
             canceladaPorId: socio.id,
             motivoCancelacion: 'Se suspendió por lluvia',
           }),
+        }),
+      );
+    });
+
+    it('la escritura va condicionada al estado CONFIRMADA', async () => {
+      prisma.reserva.findUnique.mockResolvedValue(reservaDe({ horaInicio: '13:00' }));
+
+      await servicio.cancelar(128, socio, {});
+
+      expect(prisma.reserva.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 128, estado: 'CONFIRMADA' } }),
+      );
+    });
+
+    /*
+     * Dos cancelaciones simultáneas: la segunda llega al `updateMany` cuando la
+     * fila ya está CANCELADA, así que no actualiza nada. Sin la condición en el
+     * `where`, las dos escribían, se mandaban dos mails y el registro de quién
+     * canceló quedaba pisado por la última (RN-10).
+     */
+    it('si otra cancelación ganó la carrera, devuelve 409 y no manda un segundo mail', async () => {
+      prisma.reserva.findUnique.mockResolvedValue(reservaDe({ horaInicio: '13:00' }));
+      prisma.reserva.updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(servicio.cancelar(128, socio, {})).rejects.toMatchObject({
+        estado: 409,
+        tipo: 'RESERVA_NO_CANCELABLE',
+      });
+      expect(notificaciones.enviarCancelacion).not.toHaveBeenCalled();
+    });
+
+    it('el reloj de canceladaEn sale de Reloj, no del sistema', async () => {
+      prisma.reserva.findUnique.mockResolvedValue(reservaDe({ horaInicio: '13:00' }));
+
+      await servicio.cancelar(128, socio, {});
+
+      expect(prisma.reserva.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ canceladaEn: new Date('2026-09-15T13:00:00.000Z') }),
         }),
       );
     });
@@ -259,9 +316,25 @@ describe('ReservasService', () => {
         where: {
           reservaId: 128,
           reenvio: true,
+          // Solo los que salieron: un reenvío fallido no gasta la cuota.
+          estado: 'ENVIADA',
           enviadaEn: { gte: new Date('2026-09-15T12:00:00.000Z') },
         },
       });
+    });
+
+    /*
+     * La respuesta sigue siendo 202 aunque el proveedor falle (RN-14), pero no
+     * puede afirmar que el mail salió: antes decía siempre "te reenviamos el
+     * mail" y la persona leía tres confirmaciones seguidas sin recibir nada.
+     */
+    it('si el envío falló, el mensaje no afirma que el mail salió', async () => {
+      notificaciones.reenviar.mockResolvedValue('FALLIDA');
+
+      const respuesta = await servicio.reenviarMail(128, socio);
+
+      expect(respuesta.mensaje).not.toContain('Te reenviamos');
+      expect(respuesta.mensaje).toContain('No pudimos entregar');
     });
 
     it('una reserva cancelada reenvía el aviso de cancelación, no la confirmación', async () => {

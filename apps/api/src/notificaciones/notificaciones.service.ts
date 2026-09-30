@@ -29,12 +29,20 @@ export type ReservaParaNotificar = {
 };
 
 /**
+ * Cómo terminó un envío. Se devuelve en lugar de `void` para que quien lo pide
+ * pueda decir la verdad: sin esto, la respuesta de un reenvío afirmaba que el
+ * mail había salido aunque el proveedor lo hubiera rechazado.
+ */
+export type ResultadoDeEnvio = 'ENVIADA' | 'FALLIDA';
+
+/**
  * Compone y envía los mails de reserva (spec `notificaciones`). El envío
  * nunca revierte la operación que lo dispara (RN-14): una falla se registra
  * como notificación `FALLIDA` con el error, y `enviarConfirmacion`,
- * `enviarCancelacion` y `reenviar` no relanzan esa falla. `enviarConfirmacion`
- * queda disponible para que el ítem 1.3 (creación de reserva) la invoque
- * después de confirmar la transacción.
+ * `enviarCancelacion` y `reenviar` **no propagan ninguna excepción**, ni del
+ * proveedor ni de la escritura en base; devuelven `'FALLIDA'`.
+ * `enviarConfirmacion` queda disponible para que el ítem 1.3 (creación de
+ * reserva) la invoque después de confirmar la transacción.
  */
 @Injectable()
 export class NotificacionesService {
@@ -46,12 +54,12 @@ export class NotificacionesService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async enviarConfirmacion(reserva: ReservaParaNotificar): Promise<void> {
-    await this.enviar(reserva, 'CONFIRMACION', false);
+  async enviarConfirmacion(reserva: ReservaParaNotificar): Promise<ResultadoDeEnvio> {
+    return this.enviar(reserva, 'CONFIRMACION', false);
   }
 
-  async enviarCancelacion(reserva: ReservaParaNotificar): Promise<void> {
-    await this.enviar(reserva, 'CANCELACION', false);
+  async enviarCancelacion(reserva: ReservaParaNotificar): Promise<ResultadoDeEnvio> {
+    return this.enviar(reserva, 'CANCELACION', false);
   }
 
   /**
@@ -60,45 +68,68 @@ export class NotificacionesService {
    * mail de una reserva"). `ReservasService.reenviarMail` ya validó el estado
    * y el límite de 3 por hora (RN-16); acá solo se decide qué plantilla usar.
    */
-  async reenviar(reserva: ReservaParaNotificar, activa: boolean): Promise<void> {
-    await this.enviar(reserva, activa ? 'CONFIRMACION' : 'CANCELACION', true);
+  async reenviar(reserva: ReservaParaNotificar, activa: boolean): Promise<ResultadoDeEnvio> {
+    return this.enviar(reserva, activa ? 'CONFIRMACION' : 'CANCELACION', true);
   }
 
+  /**
+   * Devuelve cómo terminó el envío y **no propaga nada**: quien la llama ya
+   * persistió su operación, así que un problema acá no puede convertirse en un
+   * error de la respuesta (RN-14). Por eso el perímetro cubre también la
+   * composición del mensaje y la escritura de la notificación, no solo la
+   * llamada al proveedor: cualquiera de las tres puede fallar y ninguna
+   * justifica decirle a la persona que su cancelación no se hizo.
+   */
   private async enviar(
     reserva: ReservaParaNotificar,
     tipo: 'CONFIRMACION' | 'CANCELACION',
     reenvio: boolean,
-  ): Promise<void> {
-    const asunto =
-      tipo === 'CONFIRMACION'
-        ? `Tu turno en Deploy está confirmado · ${reserva.codigo}`
-        : `Cancelamos tu turno en Deploy · ${reserva.codigo}`;
-    const texto = tipo === 'CONFIRMACION' ? this.cuerpoConfirmacion(reserva) : this.cuerpoCancelacion(reserva);
-
+  ): Promise<ResultadoDeEnvio> {
     try {
+      const asunto =
+        tipo === 'CONFIRMACION'
+          ? `Tu turno en Deploy está confirmado · ${reserva.codigo}`
+          : `Cancelamos tu turno en Deploy · ${reserva.codigo}`;
+      const texto = tipo === 'CONFIRMACION' ? this.cuerpoConfirmacion(reserva) : this.cuerpoCancelacion(reserva);
+
       await this.correo.enviar({ para: reserva.usuario.email, asunto, texto });
       await this.registrar(reserva.id, tipo, reserva.usuario.email, 'ENVIADA', reenvio);
+      return 'ENVIADA';
     } catch (causa) {
-      if (!(causa instanceof CorreoNoEnviadoError)) throw causa;
+      const motivo = causa instanceof CorreoNoEnviadoError ? causa.message : `Error inesperado: ${String(causa)}`;
 
       this.logger.error(
-        `No se pudo enviar el mail de ${tipo.toLowerCase()} de la reserva ${reserva.codigo}: ${causa.message}`,
+        `No se pudo enviar el mail de ${tipo.toLowerCase()} de la reserva ${reserva.codigo}: ${motivo}`,
+        causa instanceof Error ? causa.stack : undefined,
       );
-      await this.registrar(reserva.id, tipo, reserva.usuario.email, 'FALLIDA', reenvio, causa.message);
+      await this.registrar(reserva.id, tipo, reserva.usuario.email, 'FALLIDA', reenvio, motivo);
+      return 'FALLIDA';
     }
   }
 
-  private registrar(
+  /**
+   * Si la escritura falla, el log es el único rastro que queda: lleva todo lo
+   * que haría falta para reconstruir el envío a mano.
+   */
+  private async registrar(
     reservaId: number,
     tipo: 'CONFIRMACION' | 'CANCELACION',
     destinatario: string,
     estado: 'ENVIADA' | 'FALLIDA',
     reenvio: boolean,
     error?: string,
-  ) {
-    return this.prisma.notificacion.create({
-      data: { reservaId, tipo, destinatario, estado, reenvio, ...(error ? { error } : {}) },
-    });
+  ): Promise<void> {
+    try {
+      await this.prisma.notificacion.create({
+        data: { reservaId, tipo, destinatario, estado, reenvio, ...(error ? { error } : {}) },
+      });
+    } catch (causa) {
+      this.logger.error(
+        `No se pudo registrar la notificación ${tipo} de la reserva ${reservaId} para ${destinatario} ` +
+          `(estado ${estado}, reenvío ${reenvio}${error ? `, error del envío: ${error}` : ''}): ${String(causa)}`,
+        causa instanceof Error ? causa.stack : undefined,
+      );
+    }
   }
 
   private cuerpoConfirmacion(reserva: ReservaParaNotificar): string {
