@@ -13,6 +13,8 @@ El sitio institucional MUST mostrarse completo a cualquier visitante, sin sesió
 - **Contacto**: el formulario de contacto, la dirección, el teléfono, el mail y los horarios.
 - Un pie, en las páginas públicas, con los horarios, la dirección y los datos de contacto.
 
+**Con la sesión iniciada la navegación del header MUST personalizarse**: deja de ofrecer el recorrido de quien está conociendo el club y pasa a lo que le sirve a quien ya es socio. Todas las páginas institucionales MUST seguir existiendo y respondiendo por su dirección, e **Inicio MUST seguir alcanzable desde el logo del header**, que enlaza a `/`.
+
 La referencia de contenido y aspecto es el prototipo `docs/claude-design/Deploy Club.dc.html`.
 
 #### Scenario: Visitante sin sesión
@@ -29,7 +31,11 @@ La referencia de contenido y aspecto es el prototipo `docs/claude-design/Deploy 
 
 #### Scenario: Usuario con sesión
 - **WHEN** un usuario autenticado entra a `/`
-- **THEN** el header muestra su nombre y un acceso a "Mis reservas" en lugar del botón para ingresar
+- **THEN** el header muestra su nombre y su navegación es Disponibilidad, Mis reservas, Contacto y Mi perfil, en lugar del botón para ingresar y del recorrido del visitante
+
+#### Scenario: El club sigue disponible con sesión
+- **WHEN** un usuario autenticado abre `/el-club` por su dirección
+- **THEN** la página responde con su contenido completo, aunque no figure en su menú
 
 ### Requirement: El sitio institucional no depende de la API
 El contenido de Inicio, El club y Contacto MUST ser contenido estático del front, de modo que esas páginas MUST renderizar completas aunque la API no responda. Cualquier dato de la API que muestren, como los precios de las canchas o los turnos libres, MUST degradar en silencio: si la API no responde en 2 segundos, ese dato se omite y no se muestra ningún error.

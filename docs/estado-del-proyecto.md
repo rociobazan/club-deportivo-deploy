@@ -151,8 +151,12 @@ specs dejan de describir lo que la API hace.
 Los tres de Jeremías se archivaron el 28/09
 —`implementar-autenticacion` (1.1), `implementar-catalogo-y-disponibilidad` (1.2) e
 `implementar-landing-y-contacto` (1.5)— y sus deltas pasaron a `openspec/specs/`: siete requisitos
-nuevos, cuatro en `autenticacion` y uno en `catalogo`, `disponibilidad` e `institucional`. **Las
-specs ya describen lo que la API y el sitio hacen.**
+nuevos, cuatro en `autenticacion` y uno en `catalogo`, `disponibilidad` e `institucional`. El 30/09
+se archivó `implementar-perfil-de-usuario` (RF-15), que sumó dos requisitos más a `autenticacion`
+y modificó el de `institucional`.
+
+**Las specs describen lo que la API y el sitio hacen, salvo lo que trajo 1.4**: ese cambio sigue sin
+archivar, así que sus deltas todavía no están en `openspec/specs/`.
 
 Cada feature del hito 1 arranca con su propio `/opsx:propose`, que los cuatro revisan antes del
 `/opsx:apply`.
