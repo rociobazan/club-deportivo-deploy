@@ -4,9 +4,12 @@ node_modules/
 .pnp.js
 
 # Variables de entorno (NUNCA subir)
-.env
-.env.local
-.env.*.local
+#
+# Va con comodín a propósito: la lista anterior nombraba `.env`, `.env.local` y
+# `.env.*.local`, así que un `.env.production` o un `.env.development` se
+# commiteaban sin que nada avisara. El repositorio es público, así que el
+# descuido se paga caro. La excepción del final es la única que se versiona.
+.env*
 !.env.example
 
 # Build de Nest
