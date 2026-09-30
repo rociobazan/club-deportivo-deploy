@@ -1,15 +1,7 @@
 import { Transform } from 'class-transformer';
 import { IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
-/**
- * Recorta antes de validar. Sin esto, `"   "` pasa `@MinLength(1)` —son tres
- * caracteres— y el servicio lo guarda como cadena vacía: se puede borrar el
- * nombre propio mandando espacios.
- */
-const recortado = () =>
-  Transform(({ value }: { value: unknown }) =>
-    typeof value === 'string' ? value.trim() : value,
-  );
+import { recortar } from '../../common/transformaciones';
 
 /**
  * `ActualizarPerfilRequest` del contrato. Todos los campos son opcionales:
@@ -27,27 +19,27 @@ const recortado = () =>
  */
 export class ActualizarPerfilDto {
   @IsOptional()
-  @recortado()
+  @Transform(recortar)
   @IsString()
   @MinLength(1)
   @MaxLength(60)
   nombre?: string;
 
   @IsOptional()
-  @recortado()
+  @Transform(recortar)
   @IsString()
   @MinLength(1)
   @MaxLength(60)
   apellido?: string;
 
   @IsOptional()
-  @recortado()
+  @Transform(recortar)
   @IsEmail()
   email?: string;
 
   /** `null` borra el teléfono; `@IsOptional()` deja pasar `null` y `undefined`. */
   @IsOptional()
-  @recortado()
+  @Transform(recortar)
   @IsString()
   @MaxLength(30)
   telefono?: string | null;
