@@ -1,4 +1,4 @@
-import { aFechaDb, comparar, deFechaDb, esFechaValida, esHoraValida } from './fechas';
+import { aFechaDb, comparar, deFechaDb, duracionLegible, esFechaValida, esHoraValida } from './fechas';
 
 describe('aFechaDb y deFechaDb', () => {
   it('van y vuelven sin que la zona horaria se meta en el medio', () => {
@@ -46,5 +46,18 @@ describe('comparar', () => {
     expect(comparar('2026-09-14', '2026-09-15')).toBeLessThan(0);
     expect(comparar('2026-09-15', '2026-09-15')).toBe(0);
     expect(comparar('14:00', '09:30')).toBeGreaterThan(0);
+  });
+});
+
+describe('duracionLegible', () => {
+  it('expresa en horas los múltiplos de 60, con singular y plural', () => {
+    expect(duracionLegible(120)).toBe('2 horas');
+    expect(duracionLegible(60)).toBe('1 hora');
+  });
+
+  it('expresa en minutos lo que no es un múltiplo de 60, en vez de "1.5 horas"', () => {
+    expect(duracionLegible(90)).toBe('90 minutos');
+    expect(duracionLegible(45)).toBe('45 minutos');
+    expect(duracionLegible(1)).toBe('1 minuto');
   });
 });

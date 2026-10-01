@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { TipoNotificacion } from '@prisma/client';
 import { ErrorDeApi } from '../common/error-de-api';
-import { aFechaDb, comparar, deFechaDb, sumarDias } from '../common/fechas';
+import { aFechaDb, comparar, deFechaDb, duracionLegible, sumarDias } from '../common/fechas';
 import { Bloque, generarGrilla } from '../common/grilla';
 import { ventanaDelDia } from '../common/horario';
 import { Reloj } from '../common/reloj';
@@ -523,7 +523,7 @@ export class ReservasService {
         422,
         'PLAZO_CANCELACION_VENCIDO',
         'Ya no es posible cancelar esta reserva',
-        `La cancelación debe hacerse con al menos ${this.configuracion.cancelacionMinutosMinimos / 60} horas de anticipación.`,
+        `La cancelación debe hacerse con al menos ${duracionLegible(this.configuracion.cancelacionMinutosMinimos)} de anticipación.`,
       );
     }
 

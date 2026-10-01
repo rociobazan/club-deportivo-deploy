@@ -52,3 +52,16 @@ export function sumarDias(fecha: string, dias: number): string {
   const resultado = new Date(Date.UTC(anio, mes - 1, dia + dias));
   return resultado.toISOString().slice(0, 10);
 }
+
+/**
+ * Un plazo en minutos, como lo leería una persona: "2 horas", "1 hora" o
+ * "90 minutos". Dividir por 60 a secas daba "1.5 horas" o "1 horas" apenas el
+ * plazo no era un múltiplo de dos horas.
+ */
+export function duracionLegible(minutos: number): string {
+  if (minutos % 60 === 0) {
+    const horas = minutos / 60;
+    return `${horas} ${horas === 1 ? 'hora' : 'horas'}`;
+  }
+  return `${minutos} ${minutos === 1 ? 'minuto' : 'minutos'}`;
+}

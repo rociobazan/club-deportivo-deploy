@@ -10,6 +10,7 @@ import type { Reserva } from "@/lib/api/types";
 import {
   ahoraEnElClub,
   CANCELACION_MINUTOS_MINIMOS,
+  duracionLegible,
   fechaLegible,
   minutosHastaElTurno,
   precioLegible,
@@ -108,7 +109,7 @@ export default async function PaginaDetalleReserva({ params }: Props) {
       {reserva.estado === "CONFIRMADA" && !puedeCancelar ? (
         <p className="mt-4 text-sm text-text-muted">
           Esta reserva ya no se puede cancelar: faltan menos de{" "}
-          {CANCELACION_MINUTOS_MINIMOS / 60} horas para el turno.
+          {duracionLegible(CANCELACION_MINUTOS_MINIMOS)} para el turno.
         </p>
       ) : null}
 

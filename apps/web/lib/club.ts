@@ -39,8 +39,10 @@ export const CANCELACION_MINUTOS_MINIMOS = (() => {
   if (!crudo) return 120;
 
   const minutos = Number(crudo);
-  // Mismo criterio que `entero()` en apps/api/src/configuracion.ts: entero > 0.
-  if (!Number.isInteger(minutos) || minutos <= 0) {
+  // Mismo criterio que `entero()` en apps/api/src/configuracion.ts: solo
+  // dígitos y mayor que 0. La expresión regular deja afuera "120.0" o "1e2",
+  // que `Number` convierte a un entero pero la API rechaza al arrancar.
+  if (!/^\d+$/.test(crudo) || !Number.isInteger(minutos) || minutos <= 0) {
     throw new Error(
       `CANCELACION_MINUTOS_MINIMOS tiene un valor inválido ("${crudo}"): usá un entero mayor que 0, ` +
         "el mismo que en apps/api/.env.",
@@ -155,3 +157,16 @@ export const precioLegible = (monto: number) =>
     currency: "ARS",
     maximumFractionDigits: 0,
   }).format(monto);
+
+/**
+ * Un plazo en minutos, como lo leería una persona: "2 horas", "1 hora" o
+ * "90 minutos". Es la misma regla que `duracionLegible` de la API, para que la
+ * pantalla y el mail digan lo mismo.
+ */
+export function duracionLegible(minutos: number): string {
+  if (minutos % 60 === 0) {
+    const horas = minutos / 60;
+    return `${horas} ${horas === 1 ? "hora" : "horas"}`;
+  }
+  return `${minutos} ${minutos === 1 ? "minuto" : "minutos"}`;
+}
