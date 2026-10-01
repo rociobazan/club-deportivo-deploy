@@ -110,6 +110,18 @@ describe('contacto (e2e)', () => {
       expect(correo.enviados).toHaveLength(0);
     });
 
+    it('Nombre, teléfono o mensaje de solo espacios: 400 y no se envía nada', async () => {
+      for (const campo of ['nombre', 'telefono', 'mensaje']) {
+        const respuesta = await api()
+          .post('/api/v1/contacto')
+          .send({ ...valido, [campo]: '   ' })
+          .expect(400);
+
+        expect(respuesta.body.tipo).toBe('SOLICITUD_INVALIDA');
+      }
+      expect(correo.enviados).toHaveLength(0);
+    });
+
     it('Mensaje demasiado largo: 400 SOLICITUD_INVALIDA y no se envía nada', async () => {
       const respuesta = await api()
         .post('/api/v1/contacto')

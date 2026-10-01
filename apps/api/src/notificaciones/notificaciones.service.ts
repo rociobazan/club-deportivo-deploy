@@ -3,7 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { aNumero } from '../catalogo/mapeadores';
 import { CORREO, CorreoNoEnviadoError } from '../common/correo/correo';
 import type { Correo } from '../common/correo/correo';
-import { deFechaDb } from '../common/fechas';
+import { deFechaDb, duracionLegible } from '../common/fechas';
 import { CONFIGURACION } from '../configuracion';
 import type { Configuracion } from '../configuracion';
 import { PrismaService } from '../prisma/prisma.service';
@@ -141,7 +141,7 @@ export class NotificacionesService {
       ...(reserva.cantidadJugadores ? [`Jugadores: ${reserva.cantidadJugadores}`] : []),
       ...this.lineasDeEquipamiento(reserva),
       `Total a pagar en el club: ${aNumero(reserva.montoTotal)}`,
-      `Podés cancelar sin costo hasta ${this.configuracion.cancelacionMinutosMinimos / 60} horas antes del turno.`,
+      `Podés cancelar sin costo hasta ${duracionLegible(this.configuracion.cancelacionMinutosMinimos)} antes del turno.`,
     ].join('\n');
   }
 

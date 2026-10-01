@@ -110,11 +110,46 @@ function traducir(excepcion: unknown): Omit<CuerpoDeError, 'instancia'> {
     }
   }
 
+  const delParser = errorDelParser(excepcion);
+  if (delParser === 413) {
+    return {
+      tipo: 'CUERPO_DEMASIADO_GRANDE',
+      titulo: 'La solicitud es demasiado grande',
+      estado: 413,
+    };
+  }
+  if (delParser !== undefined) {
+    return {
+      tipo: 'SOLICITUD_INVALIDA',
+      titulo: 'La solicitud tiene datos inválidos',
+      estado: delParser,
+    };
+  }
+
   return {
     tipo: 'ERROR_INTERNO',
     titulo: 'Algo salió mal de nuestro lado',
     estado: 500,
   };
+}
+
+/**
+ * Los errores que lanza el parser del cuerpo de Express (`body-parser`) antes
+ * de que la solicitud llegue a Nest. No son `HttpException`, así que sin esto
+ * un cuerpo de más de 100 KB salía como 500, cuando es un error de quien lo
+ * manda. `body-parser` los marca con `expose: true` y un `status` 4xx; se
+ * devuelve ese estado, o `undefined` si el error no es de ese tipo.
+ */
+function errorDelParser(excepcion: unknown): number | undefined {
+  if (typeof excepcion !== 'object' || excepcion === null) return undefined;
+  const { expose, status, type } = excepcion as {
+    expose?: unknown;
+    status?: unknown;
+    type?: unknown;
+  };
+  const esDelParser = expose === true && typeof type === 'string';
+  const es4xx = typeof status === 'number' && status >= 400 && status < 500;
+  return esDelParser && es4xx ? status : undefined;
 }
 
 /**

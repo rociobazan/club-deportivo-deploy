@@ -273,6 +273,15 @@ describe('autenticacion (e2e)', () => {
       expect(body.email).toBe(`otra-direccion${DOMINIO}`);
     });
 
+    it('null en nombre, apellido o mail: 400 SOLICITUD_INVALIDA, no 500', async () => {
+      const token = await sesionNueva();
+
+      for (const cambios of [{ nombre: null }, { apellido: null }, { email: null }]) {
+        const { body } = await actualizar(token, cambios).expect(400);
+        expect(body).toMatchObject({ tipo: 'SOLICITUD_INVALIDA', estado: 400 });
+      }
+    });
+
     it('Mail ya usado por otra cuenta: 409 EMAIL_YA_REGISTRADO y ningún dato cambia', async () => {
       const ocupado = `ocupado${DOMINIO}`;
       await registrar({ ...registro, email: ocupado }).expect(201);

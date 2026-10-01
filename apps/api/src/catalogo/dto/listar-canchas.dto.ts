@@ -1,5 +1,6 @@
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsOptional, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { ENTERO_MAXIMO_DB } from '../../common/validadores';
 import { aBooleano } from '../../common/transformaciones';
 
 /** Los query params llegan como texto: cada campo declara su transformación (decisión 6). */
@@ -8,6 +9,7 @@ export class ListarCanchasDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(ENTERO_MAXIMO_DB)
   disciplinaId?: number;
 
   @IsOptional()

@@ -4,10 +4,11 @@ import {
   IsArray,
   IsInt,
   IsOptional,
+  Max,
   Min,
   ValidateNested,
 } from 'class-validator';
-import { EsFecha, EsHora } from '../../common/validadores';
+import { ENTERO_MAXIMO_DB, EsFecha, EsHora } from '../../common/validadores';
 
 /*
  * `CrearReservaRequest` del contrato. El body es JSON, así que los enteros ya
@@ -23,16 +24,19 @@ import { EsFecha, EsHora } from '../../common/validadores';
 export class ItemEquipamientoDto {
   @IsInt()
   @Min(1)
+  @Max(ENTERO_MAXIMO_DB)
   equipamientoId!: number;
 
   @IsInt()
   @Min(1)
+  @Max(ENTERO_MAXIMO_DB)
   cantidad!: number;
 }
 
 export class CrearReservaDto {
   @IsInt()
   @Min(1)
+  @Max(ENTERO_MAXIMO_DB)
   canchaId!: number;
 
   @EsFecha()
@@ -45,6 +49,7 @@ export class CrearReservaDto {
   @IsOptional()
   @IsInt()
   @Min(1)
+  @Max(ENTERO_MAXIMO_DB)
   cantidadJugadores?: number;
 
   @IsOptional()
