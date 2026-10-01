@@ -625,8 +625,11 @@ export class ReservasService {
   /** 404, no 403: una reserva ajena no se distingue de una inexistente (RN-13). */
   private async buscar(id: number, usuario: UsuarioAutenticado): Promise<ReservaConDetalle> {
     // Un id que no entra en la columna no puede existir: sin esto, la base lo
-    // rechazaba con un error que salía como 500 en vez de 404.
-    if (id > ENTERO_MAXIMO_DB) throw noEncontrada(id);
+    // rechazaba con un error que salía como 500 en vez de 404. El rango se
+    // acota por los dos lados, porque `ParseIntPipe` acepta el signo y el INT4
+    // tiene piso además de techo; y por debajo de 1 tampoco hay ids posibles,
+    // porque son `autoincrement()`.
+    if (id < 1 || id > ENTERO_MAXIMO_DB) throw noEncontrada(id);
 
     const reserva = await this.prisma.reserva.findUnique({ where: { id }, include: INCLUDE });
     if (!reserva || (usuario.rol === 'SOCIO' && reserva.usuarioId !== usuario.id)) {

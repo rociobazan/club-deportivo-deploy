@@ -224,15 +224,20 @@ describe('reservas (e2e)', () => {
   });
 
   describe('Ids fuera del rango de la base', () => {
-    it('un id de reserva mayor que el máximo de la columna responde 404, no 500', async () => {
-      for (const ruta of ['', '/cancelacion', '/reenvio-mail']) {
-        const metodo = ruta === '' ? 'get' : ruta === '/cancelacion' ? 'patch' : 'post';
-        const { body } = await api()
-          [metodo](`/api/v1/reservas/99999999999${ruta}`)
-          .set('Authorization', bearer(titular.id, 'SOCIO'))
-          .send({})
-          .expect(404);
-        expect(body.tipo).toBe('NO_ENCONTRADO');
+    // Los dos extremos del INT4 y el 0: `ParseIntPipe` acepta el signo, así que
+    // sin el piso el negativo llegaba a la base igual que el positivo; y los
+    // ids son `autoincrement()`, así que por debajo de 1 no hay ninguno posible.
+    it('un id de reserva fuera del rango de la columna responde 404, no 500', async () => {
+      for (const id of ['99999999999', '-99999999999', '0']) {
+        for (const ruta of ['', '/cancelacion', '/reenvio-mail']) {
+          const metodo = ruta === '' ? 'get' : ruta === '/cancelacion' ? 'patch' : 'post';
+          const { body } = await api()
+            [metodo](`/api/v1/reservas/${id}${ruta}`)
+            .set('Authorization', bearer(titular.id, 'SOCIO'))
+            .send({})
+            .expect(404);
+          expect(body.tipo).toBe('NO_ENCONTRADO');
+        }
       }
     });
 
