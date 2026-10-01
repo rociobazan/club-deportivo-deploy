@@ -11,9 +11,11 @@ esas decisiones: las enlaza.
 dice la memoria. Los comandos que producen cada número están en la última sección, para que
 cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla.
 
-> Los números de código, contrato y tests están medidos sobre la rama de este PR (**#34**) y
-> valen cuando entre. Los de participación de la sección 6 están medidos sobre `main`, que es lo
-> que devuelven los comandos de la última sección.
+> Todos los números de este documento están medidos sobre `main`, con los comandos de la última
+> sección. Si alguna vez se miden sobre la rama de un PR todavía abierto, hay que decirlo acá y
+> **volver a medirlos cuando entre**. La vez anterior quedaron medidos sobre la rama del #34 con
+> la nota "valen cuando entre", el #34 entró y nadie los volvió a medir: el documento siguió
+> afirmando en presente un estado que ya era viejo.
 
 ---
 
@@ -21,7 +23,7 @@ cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla.
 
 | Medida | Estado |
 |---|---|
-| Ítems del reparto cerrados | **9 de 12**: todo el hito 0, más 1.1, 1.2, 1.4, 1.5 y 1.7 |
+| Ítems del reparto cerrados | **10 de 12**: todo el hito 0, más 1.1, 1.2, 1.4, 1.5, 1.7 y 1.8 |
 | Requisitos funcionales implementados | **11 de 16**: RF-00 a RF-03, RF-05 a RF-10 y RF-15 |
 | Operaciones del contrato con endpoint | **14 de 20**: el contrato creció con `PATCH /auth/perfil` y `PUT /auth/password` |
 | Pantallas de producto | **10**: inicio, El club, contacto, canchas, disponibilidad, ingreso, registro, mis reservas con su detalle, y mi perfil |
@@ -30,8 +32,8 @@ cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla.
 **El producto arrancó.** Un visitante ya puede entrar al sitio, ver el club y los precios,
 consultar qué turnos hay libres, escribir por el formulario de contacto, registrarse e iniciar
 sesión, ver sus reservas y cancelarlas. Lo que todavía no puede es **crear** una reserva: eso es
-1.3, que tiene la propuesta aprobada y la implementación sin empezar. Con 1.6 son los dos ítems
-que faltan.
+1.3, que tiene la propuesta aprobada y la implementación todavía fuera de `main`. Con 1.6 son los
+dos ítems que faltan.
 
 La infraestructura estaba lista desde el hito 0 —contrato, specs, base de datos, CI, tests,
 README y la base del front—, que era la condición para trabajar en paralelo.
@@ -61,12 +63,12 @@ pantalla en Next que la consume.
 | 1.1 | Autenticación: registro, login, JWT, guards | RF-00 | **Jeremías** | ✅ en `main` (PR #19, 28/09) |
 | 1.1b | Login con Google | — | — | ⛔ **descartado el 27/09**: el equipo decidió no hacerlo ([ADR 0001](adr/0001-login-con-google.md), marcada como descartada) |
 | 1.2 | Catálogo y disponibilidad | RF-01 a RF-03 | **Jeremías** | ✅ en `main` (PR #25, 28/09) |
-| 1.3 | Crear reserva | RF-04 | **Adrián** | 🟡 propuesta de OpenSpec en `main` (PR #31, 30/09); **las 30 tareas sin empezar** |
+| 1.3 | Crear reserva | RF-04 | **Adrián** | 🟡 propuesta de OpenSpec en `main` (PR #31, 30/09); implementación hecha en local, PR por abrir (ver la sección 7) |
 | 1.4 | Mis reservas, cancelación y mails | RF-05 a RF-08 | **Rocío** | ✅ en `main` (PR #32, 30/09) |
 | 1.5 | Sitio institucional y contacto | RF-09, RF-10 | **Jeremías** | ✅ en `main` (PR #26, 28/09) |
 | 1.6 | Administración | RF-11 a RF-14 | **Renzo** | ❌ sin propuesta todavía: puede arrancar |
 | 1.7 | README | — | Jeremías | ✅ hecho el 27/09: la captura de la protección se reemplazó por una tabla con el estado real del ruleset, leída de la API de GitHub y reproducible con un comando |
-| 1.8 | Mi perfil: datos de la cuenta | RF-15 | Jeremías | 🟡 implementada y **aprobada**, en el PR #34 |
+| 1.8 | Mi perfil: datos de la cuenta | RF-15 | Jeremías | ✅ en `main` (PR #34, 30/09) |
 
 ### El reparto, ya cerrado
 
@@ -80,19 +82,17 @@ Dos cosas a tener en cuenta:
 - **1.3 arranca sobre un módulo `reservas` que ya existe.** El #32 entró el 30/09 y trajo
   `reservas.service.ts`, `reservas.controller.ts`, `reservas.module.ts`, `mapeadores.ts` y
   `dto/dto.spec.ts`, que son cinco de los archivos que el `tasks.md` de 1.3 manda **crear**.
-  **Adrián tiene que ajustar esas cinco tareas antes de empezar**: ahora son "agregar a", no
-  "crear". Salió bien de casualidad y por el orden de merge, no porque estuviera planificado.
+  Para esas cinco, el `tasks.md` dice "crear" donde en realidad toca "agregar a". Salió bien de
+  casualidad y por el orden de merge, no porque estuviera planificado.
 
 **Al abrir un PR apilado, ponele `main` de base, no la rama de abajo.** El 28/09 la pila de
 Jeremías se mergeó con las bases apiladas puestas y cuatro PRs terminaron adentro de su rama
 base en vez de en `main`; hubo que rehacerlos como #25 a #28. La nota "retargetear antes de
 mergear" en el cuerpo del PR no alcanza, porque quien la tiene que ejecutar es quien mergea.
 
-**1.4 quedó implementado el 29/09** (módulos `reservas` y `notificaciones`, pantalla
-`/mis-reservas`), con 24 unitarios de `ReservasService` y 30 e2e propios en verde, más lint y
-build de `web` en verde. Falta abrir el PR contra `main` y conseguir la aprobación; los números
-de la sección 1 y 4 de este documento siguen describiendo lo que hay en `main` hoy, y se
-actualizan cuando el PR entre.
+**1.4 está en `main` desde el 30/09** (módulos `reservas` y `notificaciones`, pantalla
+`/mis-reservas`), con 24 unitarios de `ReservasService` y 30 e2e propios, y sus deltas ya
+pasaron a `openspec/specs/reservas`. Entró con el PR #32 y se archivó con el #40.
 
 ---
 
@@ -109,7 +109,7 @@ transversal que las features nuevas reutilizan sin volver a decidir nada:
   (todo lo que compara contra el presente pasa por ahí) y el cliente de mail `Correo`.
 - Esquema completo en `prisma/schema.prisma`, con las siete tablas, y migraciones aplicadas.
 - Seed idempotente con disciplinas, canchas, equipamiento y usuarios de prueba.
-- Tests en verde (Node 24 con `--experimental-vm-modules`): 218 unitarios y 111 e2e en serie.
+- Tests en verde (Node 24 con `--experimental-vm-modules`): 222 unitarios y 111 e2e en serie.
 
 **14 de 20 operaciones del contrato tienen endpoint**: las cinco de `auth` (registro, login, ver
 el perfil, editarlo y cambiar la contraseña), las de catálogo y disponibilidad, `POST /contacto` y
@@ -220,20 +220,24 @@ Cuenta para la evaluación: la lista de *Contributors* es parte de lo que se mir
 
 | Persona | Commits en `main` | PRs mergeados |
 |---|---|---|
-| Jeremías | 84 | 29 |
+| Jeremías | 95 | 35 |
 | Adrián | 18 | 3 |
-| Rocío | 6 | 1 |
+| Rocío | 7 | 2 |
 | Renzo | **0** | **0** |
 
 Dos cosas que conviene mirar de frente:
 
 - **Renzo ya es colaborador del repo, pero sigue sin ninguna contribución**: cero commits y cero
   PRs. Ya no hay nada que lo bloquee, y ahora tiene ítem propio (1.6).
-- **El reparto está muy desbalanceado, y se agrandó.** Jeremías cerró sus tres ítems del hito 1
-  y eso le sumó casi cincuenta commits. `requisitos.md` §8 desaconseja repartir por capas
-  justamente porque desbalancea los commits, y esto se evalúa. El reparto ya está cerrado, así que
-  lo que lo corrige ahora es que 1.3, 1.4 y 1.6 **entren**: cada feature completa (spec, endpoint,
-  tests, pantalla) da un volumen parecido al de las que ya entraron.
+- **El reparto está muy desbalanceado, y se agrandó.** Jeremías cerró sus tres ítems del hito 1,
+  sumó el RF-15 y los arreglos del 30/09, y con eso pasó de 84 a 95 commits.
+  `requisitos.md` §8 desaconseja repartir por capas justamente porque desbalancea los commits, y
+  esto se evalúa. El reparto ya está cerrado, así que lo que lo corrige ahora es que **1.3 y 1.6
+  entren**: cada feature completa (spec, endpoint, tests, pantalla) da un volumen parecido al de
+  las que ya entraron. Con una salvedad: **el volumen de *commits* depende de cómo se parta el
+  trabajo, no solo de cuánto se hace.** 1.4 es una feature completa —spec, dos módulos de API,
+  pantalla y tests— y le dio a Rocío **cuatro commits**. Quien quiera que su aporte se vea en
+  *Contributors* conviene que commitee por paso, no de una sola vez al final.
 
 > `git shortlog` muestra a Jeremías con dos nombres (`JereDev` y `Jeremias Fernandez`), pero los
 > dos commits salen del mismo email, y GitHub arma *Contributors* por email. Cuenta como una
@@ -255,9 +259,17 @@ Dos cosas que conviene mirar de frente:
 
 ### Cada quien con su ítem
 
-2. **Adrián — 1.3.** La propuesta está en `main` desde el 30/09; faltan las 30 tareas. Conviene
-   **esperar a que entre el #32** y ajustar el `tasks.md`: cinco de los archivos que manda crear
-   los crea ese PR.
+2. **Adrián — 1.3.** La propuesta está en `main` desde el 30/09, con las 30 tareas sin tildar.
+   **Avisó el 30/09 que tiene la implementación hecha en local** (API, front y tests) y que va a
+   pushear `feature/spec-creacion-reserva` con `--force-with-lease` para abrir el PR. Dos cosas
+   para mirar en la revisión, que el CI no puede ver:
+   - **Que el conteo de reservas activas (RN-07) esté adentro de `$transaction` y después del
+     lock** de la tarea 4.1. Contarlo antes deja el `SELECT … FOR UPDATE` sin efecto y dos
+     solicitudes simultáneas del mismo socio se pasan del límite igual. **Ninguna suite de este
+     repo puede detectarlo**: los e2e corren con `maxWorkers: 1` y Playwright con `workers: 1`,
+     así que nunca hay dos solicitudes a la vez. Es revisión de código, no de CI.
+   - **Que la rama haya mergeado `main`, y no la rama de Rocío.** 1.4 está en `main` desde el #32;
+     mergear su rama repite el enredo del 28/09.
 3. **Renzo — 1.6.** Sin empezar: arranca con el `/opsx:propose` de administración. Es el único
    integrante sin ninguna contribución, así que es lo que más mueve la aguja de la evaluación.
 4. ~~**Rocío — el ruleset.**~~ **Resuelto el 30/09**: `e2e` es el cuarto check obligatorio.
