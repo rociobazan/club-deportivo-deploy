@@ -115,7 +115,7 @@ Las tres primeras las usa este cambio. `CANCELACION_MINUTOS_MINIMOS` **no la con
 
 La transacción hace: locks de la decisión 3 → conteos de stock y de reservas activas → `INSERT` de la reserva → `INSERT` de las filas de `reserva_equipamiento` (en una sola llamada). Todo lo que no es escritura —cancha, disciplina, ítems, reglas de tiempo— se resuelve antes, para que la transacción sea lo más corta posible.
 
-**El punto de enganche de 1.4** queda en `ReservasService.crear()`, inmediatamente después de que `$transaction` resuelve y antes del `return`, con un comentario que lo nombra. Ahí, y solo ahí, va el envío del mail de confirmación: **después** del commit, porque RN-14 exige que una falla del proveedor no revierta la reserva ni cambie la respuesta. Este cambio no manda nada; deja el lugar y la razón escritos.
+**El punto de enganche de 1.4** queda en `ReservasService.crear()`, inmediatamente después de que `$transaction` resuelve y antes del `return`, con un comentario que lo nombra. Ahí, y solo ahí, va el envío del mail de confirmación: **después** del commit, porque RN-14 exige que una falla del proveedor no revierta la reserva ni cambie la respuesta. Este cambio dejó el lugar y la razón escritos y no mandaba nada. **Al integrar 1.4 el mail quedó cableado:** `crear()` llama a `NotificacionesService.enviarConfirmacion()` en ese punto, después del commit, y como ese servicio no propaga y devuelve el estado del envío, una falla del proveedor no revierte la reserva ni cambia la respuesta (RN-14).
 
 ### 9. Front: la URL es el estado, el total es lo único que hace el cliente
 

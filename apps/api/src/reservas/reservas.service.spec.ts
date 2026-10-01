@@ -440,7 +440,7 @@ function armar(escenario: Escenario = {}) {
           // el mapeador combinado los usa para `cliente` y para `cancha`.
           usuario: { nombre: 'E2E', apellido: 'Socio', email: 'socio@e2e.test' },
           cancha: {
-            ...(canchaDb ?? {}),
+            ...canchaDb,
             nombre: canchaDb?.nombre ?? 'Polvo',
             disciplina: { nombre: canchaDb?.disciplina.nombre ?? 'Tenis' },
           },
