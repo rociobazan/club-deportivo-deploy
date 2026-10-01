@@ -163,10 +163,11 @@ Cada funcionalidad empieza por su especificación:
 | `specs` | Las specs de OpenSpec (`openspec validate --all --strict`) y el contrato OpenAPI |
 | `api` | Aplica las migraciones sobre un PostgreSQL 17 vacío y corre lint, build, tests unitarios y e2e de la API |
 | `web` | Lint y build del front; el build corre TypeScript, así que también verifica los tipos |
+| `e2e` | Tests de navegador con Playwright contra la pila entera: Postgres, la API y el front en modo producción |
 
-La protección de `main` exige los tres checks en verde y una aprobación antes de mergear, sin excepciones para los administradores. El detalle está en [`docs/arquitectura.md`](docs/arquitectura.md), secciones 6 y 7.
+La protección de `main` exige los cuatro checks en verde y una aprobación antes de mergear, sin excepciones para los administradores. El detalle está en [`docs/arquitectura.md`](docs/arquitectura.md), secciones 6 y 7.
 
-Este es el estado real del *ruleset*, leído de la API de GitHub el 27/09/2026. Va como tabla y no como captura a propósito: una captura no se puede verificar y envejece sin que nadie se entere, y cualquiera puede reproducir esta:
+Este es el estado real del *ruleset*, leído de la API de GitHub el 30/09/2026. Va como tabla y no como captura a propósito: una captura no se puede verificar y envejece sin que nadie se entere, y cualquiera puede reproducir esta:
 
 ```bash
 gh api repos/rociobazan/club-deportivo-deploy/rulesets/23795821
@@ -177,7 +178,7 @@ gh api repos/rociobazan/club-deportivo-deploy/rulesets/23795821
 | Estado | `active` sobre la rama por defecto (`main`) |
 | Quién puede saltearla | **Nadie**: la lista de *bypass* está vacía, ni siquiera los administradores |
 | Pull request | Obligatorio, con **1 aprobación** |
-| Checks requeridos | `specs`, `api` y `web`, los tres en verde |
+| Checks requeridos | `specs`, `api`, `web` y `e2e`, los cuatro en verde (`e2e` desde el 30/09) |
 | Rama al día | Obligatorio: hay que actualizar con `main` antes de mergear |
 | Borrar `main` | Bloqueado |
 | Reescribir la historia | Bloqueado (no se admite *force push*) |

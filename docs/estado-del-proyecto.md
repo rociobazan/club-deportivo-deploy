@@ -25,7 +25,7 @@ cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla.
 | Requisitos funcionales implementados | **12 de 16**: RF-00 a RF-10 y RF-15 |
 | Operaciones del contrato con endpoint | **15 de 20**: se sumó `POST /reservas` |
 | Pantallas de producto | **11**: inicio, El club, contacto, canchas, disponibilidad, ingreso, registro, **reservar**, mis reservas con su detalle, y mi perfil |
-| Protección de `main` | ✅ **activa**: 1 aprobación y los tres checks |
+| Protección de `main` | ✅ **activa**: 1 aprobación y los cuatro checks |
 
 **El recorrido principal está completo.** Un visitante ya puede entrar al sitio, ver el club y
 los precios, consultar qué turnos hay libres, escribir por el formulario de contacto, registrarse
@@ -165,10 +165,10 @@ Los tres de Jeremías se archivaron el 28/09
 `implementar-landing-y-contacto` (1.5)— y sus deltas pasaron a `openspec/specs/`: siete requisitos
 nuevos, cuatro en `autenticacion` y uno en `catalogo`, `disponibilidad` e `institucional`. El 30/09
 se archivó `implementar-perfil-de-usuario` (RF-15), que sumó dos requisitos más a `autenticacion`
-y modificó el de `institucional`.
+y modificó el de `institucional`, y también `implementar-reservas-notificaciones` (1.4), que sumó
+un requisito a `reservas`.
 
-**Las specs describen lo que la API y el sitio hacen, salvo lo que trajo 1.4**: ese cambio sigue sin
-archivar, así que sus deltas todavía no están en `openspec/specs/`.
+**Las specs describen lo que la API y el sitio hacen.**
 
 Cada feature del hito 1 arranca con su propio `/opsx:propose`, que los cuatro revisan antes del
 `/opsx:apply`.
@@ -179,8 +179,8 @@ Cada feature del hito 1 arranca con su propio `/opsx:propose`, que los cuatro re
 
 ### CI
 
-Cuatro jobs en cada PR a `main` y en cada push a `main`. Los tres primeros son los checks
-**obligatorios** del ruleset; `e2e` todavía no lo es:
+Cuatro jobs en cada PR a `main` y en cada push a `main`. Los cuatro son checks **obligatorios**
+del ruleset:
 
 | Check | Qué corre |
 |---|---|
@@ -189,13 +189,13 @@ Cuatro jobs en cada PR a `main` y en cada push a `main`. Los tres primeros son l
 | `web` | Lint y build del front, que además verifica los tipos |
 | `e2e` | 25 tests de navegador con Playwright contra la pila entera: Postgres, la API y el front servido en producción ([ADR 0002](adr/0002-tests-e2e-con-playwright.md)) |
 
-**`e2e` no bloquea todavía.** Corre e informa, pero sumarlo como cuarto check obligatorio lo tiene
-que hacer `rociobazan`: editar un *ruleset* pide permiso de admin, y es la única cuenta que lo
-tiene —el resto figura como `write`—. Hasta entonces, un PR con los e2e en rojo se puede mergear
-igual.
+**`e2e` bloquea desde el 30/09.** Hasta esa fecha corría e informaba, así que un PR con los e2e en
+rojo se podía mergear igual. Lo sumó `rociobazan`, porque editar un *ruleset* pide permiso de admin
+y es la única cuenta que lo tiene —el resto figura como `write`—.
 
-Se agrega desde `Settings → Rules → main`, tildando `e2e` en *Require status checks to pass*. Los
-tres PRs abiertos hoy lo tienen en verde, así que sumarlo no bloquea nada de lo que está en vuelo.
+Ese mismo día se activaron en el repo **Allow auto-merge** y **Automatically delete head
+branches**: se puede dejar un PR con auto-merge para que entre solo cuando tenga la aprobación y
+los checks en verde, y la rama se borra sola al mergear.
 
 ### Protección de `main` — activa desde el 24/09
 
@@ -204,7 +204,7 @@ tres PRs abiertos hoy lo tienen en verde, así que sumarlo no bloquea nada de lo
 | Regla | Estado |
 |---|---|
 | Pull request obligatorio | ✅ con **1 aprobación** |
-| Checks obligatorios | ✅ `specs`, `api` y `web` |
+| Checks obligatorios | ✅ `specs`, `api`, `web` y `e2e` |
 | Rama al día antes de mergear | ✅ |
 | Borrado y force-push | ✅ bloqueados |
 | Bypass de administradores | ✅ nadie puede saltearla |
@@ -260,9 +260,8 @@ Dos cosas que conviene mirar de frente:
 
 ### Lo que quedó abierto
 
-1. **Archivar `implementar-reservas-notificaciones`** con `/opsx:archive` desde `main`. El #32 ya
-   entró, así que el cambio está implementado pero sus deltas siguen sin pasar a `openspec/specs/`.
-   Es de Rocío, y cuanto antes se haga menos chance hay de que se olvide.
+1. ~~**Archivar `implementar-reservas-notificaciones`.**~~ **Resuelto el 30/09**: sus deltas
+   pasaron a `openspec/specs/reservas`.
 1. ~~**1.4 entró sin un solo test de navegador.**~~ **Resuelto el 30/09**: `mis-reservas.spec.ts`
    suma cinco casos y la suite pasa de 20 a **25**, y con los tres de `/reservar` a **28**. **Queda un hueco, y sigue abierto**: la lista
    **con** reservas, las pestañas con contenido y la cancelación. Dependían de que existiera
@@ -278,8 +277,7 @@ Dos cosas que conviene mirar de frente:
    desde `main`.
 3. **Renzo — 1.6.** Sin empezar: arranca con el `/opsx:propose` de administración. Es el único
    integrante sin ninguna contribución, así que es lo que más mueve la aguja de la evaluación.
-4. **Rocío — el ruleset.** Sumar `e2e` como cuarto check obligatorio; es la única cuenta con
-   admin. Cómo se hace está en la sección 5.
+4. ~~**Rocío — el ruleset.**~~ **Resuelto el 30/09**: `e2e` es el cuarto check obligatorio.
 
 ### Para todos, en cada feature
 

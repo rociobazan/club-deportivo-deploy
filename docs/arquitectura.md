@@ -185,7 +185,7 @@ El workflow por sí solo no bloquea nada. Pinta la ejecución de rojo y el botó
 Solo puede hacerlo alguien con permisos de admin sobre el repo (hoy, `rociobazan`). En `Settings → Branches → Add branch protection rule`, sobre `main`:
 
 - Require a pull request before merging → **1 approval mínimo**
-- Require status checks to pass before merging → seleccionar `specs`, `api` y `web`
+- Require status checks to pass before merging → seleccionar `specs`, `api`, `web` y `e2e`
 - Require branches to be up to date before merging
 - Do not allow bypassing the above settings (incluye a los administradores)
 
@@ -196,7 +196,7 @@ Lo mismo por API, con `gh` autenticado como admin:
 ```bash
 gh api -X PUT repos/rociobazan/club-deportivo-deploy/branches/main/protection --input - <<'EOF'
 {
-  "required_status_checks": { "strict": true, "checks": [{ "context": "specs" }, { "context": "api" }, { "context": "web" }] },
+  "required_status_checks": { "strict": true, "checks": [{ "context": "specs" }, { "context": "api" }, { "context": "web" }, { "context": "e2e" }] },
   "enforce_admins": true,
   "required_pull_request_reviews": { "required_approving_review_count": 1 },
   "restrictions": null
@@ -204,7 +204,7 @@ gh api -X PUT repos/rociobazan/club-deportivo-deploy/branches/main/protection --
 EOF
 ```
 
-**Sacar captura de esta pantalla** y sumarla al README. Es la evidencia de que el bloqueo existe, algo que el historial de PRs por sí solo no demuestra. Sin permisos de admin, sirve también la captura de un PR donde se vean `specs`, `api` y `web` como *Required* y el merge bloqueado.
+**Sacar captura de esta pantalla** y sumarla al README. Es la evidencia de que el bloqueo existe, algo que el historial de PRs por sí solo no demuestra. Sin permisos de admin, sirve también la captura de un PR donde se vean `specs`, `api`, `web` y `e2e` como *Required* y el merge bloqueado.
 
 ---
 
