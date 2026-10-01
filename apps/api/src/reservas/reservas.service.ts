@@ -7,6 +7,7 @@ import { Bloque, generarGrilla } from '../common/grilla';
 import { ventanaDelDia } from '../common/horario';
 import { Reloj } from '../common/reloj';
 import type { UsuarioAutenticado } from '../common/usuario-actual';
+import { ENTERO_MAXIMO_DB } from '../common/validadores';
 import { CONFIGURACION } from '../configuracion';
 import type { Configuracion } from '../configuracion';
 import { NotificacionesService } from '../notificaciones/notificaciones.service';
@@ -623,6 +624,10 @@ export class ReservasService {
 
   /** 404, no 403: una reserva ajena no se distingue de una inexistente (RN-13). */
   private async buscar(id: number, usuario: UsuarioAutenticado): Promise<ReservaConDetalle> {
+    // Un id que no entra en la columna no puede existir: sin esto, la base lo
+    // rechazaba con un error que salía como 500 en vez de 404.
+    if (id > ENTERO_MAXIMO_DB) throw noEncontrada(id);
+
     const reserva = await this.prisma.reserva.findUnique({ where: { id }, include: INCLUDE });
     if (!reserva || (usuario.rol === 'SOCIO' && reserva.usuarioId !== usuario.id)) {
       throw noEncontrada(id);

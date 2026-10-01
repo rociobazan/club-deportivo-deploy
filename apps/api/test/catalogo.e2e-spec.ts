@@ -173,6 +173,11 @@ describe('catalogo (e2e)', () => {
       await api().get('/api/v1/canchas?disciplinaId=9999').expect(200, []);
     });
 
+    it('un disciplinaId mayor que el máximo de la columna responde 400, no 500', async () => {
+      await api().get('/api/v1/canchas?disciplinaId=99999999999').expect(400);
+      await api().get('/api/v1/equipamiento?disciplinaId=99999999999').expect(400);
+    });
+
     it('Filtro por canchas techadas: todas tienen techada en true', async () => {
       const { body } = await api().get('/api/v1/canchas?techada=true').expect(200);
       expect(body.length).toBeGreaterThan(0);

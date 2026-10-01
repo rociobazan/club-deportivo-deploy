@@ -223,6 +223,28 @@ describe('reservas (e2e)', () => {
     });
   });
 
+  describe('Ids fuera del rango de la base', () => {
+    it('un id de reserva mayor que el máximo de la columna responde 404, no 500', async () => {
+      for (const ruta of ['', '/cancelacion', '/reenvio-mail']) {
+        const metodo = ruta === '' ? 'get' : ruta === '/cancelacion' ? 'patch' : 'post';
+        const { body } = await api()
+          [metodo](`/api/v1/reservas/99999999999${ruta}`)
+          .set('Authorization', bearer(titular.id, 'SOCIO'))
+          .send({})
+          .expect(404);
+        expect(body.tipo).toBe('NO_ENCONTRADO');
+      }
+    });
+
+    it('un clienteId mayor que el máximo de la columna responde 400, no 500', async () => {
+      const { body } = await api()
+        .get('/api/v1/reservas?clienteId=99999999999')
+        .set('Authorization', bearer(admin.id, 'ADMIN'))
+        .expect(400);
+      expect(body.tipo).toBe('SOLICITUD_INVALIDA');
+    });
+  });
+
   describe('Detalle de reserva sin revelar reservas ajenas', () => {
     it('Detalle con equipamiento', async () => {
       const reserva = await reservar({
@@ -787,6 +809,21 @@ describe('reservas: creación (e2e)', () => {
 
       const inactiva = await reservar(turno({ canchaId: canchaInactiva })).expect(404);
       expect(inactiva.body).toMatchObject({ tipo: 'NO_ENCONTRADO' });
+    });
+  });
+
+  describe('Enteros fuera del rango de la base', () => {
+    it('canchaId, equipamientoId, cantidad o cantidadJugadores enormes responden 400, no 500', async () => {
+      const enorme = 99_999_999_999;
+      for (const cuerpo of [
+        turno({ canchaId: enorme }),
+        turno({ cantidadJugadores: enorme }),
+        turno({ equipamiento: [{ equipamientoId: enorme, cantidad: 1 }] }),
+        turno({ equipamiento: [{ equipamientoId: 1, cantidad: enorme }] }),
+      ]) {
+        const { body } = await reservar(cuerpo).expect(400);
+        expect(body.tipo).toBe('SOLICITUD_INVALIDA');
+      }
     });
   });
 
