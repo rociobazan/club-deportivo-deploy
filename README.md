@@ -109,9 +109,20 @@ Los carga el seed, solo para desarrollo local.
 
 Para probar el ingreso desde el sitio: <http://localhost:3001/ingresar> con cualquiera de los dos. En <http://localhost:3001/registro> se crea un socio nuevo. El sitio público es <http://localhost:3001/> (inicio), <http://localhost:3001/el-club> y <http://localhost:3001/contacto>; el catálogo está en <http://localhost:3001/canchas> y los turnos libres en <http://localhost:3001/disponibilidad>. Los tests e2e crean datos propios (`e2e …`, usuarios `@e2e.test`) y borran solo esos.
 
+**El recorrido de una reserva, de punta a punta.** Con sesión de socio, en <http://localhost:3001/disponibilidad> se elige la fecha y se toca un turno **Libre**: eso lleva a <http://localhost:3001/reservar> con la cancha, la fecha y la hora en la dirección. Ahí se confirma —con cantidad de jugadores y equipamiento opcionales, acotado a lo que queda libre en ese turno— y la pantalla devuelve el **código de la reserva**. Después aparece en <http://localhost:3001/mis-reservas>, donde se puede ver el detalle y cancelarla. Sin sesión, `/reservar` redirige a `/ingresar` y vuelve sola cuando entrás.
+
 **Mail.** `MAIL_FROM` (`turnos@clubdeploy.com.ar`) es el remitente del sistema y `MAIL_CONTACTO` (`hola@clubdeploy.com.ar`) la casilla que recibe el formulario de contacto; las dos tienen valor por defecto. **Sin `RESEND_API_KEY` no se envía ningún mail**: el cliente de mail es un doble que deja en el log lo que se habría enviado, así se puede probar `/contacto` sin pedir una clave. Si la definís, los mails salen de verdad desde tu máquina a `MAIL_CONTACTO`. En producción la clave es obligatoria y el arranque corta si falta.
 
 **Horario y zona del club.** `HORA_APERTURA` (`08:00`), `HORA_CIERRE` (`23:00`) y `ZONA_HORARIA_CLUB` (`America/Argentina/Cordoba`) tienen valor por defecto, así que no hace falta definirlas. Si las cambiás, van **en los dos** `.env`: la API calcula la grilla con ellas y el sitio la dibuja.
+
+**Reglas de reserva.** Cuatro variables con valor por defecto: sin ninguna de ellas la API arranca igual. Si una tiene un valor inválido, el arranque **corta** con un mensaje que dice qué poner, en vez de fallar más tarde en la primera reserva. Las tres primeras son solo de la API; **`CANCELACION_MINUTOS_MINIMOS` va en los dos** `.env`, como el horario: la API decide si acepta la cancelación y el sitio decide si muestra el botón, así que con valores distintos el botón aparece y el PATCH responde 422.
+
+| Variable | Default | Qué hace |
+|---|---|---|
+| `HORIZONTE_RESERVA_DIAS` | `30` | Hasta cuántos días adelante se puede reservar, contando hoy. El límite es **inclusivo**: el último día todavía entra (RN-03) |
+| `MAX_RESERVAS_ACTIVAS_SOCIO` | `3` | Reservas activas simultáneas de un socio. Activa es `CONFIRMADA` con el turno sin terminar, así que las canceladas y las ya jugadas no cuentan. Un `ADMIN` no tiene límite (RN-07) |
+| `PREFIJO_CODIGO_RESERVA` | `RES` | Prefijo del código que se le da al cliente, `<prefijo>-XXXXXX`. De 2 a 5 letras mayúsculas: con el guion y el sufijo tiene que entrar en los 12 caracteres de la columna |
+| `CANCELACION_MINUTOS_MINIMOS` | `120` | Anticipación mínima para que un socio cancele, en minutos. **En los dos `.env`.** Tiene que ser 1 o más: con 0 se podría cancelar en el segundo en que arranca el turno. Un `ADMIN` cancela sin plazo (RN-04) |
 
 ### Comandos útiles
 
