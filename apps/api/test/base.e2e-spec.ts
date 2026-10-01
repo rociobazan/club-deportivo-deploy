@@ -103,6 +103,19 @@ describe('Base transversal (e2e)', () => {
         .expect(201, { ok: true, email: 'socio@club.test' });
     });
 
+    it('un cuerpo de más de 100 KB responde 413 CUERPO_DEMASIADO_GRANDE, no 500', async () => {
+      const { body } = await api()
+        .post('/api/v1/prueba/validacion')
+        .send({ email: 'a'.repeat(200_000) })
+        .expect(413);
+
+      expect(body).toMatchObject({
+        tipo: 'CUERPO_DEMASIADO_GRANDE',
+        estado: 413,
+        instancia: '/prueba/validacion',
+      });
+    });
+
     it('un error que no es HttpException sale como 500 genérico sin el detalle interno', async () => {
       const { body } = await api().get('/api/v1/prueba/explota').expect(500);
 
