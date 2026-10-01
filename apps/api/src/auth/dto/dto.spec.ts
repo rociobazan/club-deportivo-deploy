@@ -144,6 +144,12 @@ describe('ActualizarPerfilDto', () => {
     }
   });
 
+  it('rechaza null en nombre, apellido o mail: solo el teléfono se borra con null', async () => {
+    for (const caso of [{ nombre: null }, { apellido: null }, { email: null }]) {
+      await expect(validar(ActualizarPerfilDto, caso)).rejects.toBeInstanceOf(BadRequestException);
+    }
+  });
+
   /*
    * El cuerpo vacío pasa el pipe a propósito y lo rechaza el servicio: con
    * todos los campos opcionales, `@IsOptional()` corta la validación de cada
