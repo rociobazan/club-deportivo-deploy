@@ -11,9 +11,16 @@ esas decisiones: las enlaza.
 dice la memoria. Los comandos que producen cada número están en la última sección, para que
 cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla.
 
-> Los números de código, contrato y tests están medidos sobre la rama de **1.3** (creación de
-> reserva) y valen cuando entre. Los de participación de la sección 6 están medidos sobre `main`,
-> que es lo que devuelven los comandos de la última sección.
+> Todos los números de este documento están medidos sobre `main`, con los comandos de la última
+> sección. Si alguna vez se miden sobre la rama de un PR todavía abierto, hay que decirlo acá y
+> **volver a medirlos cuando entre**. La vez anterior quedaron medidos sobre la rama del #34 con
+> la nota "valen cuando entre", el #34 entró y nadie los volvió a medir: el documento siguió
+> afirmando en presente un estado que ya era viejo.
+>
+> **Ahora mismo hay un caso así:** los números que incluyen a **1.3** (ítems, requisitos,
+> operaciones, pantallas y tests) están medidos sobre la rama de su PR, `feature/spec-creacion-reserva`.
+> Hay que volver a medirlos cuando entre. Los de participación de la sección 6 sí están medidos
+> sobre `main`.
 
 ---
 
@@ -21,7 +28,7 @@ cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla.
 
 | Medida | Estado |
 |---|---|
-| Ítems del reparto cerrados | **10 de 12**: todo el hito 0, más 1.1, 1.2, **1.3**, 1.4, 1.5 y 1.7 |
+| Ítems del reparto cerrados | **11 de 12**: todo el hito 0, más 1.1, 1.2, **1.3**, 1.4, 1.5, 1.7 y 1.8 |
 | Requisitos funcionales implementados | **12 de 16**: RF-00 a RF-10 y RF-15 |
 | Operaciones del contrato con endpoint | **15 de 20**: se sumó `POST /reservas` |
 | Pantallas de producto | **11**: inicio, El club, contacto, canchas, disponibilidad, ingreso, registro, **reservar**, mis reservas con su detalle, y mi perfil |
@@ -66,7 +73,7 @@ pantalla en Next que la consume.
 | 1.5 | Sitio institucional y contacto | RF-09, RF-10 | **Jeremías** | ✅ en `main` (PR #26, 28/09) |
 | 1.6 | Administración | RF-11 a RF-14 | **Renzo** | ❌ sin propuesta todavía: puede arrancar |
 | 1.7 | README | — | Jeremías | ✅ hecho el 27/09: la captura de la protección se reemplazó por una tabla con el estado real del ruleset, leída de la API de GitHub y reproducible con un comando |
-| 1.8 | Mi perfil: datos de la cuenta | RF-15 | Jeremías | 🟡 implementada y **aprobada**, en el PR #34 |
+| 1.8 | Mi perfil: datos de la cuenta | RF-15 | Jeremías | ✅ en `main` (PR #34, 30/09) |
 
 ### El reparto, ya cerrado
 
@@ -90,11 +97,9 @@ Jeremías se mergeó con las bases apiladas puestas y cuatro PRs terminaron aden
 base en vez de en `main`; hubo que rehacerlos como #25 a #28. La nota "retargetear antes de
 mergear" en el cuerpo del PR no alcanza, porque quien la tiene que ejecutar es quien mergea.
 
-**1.4 quedó implementado el 29/09** (módulos `reservas` y `notificaciones`, pantalla
-`/mis-reservas`), con 24 unitarios de `ReservasService` y 30 e2e propios en verde, más lint y
-build de `web` en verde. Falta abrir el PR contra `main` y conseguir la aprobación; los números
-de la sección 1 y 4 de este documento siguen describiendo lo que hay en `main` hoy, y se
-actualizan cuando el PR entre.
+**1.4 está en `main` desde el 30/09** (módulos `reservas` y `notificaciones`, pantalla
+`/mis-reservas`), con 24 unitarios de `ReservasService` y 30 e2e propios, y sus deltas ya
+pasaron a `openspec/specs/reservas`. Entró con el PR #32 y se archivó con el #40.
 
 ---
 
@@ -187,7 +192,7 @@ del ruleset:
 | `specs` | OpenSpec en modo estricto y lint del contrato |
 | `api` | Migraciones contra `postgres:17`, lint, build y tests de la API |
 | `web` | Lint y build del front, que además verifica los tipos |
-| `e2e` | 25 tests de navegador con Playwright contra la pila entera: Postgres, la API y el front servido en producción ([ADR 0002](adr/0002-tests-e2e-con-playwright.md)) |
+| `e2e` | 28 tests de navegador con Playwright contra la pila entera: Postgres, la API y el front servido en producción ([ADR 0002](adr/0002-tests-e2e-con-playwright.md)) |
 
 **`e2e` bloquea desde el 30/09.** Hasta esa fecha corría e informaba, así que un PR con los e2e en
 rojo se podía mergear igual. Lo sumó `rociobazan`, porque editar un *ruleset* pide permiso de admin
@@ -235,20 +240,24 @@ Cuenta para la evaluación: la lista de *Contributors* es parte de lo que se mir
 
 | Persona | Commits en `main` | PRs mergeados |
 |---|---|---|
-| Jeremías | 84 | 29 |
+| Jeremías | 95 | 35 |
 | Adrián | 18 | 3 |
-| Rocío | 6 | 1 |
+| Rocío | 7 | 2 |
 | Renzo | **0** | **0** |
 
 Dos cosas que conviene mirar de frente:
 
 - **Renzo ya es colaborador del repo, pero sigue sin ninguna contribución**: cero commits y cero
   PRs. Ya no hay nada que lo bloquee, y ahora tiene ítem propio (1.6).
-- **El reparto está muy desbalanceado, y se agrandó.** Jeremías cerró sus tres ítems del hito 1
-  y eso le sumó casi cincuenta commits. `requisitos.md` §8 desaconseja repartir por capas
-  justamente porque desbalancea los commits, y esto se evalúa. El reparto ya está cerrado, así que
-  lo que lo corrige ahora es que 1.3, 1.4 y 1.6 **entren**: cada feature completa (spec, endpoint,
-  tests, pantalla) da un volumen parecido al de las que ya entraron.
+- **El reparto está muy desbalanceado, y se agrandó.** Jeremías cerró sus tres ítems del hito 1,
+  sumó el RF-15 y los arreglos del 30/09, y con eso pasó de 84 a 95 commits.
+  `requisitos.md` §8 desaconseja repartir por capas justamente porque desbalancea los commits, y
+  esto se evalúa. El reparto ya está cerrado, así que lo que lo corrige ahora es que **1.3 y 1.6
+  entren**: cada feature completa (spec, endpoint, tests, pantalla) da un volumen parecido al de
+  las que ya entraron. Con una salvedad: **el volumen de *commits* depende de cómo se parta el
+  trabajo, no solo de cuánto se hace.** 1.4 es una feature completa —spec, dos módulos de API,
+  pantalla y tests— y le dio a Rocío **cuatro commits**. Quien quiera que su aporte se vea en
+  *Contributors* conviene que commitee por paso, no de una sola vez al final.
 
 > `git shortlog` muestra a Jeremías con dos nombres (`JereDev` y `Jeremias Fernandez`), pero los
 > dos commits salen del mismo email, y GitHub arma *Contributors* por email. Cuenta como una
@@ -274,7 +283,14 @@ Dos cosas que conviene mirar de frente:
 
 2. **Adrián — 1.3.** Implementado: las 31 tareas cerradas, `POST /reservas` y la pantalla
    `/reservar`. Falta que el PR entre y, después, archivar `implementar-creacion-de-reserva`
-   desde `main`.
+   desde `main`. Dos cosas para mirar en la revisión, que el CI no puede ver:
+   - **Que el conteo de reservas activas (RN-07) esté adentro de `$transaction` y después del
+     lock** de la tarea 4.1. Contarlo antes deja el `SELECT … FOR UPDATE` sin efecto y dos
+     solicitudes simultáneas del mismo socio se pasan del límite igual. **Ninguna suite de este
+     repo puede detectarlo**: los e2e corren con `maxWorkers: 1` y Playwright con `workers: 1`,
+     así que nunca hay dos solicitudes a la vez. Es revisión de código, no de CI.
+   - **Que la rama haya mergeado `main`, y no la rama de Rocío.** 1.4 está en `main` desde el #32;
+     mergear su rama repite el enredo del 28/09.
 3. **Renzo — 1.6.** Sin empezar: arranca con el `/opsx:propose` de administración. Es el único
    integrante sin ninguna contribución, así que es lo que más mueve la aguja de la evaluación.
 4. ~~**Rocío — el ruleset.**~~ **Resuelto el 30/09**: `e2e` es el cuarto check obligatorio.
