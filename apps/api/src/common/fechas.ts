@@ -40,3 +40,15 @@ export function deFechaDb(fecha: Date): string {
 export function comparar(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
+
+/**
+ * `fecha` más `dias`, en el calendario. Se hace en UTC por lo mismo que
+ * `diaDeLaSemana`: la fecha ya viene resuelta en la zona del club, así que
+ * pasarla por el huso del servidor la correría un día. Lo usa el horizonte de
+ * reserva (RN-03).
+ */
+export function sumarDias(fecha: string, dias: number): string {
+  const [anio, mes, dia] = fecha.split('-').map(Number);
+  const resultado = new Date(Date.UTC(anio, mes - 1, dia + dias));
+  return resultado.toISOString().slice(0, 10);
+}

@@ -1,18 +1,53 @@
-import { Body, Controller, Get, HttpCode, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  Res,
+} from '@nestjs/common';
+import type { Response } from 'express';
+import { Roles } from '../common/decoradores';
 import { UsuarioActual } from '../common/usuario-actual';
 import type { UsuarioAutenticado } from '../common/usuario-actual';
+import { PREFIJO_API } from '../configuracion';
 import { CancelarReservaDto } from './dto/cancelar-reserva.dto';
+import { CrearReservaDto } from './dto/crear-reserva.dto';
 import { ListarReservasDto } from './dto/listar-reservas.dto';
 import { ReservasService } from './reservas.service';
 
 /**
- * Los cuatro endpoints exigen autenticación (no llevan `@Publico()`): el
- * guard global de JWT ya lo garantiza. `POST /reservas` (creación) no vive
- * acá todavía: es el ítem 1.3.
+ * Los cinco endpoints exigen autenticación (ninguno lleva `@Publico()`): el
+ * guard global de JWT ya lo garantiza. La creación además acota por rol.
  */
 @Controller('reservas')
 export class ReservasController {
   constructor(private readonly reservas: ReservasService) {}
+
+  /**
+   * `POST /reservas` → 201 con la `Reserva` y el header `Location` (RF-04).
+   *
+   * `@Roles` acota a SOCIO o ADMIN. El titular sale de `@UsuarioActual()`,
+   * nunca del body: el DTO no declara `clienteId` y el pipe rechaza los campos
+   * de más.
+   */
+  @Roles('SOCIO', 'ADMIN')
+  @Post()
+  async crear(
+    @Body() datos: CrearReservaDto,
+    @UsuarioActual() usuario: UsuarioAutenticado,
+    // `passthrough` para setear un header sin tomar el control de la respuesta:
+    // el cuerpo lo sigue serializando Nest.
+    @Res({ passthrough: true }) respuesta: Response,
+  ) {
+    const reserva = await this.reservas.crear(datos, usuario);
+    respuesta.setHeader('Location', `/${PREFIJO_API}/reservas/${reserva.id}`);
+    return reserva;
+  }
 
   @Get()
   listar(@Query() filtros: ListarReservasDto, @UsuarioActual() usuario: UsuarioAutenticado) {

@@ -17,7 +17,7 @@ La capacidad `reservas` ya está especificada requisito por requisito; este camb
 
 **Fuera de alcance:**
 
-- **El mail de confirmación** (RF-08): es del ítem 1.4, dueño de la capacidad `notificaciones`. Mandarlo desde acá además obligaría a cambiar la interfaz `Correo`, porque `enviar()` hoy devuelve `void` y la spec de `notificaciones` pide guardar el identificador que devolvió el proveedor. `design.md` deja señalado el punto exacto donde 1.4 engancha el envío. **Hueco consciente**: entre que entra este cambio y entra 1.4, crear una reserva no manda mail.
+- **El mail de confirmación** (RF-08): es del ítem 1.4, dueño de la capacidad `notificaciones`. Mandarlo desde acá además obligaría a cambiar la interfaz `Correo`, porque `enviar()` hoy devuelve `void` y la spec de `notificaciones` pide guardar el identificador que devolvió el proveedor. `design.md` deja señalado el punto exacto donde 1.4 engancha el envío. **Hueco consciente**, ya cerrado: entre que entrara este cambio y entrara 1.4, crear una reserva no iba a mandar mail. Entraron en el orden inverso y la integración dejó el envío cableado en ese punto, así que el hueco no llegó a `main`.
 - `GET /reservas`, el detalle y la cancelación (1.4). El ABM de canchas y equipamiento y el reenvío (1.6).
 
 ## Capabilities

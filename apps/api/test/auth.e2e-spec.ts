@@ -27,8 +27,16 @@ describe('autenticacion (e2e)', () => {
     password: 'unaClaveSegura123',
   };
 
-  const limpiar = () =>
-    prisma.usuario.deleteMany({ where: { email: { endsWith: DOMINIO } } });
+  /*
+   * Las reservas van primero: `reserva.usuario_id` no tiene borrado en cascada,
+   * así que borrar un usuario que tiene reservas viola la clave foránea. Pasa
+   * cuando otra suite —los e2e de navegador, o los de reservas— dejó una reserva
+   * de un usuario de este dominio.
+   */
+  const limpiar = async () => {
+    await prisma.reserva.deleteMany({ where: { usuario: { email: { endsWith: DOMINIO } } } });
+    await prisma.usuario.deleteMany({ where: { email: { endsWith: DOMINIO } } });
+  };
 
   const registrar = (datos: object = registro) => api().post('/api/v1/auth/registro').send(datos);
   const ingresar = (email: string, password: string) =>

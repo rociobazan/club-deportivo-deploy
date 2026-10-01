@@ -43,6 +43,62 @@ const base: ReservaConDetalle = {
 };
 
 describe('aReserva', () => {
+  /** Antes del turno: el estado derivado no es lo que estos casos prueban. */
+  const ANTES: Momento = { fecha: '2026-09-01', hora: '10:00' };
+
+  // Los cinco casos que siguen vienen del ítem 1.3, portados a este fixture y a
+  // la firma de dos argumentos del mapeador combinado.
+
+  it('serializa el dinero como número y no como string', () => {
+    const json = JSON.stringify(aReserva(base, ANTES));
+    expect(json).toContain('"montoCancha":14000');
+    expect(json).toContain('"montoTotal":19000');
+    expect(json).not.toContain('"19000"');
+  });
+
+  it('arma el desglose de equipamiento con el precio congelado y su subtotal', () => {
+    expect(aReserva(base, ANTES).equipamiento).toEqual([
+      {
+        equipamientoId: 7,
+        nombre: 'Paleta de pádel',
+        cantidad: 2,
+        precioUnitario: 2500,
+        subtotal: 5000,
+      },
+    ]);
+  });
+
+  it('pasa la fecha del @db.Date al YYYY-MM-DD del contrato', () => {
+    expect(aReserva(base, ANTES).fecha).toBe('2026-09-15');
+  });
+
+  it('informa el titular en clienteId y la cancha con su disciplina', () => {
+    const publica = aReserva(base, ANTES);
+    expect(publica.clienteId).toBe(42);
+    expect(publica.cancha).toBe('Pádel 1 - Pádel');
+  });
+
+  // Escenario "Sin cantidad de jugadores": la clave viaja en null, no ausente.
+  it('devuelve cantidadJugadores en null cuando no se informó', () => {
+    const publica = aReserva({ ...base, cantidadJugadores: null }, ANTES);
+    expect(publica.cantidadJugadores).toBeNull();
+    expect(JSON.stringify(publica)).toContain('"cantidadJugadores":null');
+  });
+
+  it('una reserva sin equipamiento sale con la lista vacía y monto cero', () => {
+    const publica = aReserva(
+      {
+        ...base,
+        equipamiento: [],
+        montoEquipamiento: new Prisma.Decimal('0'),
+        montoTotal: new Prisma.Decimal('14000'),
+      },
+      ANTES,
+    );
+    expect(publica.equipamiento).toEqual([]);
+    expect(publica.montoEquipamiento).toBe(0);
+  });
+
   it('da montos numéricos, no Decimal', () => {
     const ahora: Momento = { fecha: '2026-09-01', hora: '10:00' };
     const publica = aReserva(base, ahora);

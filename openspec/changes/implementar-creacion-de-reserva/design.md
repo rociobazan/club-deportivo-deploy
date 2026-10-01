@@ -53,7 +53,9 @@ El criterio: primero lo que se contesta sin tocar la base, después lo que depen
 
 ### 2. RN-01: la base es el árbitro, el pre-chequeo es solo cortesía
 
-El pre-chequeo (`findFirst` del turno) sirve para dar un `detalle` claro y para no escribir de más, pero **no garantiza nada**: entre el `SELECT` y el `INSERT` entra otra solicitud. La garantía es el `INSERT` contra `ux_reserva_slot_activo`. Así que el `INSERT` va dentro de `prisma.$transaction` y se **captura el `P2002`** de ese índice (`PrismaClientKnownRequestError` con `code === 'P2002'`, discriminando por el nombre del índice en `meta.target`) para devolver 409 `SLOT_NO_DISPONIBLE`.
+El pre-chequeo (`findFirst` del turno) sirve para dar un `detalle` claro y para no escribir de más, pero **no garantiza nada**: entre el `SELECT` y el `INSERT` entra otra solicitud. La garantía es el `INSERT` contra `ux_reserva_slot_activo`. Así que el `INSERT` va dentro de `prisma.$transaction` y se **captura el `P2002`** de ese índice (`PrismaClientKnownRequestError` con `code === 'P2002'`) para devolver 409 `SLOT_NO_DISPONIBLE`.
+
+**Verificado contra la base, no supuesto**: Prisma **no** informa el nombre del índice en `meta.target`, informa las **columnas**: `["cancha_id", "fecha", "hora_inicio"]` para el turno ocupado y `["codigo"]` para el código repetido. Así que el discriminador es el conjunto de columnas, no el nombre.
 
 Esto es exactamente lo que pide el escenario "Dos solicitudes simultáneas por el mismo turno", y se prueba con un e2e que manda los dos `POST` con `Promise.all` y exige un 201, un 409 y **una sola** fila no cancelada.
 
@@ -113,7 +115,7 @@ Las tres primeras las usa este cambio. `CANCELACION_MINUTOS_MINIMOS` **no la con
 
 La transacción hace: locks de la decisión 3 → conteos de stock y de reservas activas → `INSERT` de la reserva → `INSERT` de las filas de `reserva_equipamiento` (en una sola llamada). Todo lo que no es escritura —cancha, disciplina, ítems, reglas de tiempo— se resuelve antes, para que la transacción sea lo más corta posible.
 
-**El punto de enganche de 1.4** queda en `ReservasService.crear()`, inmediatamente después de que `$transaction` resuelve y antes del `return`, con un comentario que lo nombra. Ahí, y solo ahí, va el envío del mail de confirmación: **después** del commit, porque RN-14 exige que una falla del proveedor no revierta la reserva ni cambie la respuesta. Este cambio no manda nada; deja el lugar y la razón escritos.
+**El punto de enganche de 1.4** queda en `ReservasService.crear()`, inmediatamente después de que `$transaction` resuelve y antes del `return`, con un comentario que lo nombra. Ahí, y solo ahí, va el envío del mail de confirmación: **después** del commit, porque RN-14 exige que una falla del proveedor no revierta la reserva ni cambie la respuesta. Este cambio dejó el lugar y la razón escritos y no mandaba nada. **Al integrar 1.4 el mail quedó cableado:** `crear()` llama a `NotificacionesService.enviarConfirmacion()` en ese punto, después del commit, y como ese servicio no propaga y devuelve el estado del envío, una falla del proveedor no revierte la reserva ni cambia la respuesta (RN-14).
 
 ### 9. Front: la URL es el estado, el total es lo único que hace el cliente
 
@@ -133,7 +135,7 @@ El formulario es un Client Component con `useActionState` sobre una server actio
 ## Risks / Trade-offs
 
 - **[El lock de `equipamiento` lo va a compartir `PATCH /equipamiento` (1.6)]** → Las dos transacciones son cortas y el lock es por fila; se documenta en la memoria para que 1.6 no lo descubra depurando. Si alguna vez molesta, la alternativa es mover el lock a una tabla de stock por turno, que es un cambio de modelo y no entra acá.
-- **[Discriminar `P2002` depende de `meta.target`, que es un detalle de Prisma]** → Se aísla en una función con nombre (`esViolacionDe(error, 'ux_reserva_slot_activo')`) y se cubre con el e2e de concurrencia, que es el que fallaría si Prisma cambiara la forma del error.
+- **[Discriminar `P2002` depende de `meta.target`, que es un detalle de Prisma]** → Se aísla en una función con nombre (`esViolacionDe(error, COLUMNAS_SLOT_ACTIVO)`) y se cubre con el e2e de concurrencia, que es el que fallaría si Prisma cambiara la forma del error. Que informe columnas y no el nombre del índice se comprobó con una sonda contra la base antes de escribir el helper.
 - **[La spec de RN-09 se modifica y la implementación se escribe en el mismo cambio]** → Es el motivo por el que el delta va en este PR y no aparte: hoy la spec no dice qué pasa un domingo y la API tiene que responder algo. Los dos escenarios nuevos son los que el equipo revisa en la propuesta.
 - **[`CANCELACION_MINUTOS_MINIMOS` entra sin consumidor]** → Queda con default, validación y su unitario, y anotada como insumo de 1.4. Es código que no se ejecuta en ninguna ruta de este cambio; la alternativa era dejar la variable en el `.env.example` sin que nadie la lea, que es peor.
 - **[El total del front puede diferir del de la API si alguien cambia un precio en el medio]** → Es RN-06 funcionando: el monto que vale es el que devuelve el 201, y la pantalla lo dice y muestra el confirmado.
