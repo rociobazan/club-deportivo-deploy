@@ -7,20 +7,19 @@
 el historial viven en [`memoria-proyecto.md`](memoria-proyecto.md). Este documento no repite
 esas decisiones: las enlaza.
 
-**Última verificación:** 2026-09-30, contra el código y la API de GitHub, no contra lo que
+**Última verificación:** 2026-10-01, contra el código y la API de GitHub, no contra lo que
 dice la memoria. Los comandos que producen cada número están en la última sección, para que
-cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla.
+cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla. Los unitarios, los endpoints
+y las pantallas se contaron corriéndolos sobre `main`; los e2e de la API son el verde del CI del
+#42, no una corrida local.
 
 > Todos los números de este documento están medidos sobre `main`, con los comandos de la última
 > sección. Si alguna vez se miden sobre la rama de un PR todavía abierto, hay que decirlo acá y
 > **volver a medirlos cuando entre**. La vez anterior quedaron medidos sobre la rama del #34 con
 > la nota "valen cuando entre", el #34 entró y nadie los volvió a medir: el documento siguió
-> afirmando en presente un estado que ya era viejo.
->
-> **Ahora mismo hay un caso así:** los números que incluyen a **1.3** (ítems, requisitos,
-> operaciones, pantallas y tests) están medidos sobre la rama de su PR, `feature/spec-creacion-reserva`.
-> Hay que volver a medirlos cuando entre. Los de participación de la sección 6 sí están medidos
-> sobre `main`.
+> afirmando en presente un estado que ya era viejo. Pasó dos veces: con el #34 y con el #42,
+> que declaró sus números como de rama —eso es lo que la regla pide— pero entró sin que nadie
+> los remidiera. **Declararlos es la mitad; la otra mitad es volver**.
 
 ---
 
@@ -68,7 +67,7 @@ pantalla en Next que la consume.
 | 1.1 | Autenticación: registro, login, JWT, guards | RF-00 | **Jeremías** | ✅ en `main` (PR #19, 28/09) |
 | 1.1b | Login con Google | — | — | ⛔ **descartado el 27/09**: el equipo decidió no hacerlo ([ADR 0001](adr/0001-login-con-google.md), marcada como descartada) |
 | 1.2 | Catálogo y disponibilidad | RF-01 a RF-03 | **Jeremías** | ✅ en `main` (PR #25, 28/09) |
-| 1.3 | Crear reserva | RF-04 | **Adrián** | 🟡 **implementado**, en el PR de esta rama: las 31 tareas cerradas |
+| 1.3 | Crear reserva | RF-04 | **Adrián** | ✅ en `main` (PR #42, 01/10); falta archivar el cambio |
 | 1.4 | Mis reservas, cancelación y mails | RF-05 a RF-08 | **Rocío** | ✅ en `main` (PR #32, 30/09) |
 | 1.5 | Sitio institucional y contacto | RF-09, RF-10 | **Jeremías** | ✅ en `main` (PR #26, 28/09) |
 | 1.6 | Administración | RF-11 a RF-14 | **Renzo** | ❌ sin propuesta todavía: puede arrancar |
@@ -279,16 +278,19 @@ Dos cosas que conviene mirar de frente:
 
 ### Cada quien con su ítem
 
-2. **Adrián — 1.3.** Implementado: las 31 tareas cerradas, `POST /reservas` y la pantalla
-   `/reservar`. Falta que el PR entre y, después, archivar `implementar-creacion-de-reserva`
-   desde `main`. Dos cosas para mirar en la revisión, que el CI no puede ver:
-   - **Que el conteo de reservas activas (RN-07) esté adentro de `$transaction` y después del
-     lock** de la tarea 4.1. Contarlo antes deja el `SELECT … FOR UPDATE` sin efecto y dos
-     solicitudes simultáneas del mismo socio se pasan del límite igual. **Ninguna suite de este
-     repo puede detectarlo**: los e2e corren con `maxWorkers: 1` y Playwright con `workers: 1`,
-     así que nunca hay dos solicitudes a la vez. Es revisión de código, no de CI.
-   - **Que la rama haya mergeado `main`, y no la rama de Rocío.** 1.4 está en `main` desde el #32;
-     mergear su rama repite el enredo del 28/09.
+2. **Adrián — 1.3.** Entró con el PR #42 el 01/10, con las 31 tareas cerradas. **Falta archivar
+   `implementar-creacion-de-reserva`** con `/opsx:archive` desde `main`: hasta que no se corra,
+   `openspec/specs/` no describe la creación de reservas aunque el código ya esté.
+
+   Las dos cosas que se habían marcado para revisar a mano, porque el CI no puede verlas,
+   **quedaron verificadas el 01/10 y las dos están bien**:
+   - El conteo de reservas activas (RN-07) corre **adentro de `$transaction` y después del lock**.
+     El orden en `enLaTransaccion()` es `tomarLocks` → RN-07 → stock → turno libre → `insertar`, y
+     el conteo usa el cliente de la transacción, no el global. Contarlo antes habría dejado el
+     `SELECT … FOR UPDATE` sin efecto, y **ninguna suite de este repo podría haberlo detectado**:
+     los e2e corren con `maxWorkers: 1` y Playwright con `workers: 1`, así que nunca hay dos
+     solicitudes a la vez. Se verifica leyendo el orden de los `await`, no corriendo tests.
+   - La rama mergeó `main` y no la rama de 1.4, así que no se repitió el enredo del 28/09.
 3. **Renzo — 1.6.** Sin empezar: arranca con el `/opsx:propose` de administración. Es el único
    integrante sin ninguna contribución, así que es lo que más mueve la aguja de la evaluación.
 4. ~~**Rocío — el ruleset.**~~ **Resuelto el 30/09**: `e2e` es el cuarto check obligatorio.
