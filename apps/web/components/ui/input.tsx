@@ -12,3 +12,8 @@ export function Input({ className = "", ...props }: ComponentProps<"input">) {
 export function Textarea({ className = "", ...props }: ComponentProps<"textarea">) {
   return <textarea className={`${campo} py-3 ${className}`.trim()} {...props} />;
 }
+
+/** Mismo aspecto que `Input`, para elegir de una lista. */
+export function Select({ className = "", ...props }: ComponentProps<"select">) {
+  return <select className={`${campo} min-h-12 ${className}`.trim()} {...props} />;
+}

@@ -6,15 +6,18 @@ import { usePathname } from "next/navigation";
 // Cliente porque necesita la ruta actual para marcar el link activo.
 export function NavLink({
   href,
+  exacto = false,
   children,
   className = "",
 }: {
   href: string;
+  /** Activo solo en `href`, no en sus subrutas. */
+  exacto?: boolean;
   children: string;
   className?: string;
 }) {
   const pathname = usePathname();
-  const active = pathname === href || pathname.startsWith(`${href}/`);
+  const active = pathname === href || (!exacto && pathname.startsWith(`${href}/`));
 
   return (
     <Link

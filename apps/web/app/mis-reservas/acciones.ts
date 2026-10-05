@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { apiFetch, ApiHttpError } from "@/lib/api/client";
 import type { ReenvioMailResponse } from "@/lib/api/types";
+import { texto } from "@/lib/formularios";
 import { leerToken } from "@/lib/sesion";
 
 /**
@@ -20,6 +21,8 @@ export async function cancelarReserva(
   formData: FormData,
 ): Promise<EstadoAccionReserva> {
   const id = Number(formData.get("id"));
+  // Solo el detalle de administración pide el motivo; en "Mis reservas" no viene.
+  const motivo = texto(formData, "motivo");
   const token = await leerToken();
 
   try {
@@ -27,14 +30,18 @@ export async function cancelarReserva(
       method: "PATCH",
       token,
       timeoutMs: 2000,
+      ...(motivo ? { body: { motivo } } : {}),
     });
   } catch (error) {
     if (!(error instanceof ApiHttpError)) throw error;
     return { error: error.message };
   }
 
+  // La misma acción la usan el titular y el ADMIN: se refrescan las dos vistas.
   revalidatePath(`/mis-reservas/${id}`);
   revalidatePath("/mis-reservas");
+  revalidatePath(`/admin/reservas/${id}`);
+  revalidatePath("/admin/reservas");
   return {};
 }
 

@@ -1,4 +1,4 @@
-import { aFechaDb, comparar, deFechaDb, duracionLegible, esFechaValida, esHoraValida } from './fechas';
+import { aFechaDb, comparar, deFechaDb, duracionLegible, esFechaValida, esHoraValida, minutosEntre } from './fechas';
 
 describe('aFechaDb y deFechaDb', () => {
   it('van y vuelven sin que la zona horaria se meta en el medio', () => {
@@ -59,5 +59,19 @@ describe('duracionLegible', () => {
     expect(duracionLegible(90)).toBe('90 minutos');
     expect(duracionLegible(45)).toBe('45 minutos');
     expect(duracionLegible(1)).toBe('1 minuto');
+  });
+});
+
+describe('minutosEntre', () => {
+  it('cuenta los minutos dentro del mismo día', () => {
+    expect(minutosEntre({ fecha: '2026-09-15', hora: '18:00' }, { fecha: '2026-09-15', hora: '20:30' })).toBe(150);
+  });
+
+  it('cruza la medianoche y el cambio de mes', () => {
+    expect(minutosEntre({ fecha: '2026-09-30', hora: '23:30' }, { fecha: '2026-10-01', hora: '00:15' })).toBe(45);
+  });
+
+  it('es negativo si el segundo momento es anterior', () => {
+    expect(minutosEntre({ fecha: '2026-09-15', hora: '20:00' }, { fecha: '2026-09-15', hora: '19:30' })).toBe(-30);
   });
 });

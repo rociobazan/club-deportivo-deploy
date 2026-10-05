@@ -1,4 +1,4 @@
-import { registerDecorator, ValidationOptions } from 'class-validator';
+import { IsNumber, IsPositive, Max, registerDecorator, ValidationOptions } from 'class-validator';
 import { esFechaValida, esHoraValida } from './fechas';
 
 /**
@@ -33,3 +33,27 @@ export function EsHora(opciones?: ValidationOptions) {
     });
   };
 }
+
+/** El mayor valor de una columna `Decimal(10,2)`: ocho enteros y dos decimales. */
+export const PRECIO_MAXIMO_DB = 99_999_999.99;
+
+/**
+ * Un precio del contrato: número mayor que 0, con hasta dos decimales y que
+ * entre en `Decimal(10,2)`. Uno más grande pasaba `@IsNumber()` y la base lo
+ * rechazaba con un 500, igual que los enteros de `ENTERO_MAXIMO_DB`; uno con
+ * más decimales se habría redondeado en silencio al guardarlo.
+ */
+export function EsPrecio() {
+  return (objeto: object, propiedad: string) => {
+    IsNumber({ maxDecimalPlaces: 2, allowNaN: false, allowInfinity: false })(objeto, propiedad);
+    IsPositive()(objeto, propiedad);
+    Max(PRECIO_MAXIMO_DB)(objeto, propiedad);
+  };
+}
+
+/**
+ * Para `@ValidateIf(enviado)`: solo `undefined` significa "no vino". A
+ * diferencia de `@IsOptional()`, que también deja pasar `null` sin validar, un
+ * `null` se valida y da 400 en vez de llegar a la base como un 500 (decisión 33).
+ */
+export const enviado = (_objeto: object, valor: unknown) => valor !== undefined;

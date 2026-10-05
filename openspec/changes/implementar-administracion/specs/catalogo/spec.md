@@ -3,7 +3,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Administración de canchas
-Un usuario con rol `ADMIN` MUST poder dar de alta canchas indicando disciplina, nombre, superficie opcional, si es techada y `precioPorTurno` mayor que 0, y MUST poder modificar nombre, superficie, techada, `precioPorTurno` y `activa`. El nombre MUST recortarse antes de validarse y MUST NOT quedar vacío. Dos canchas de la misma disciplina MUST NOT tener el mismo nombre: un alta o una edición que lo repita MUST responder 409 sin modificar nada. Dar de baja una cancha (`activa` en `false`) MUST quitarla del catálogo público y de la disponibilidad e impedir reservas nuevas, sin modificar ni cancelar las reservas que ya tiene; reactivarla MUST revertirlo. Cambiar el precio MUST NOT modificar los montos de reservas existentes (RN-06). `GET /canchas?incluirInactivas=true` MUST devolver también las canchas inactivas y MUST estar reservado a `ADMIN`. Ninguna de estas operaciones MUST estar disponible para otros roles.
+Un usuario con rol `ADMIN` MUST poder dar de alta canchas indicando disciplina, nombre, superficie opcional, si es techada y `precioPorTurno` mayor que 0, y MUST poder modificar nombre, superficie, techada, `precioPorTurno` y `activa`. La disciplina del alta MUST existir y estar activa. El nombre MUST recortarse antes de validarse y MUST NOT quedar vacío. Dos canchas de la misma disciplina MUST NOT tener el mismo nombre: un alta o una edición que lo repita MUST responder 409 sin modificar nada. Dar de baja una cancha (`activa` en `false`) MUST quitarla del catálogo público y de la disponibilidad e impedir reservas nuevas, sin modificar ni cancelar las reservas que ya tiene; reactivarla MUST revertirlo. Cambiar el precio MUST NOT modificar los montos de reservas existentes (RN-06). `GET /canchas?incluirInactivas=true` MUST devolver también las canchas inactivas y MUST estar reservado a `ADMIN`. Ninguna de estas operaciones MUST estar disponible para otros roles.
 
 #### Scenario: Alta de una cancha
 - **WHEN** un ADMIN envía `POST /canchas` con la disciplina Pádel, nombre "Pádel 4", techada `false` y `precioPorTurno` 15000
@@ -18,7 +18,7 @@ Un usuario con rol `ADMIN` MUST poder dar de alta canchas indicando disciplina, 
 - **THEN** se devuelve 400 con `tipo` `SOLICITUD_INVALIDA`
 
 #### Scenario: Disciplina o cancha inexistente
-- **WHEN** un ADMIN envía `POST /canchas` con un `disciplinaId` que no existe, o `PATCH /canchas/{id}` con un id que no existe
+- **WHEN** un ADMIN envía `POST /canchas` con un `disciplinaId` que no existe o que corresponde a una disciplina inactiva, o `PATCH /canchas/{id}` con un id que no existe
 - **THEN** se devuelve 404 con `tipo` `NO_ENCONTRADO`
 
 #### Scenario: Nombre repetido en la disciplina
@@ -50,7 +50,7 @@ Un usuario con rol `ADMIN` MUST poder dar de alta canchas indicando disciplina, 
 - **THEN** se devuelve 403 con `tipo` `SIN_PERMISOS`; y sin token, 401 con `tipo` `NO_AUTENTICADO`
 
 ### Requirement: Administración de equipamiento
-Un usuario con rol `ADMIN` MUST poder dar de alta equipamiento indicando disciplina, nombre, `stockTotal` entero mayor o igual a 0 y `precioPorTurno` mayor que 0, y MUST poder modificar nombre, `stockTotal`, `precioPorTurno` y `activo`. El nombre MUST recortarse antes de validarse y MUST NOT quedar vacío. Dos ítems de la misma disciplina MUST NOT tener el mismo nombre: un alta o una edición que lo repita MUST responder 409 sin modificar nada. Dar de baja un ítem (`activo` en `false`) MUST quitarlo del catálogo público e impedir alquilarlo en reservas nuevas, sin modificar las reservas que ya lo incluyen. Reducir `stockTotal` MUST NOT modificar reservas existentes. Cambiar el precio MUST NOT modificar el `precioUnitario` de reservas existentes (RN-06). `GET /equipamiento?incluirInactivos=true` MUST devolver también los ítems inactivos y MUST estar reservado a `ADMIN`.
+Un usuario con rol `ADMIN` MUST poder dar de alta equipamiento indicando disciplina, nombre, `stockTotal` entero mayor o igual a 0 y `precioPorTurno` mayor que 0, y MUST poder modificar nombre, `stockTotal`, `precioPorTurno` y `activo`. La disciplina del alta MUST existir y estar activa. El nombre MUST recortarse antes de validarse y MUST NOT quedar vacío. Dos ítems de la misma disciplina MUST NOT tener el mismo nombre: un alta o una edición que lo repita MUST responder 409 sin modificar nada. Dar de baja un ítem (`activo` en `false`) MUST quitarlo del catálogo público e impedir alquilarlo en reservas nuevas, sin modificar las reservas que ya lo incluyen. Reducir `stockTotal` MUST NOT modificar reservas existentes. Cambiar el precio MUST NOT modificar el `precioUnitario` de reservas existentes (RN-06). `GET /equipamiento?incluirInactivos=true` MUST devolver también los ítems inactivos y MUST estar reservado a `ADMIN`.
 
 #### Scenario: Alta de equipamiento
 - **WHEN** un ADMIN envía `POST /equipamiento` con la disciplina Tenis, nombre "Visera", `stockTotal` 8 y `precioPorTurno` 1000
@@ -61,7 +61,7 @@ Un usuario con rol `ADMIN` MUST poder dar de alta equipamiento indicando discipl
 - **THEN** se devuelve 400 con `tipo` `SOLICITUD_INVALIDA`
 
 #### Scenario: Disciplina o ítem inexistente
-- **WHEN** un ADMIN envía `POST /equipamiento` con un `disciplinaId` que no existe, o `PATCH /equipamiento/{id}` con un id que no existe
+- **WHEN** un ADMIN envía `POST /equipamiento` con un `disciplinaId` que no existe o que corresponde a una disciplina inactiva, o `PATCH /equipamiento/{id}` con un id que no existe
 - **THEN** se devuelve 404 con `tipo` `NO_ENCONTRADO`
 
 #### Scenario: Nombre repetido en la disciplina

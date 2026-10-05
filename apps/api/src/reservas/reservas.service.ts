@@ -2,7 +2,8 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { TipoNotificacion } from '@prisma/client';
 import { ErrorDeApi } from '../common/error-de-api';
-import { aFechaDb, comparar, deFechaDb, duracionLegible, sumarDias } from '../common/fechas';
+import { esViolacionDe } from '../common/errores-de-prisma';
+import { aFechaDb, comparar, deFechaDb, duracionLegible, minutosEntre, sumarDias } from '../common/fechas';
 import { Bloque, generarGrilla } from '../common/grilla';
 import { ventanaDelDia } from '../common/horario';
 import { Reloj } from '../common/reloj';
@@ -16,7 +17,7 @@ import { generarCodigo } from './codigo';
 import { CancelarReservaDto } from './dto/cancelar-reserva.dto';
 import { CrearReservaDto, ItemEquipamientoDto } from './dto/crear-reserva.dto';
 import { ListarReservasDto } from './dto/listar-reservas.dto';
-import { COLUMNAS_CODIGO, COLUMNAS_SLOT_ACTIVO, esViolacionDe } from './errores-de-prisma';
+import { COLUMNAS_CODIGO, COLUMNAS_SLOT_ACTIVO } from './errores-de-prisma';
 import { aReserva, ReservaConDetalle, ReservaPublica, turnoTermino } from './mapeadores';
 
 /**
@@ -518,7 +519,8 @@ export class ReservasService {
       );
     }
     // Un ADMIN cancela sin plazo, incluso reservas de otros usuarios (RN-04).
-    if (usuario.rol === 'SOCIO' && this.minutosHastaElTurno(reserva, ahora) < this.configuracion.cancelacionMinutosMinimos) {
+    const turno = { fecha: deFechaDb(reserva.fecha), hora: reserva.horaInicio };
+    if (usuario.rol === 'SOCIO' && minutosEntre(ahora, turno) < this.configuracion.cancelacionMinutosMinimos) {
       throw new ErrorDeApi(
         422,
         'PLAZO_CANCELACION_VENCIDO',
@@ -636,13 +638,5 @@ export class ReservasService {
       throw noEncontrada(id);
     }
     return reserva;
-  }
-
-  /** Minutos entre ahora y el inicio del turno; negativo si ya empezó. */
-  private minutosHastaElTurno(reserva: { fecha: Date; horaInicio: string }, ahora: { fecha: string; hora: string }): number {
-    const comoInstante = (fecha: string, hora: string) => new Date(`${fecha}T${hora}:00.000Z`).getTime();
-    const turno = comoInstante(deFechaDb(reserva.fecha), reserva.horaInicio);
-    const actual = comoInstante(ahora.fecha, ahora.hora);
-    return Math.round((turno - actual) / 60_000);
   }
 }

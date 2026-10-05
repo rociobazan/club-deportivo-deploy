@@ -581,6 +581,7 @@ export interface components {
             techada: boolean;
             /**
              * Format: double
+             * @description Hasta dos decimales. Es el máximo de una columna `Decimal(10,2)`.
              * @example 15000
              */
             precioPorTurno: number;
@@ -595,6 +596,7 @@ export interface components {
             techada?: boolean;
             /**
              * Format: double
+             * @description Hasta dos decimales. Es el máximo de una columna `Decimal(10,2)`.
              * @example 16000
              */
             precioPorTurno?: number;
@@ -613,6 +615,7 @@ export interface components {
             stockTotal: number;
             /**
              * Format: double
+             * @description Hasta dos decimales. Es el máximo de una columna `Decimal(10,2)`.
              * @example 1000
              */
             precioPorTurno: number;
@@ -625,6 +628,7 @@ export interface components {
             stockTotal?: number;
             /**
              * Format: double
+             * @description Hasta dos decimales. Es el máximo de una columna `Decimal(10,2)`.
              * @example 3000
              */
             precioPorTurno?: number;
@@ -978,6 +982,27 @@ export interface components {
             };
         };
         /**
+         * @description Ya existe otra cancha o ítem de equipamiento con ese nombre en la misma
+         *     disciplina. No se modifica nada.
+         */
+        NombreDuplicado: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "tipo": "NOMBRE_DUPLICADO",
+                 *       "titulo": "Ya existe una cancha con ese nombre",
+                 *       "estado": 409,
+                 *       "detalle": "En Pádel ya hay una cancha llamada \"Pádel 1\".",
+                 *       "instancia": "/canchas"
+                 *     }
+                 */
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /**
          * @description La solicitud es sintácticamente válida pero incumple una regla de negocio
          *     (fecha pasada, horizonte excedido, horario fuera de la grilla de turnos,
          *     límite de reservas activas, equipamiento de otra disciplina, plazo de
@@ -1237,6 +1262,7 @@ export interface operations {
             401: components["responses"]["NoAutenticado"];
             403: components["responses"]["SinPermisos"];
             404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["NombreDuplicado"];
         };
     };
     actualizarCancha: {
@@ -1268,6 +1294,7 @@ export interface operations {
             401: components["responses"]["NoAutenticado"];
             403: components["responses"]["SinPermisos"];
             404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["NombreDuplicado"];
         };
     };
     listarEquipamiento: {
@@ -1332,6 +1359,7 @@ export interface operations {
             401: components["responses"]["NoAutenticado"];
             403: components["responses"]["SinPermisos"];
             404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["NombreDuplicado"];
         };
     };
     actualizarEquipamiento: {
@@ -1363,6 +1391,7 @@ export interface operations {
             401: components["responses"]["NoAutenticado"];
             403: components["responses"]["SinPermisos"];
             404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["NombreDuplicado"];
         };
     };
     consultarDisponibilidad: {

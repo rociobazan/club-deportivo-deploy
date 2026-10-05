@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { DetalleDeReserva } from "@/components/reservas/detalle-de-reserva";
 import { EstadoError } from "@/components/ui/estado-error";
 import { apiFetch, ApiHttpError } from "@/lib/api/client";
 import type { Reserva } from "@/lib/api/types";
@@ -11,26 +10,14 @@ import {
   ahoraEnElClub,
   CANCELACION_MINUTOS_MINIMOS,
   duracionLegible,
-  fechaLegible,
   minutosHastaElTurno,
-  precioLegible,
 } from "@/lib/club";
 import { leerToken } from "@/lib/sesion";
-import { badgeDe } from "../badge-de-reserva";
 import { AccionesDeReserva } from "./acciones-de-reserva";
 
 export const metadata: Metadata = { title: "Detalle de tu reserva — Deploy" };
 
 type Props = { params: Promise<{ id: string }> };
-
-function Fila({ etiqueta, valor }: { etiqueta: string; valor: string }) {
-  return (
-    <div className="flex justify-between gap-4 border-b border-border-subtle pb-3 text-sm last:border-0 last:pb-0">
-      <span className="text-text-subtle">{etiqueta}</span>
-      <span className="text-right text-text">{valor}</span>
-    </div>
-  );
-}
 
 export default async function PaginaDetalleReserva({ params }: Props) {
   const { id } = await params;
@@ -67,7 +54,6 @@ export default async function PaginaDetalleReserva({ params }: Props) {
   const puedeCancelar =
     reserva.estado === "CONFIRMADA" &&
     minutosHastaElTurno(reserva.fecha, reserva.horaInicio, ahora) >= CANCELACION_MINUTOS_MINIMOS;
-  const badge = badgeDe(reserva.estado);
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
@@ -75,36 +61,7 @@ export default async function PaginaDetalleReserva({ params }: Props) {
         ← Mis reservas
       </Link>
 
-      <div className="mt-5 flex flex-wrap items-center gap-3">
-        <h1 className="font-display text-3xl font-semibold sm:text-4xl">{reserva.cancha}</h1>
-        <Badge tone={badge.tone}>{badge.texto}</Badge>
-      </div>
-
-      <Card className="mt-6 flex flex-col gap-3">
-        <Fila etiqueta="Código" valor={reserva.codigo} />
-        <Fila etiqueta="Día" valor={fechaLegible(reserva.fecha)} />
-        <Fila etiqueta="Horario" valor={`${reserva.horaInicio} a ${reserva.horaFin}`} />
-        {reserva.cantidadJugadores ? (
-          <Fila etiqueta="Jugadores" valor={String(reserva.cantidadJugadores)} />
-        ) : null}
-        {reserva.equipamiento?.map((item) => (
-          <Fila
-            key={item.equipamientoId}
-            etiqueta={`${item.nombre} × ${item.cantidad}`}
-            valor={precioLegible(item.subtotal)}
-          />
-        ))}
-        {reserva.motivoCancelacion ? (
-          <Fila etiqueta="Motivo" valor={reserva.motivoCancelacion} />
-        ) : null}
-
-        <div className="mt-2 flex items-baseline justify-between border-t border-border-subtle pt-4">
-          <span className="text-xs uppercase tracking-wide text-text-subtle">Total</span>
-          <span className="font-display text-2xl font-semibold text-accent">
-            {precioLegible(reserva.montoTotal)}
-          </span>
-        </div>
-      </Card>
+      <DetalleDeReserva reserva={reserva} />
 
       {reserva.estado === "CONFIRMADA" && !puedeCancelar ? (
         <p className="mt-4 text-sm text-text-muted">

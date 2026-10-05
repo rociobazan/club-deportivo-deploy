@@ -15,6 +15,11 @@ después del #43**: los unitarios corriéndolos sobre `main`, y los e2e de la AP
 con el verde del CI del #43, que corrió sobre la rama ya al día con `main` —el mismo árbol que
 entró—, no con una corrida local.
 
+> **Números de rama, a volver a medir.** Lo que dice este documento sobre el ítem 1.6 —20 de 20
+> operaciones, 16 de 16 RF, 16 pantallas, 353 unitarios, 181 e2e de la API y 36 de navegador— se
+> midió el **2026-10-04 sobre la rama `feature/administracion`**, antes de abrir su PR. **Hay que
+> volver a medirlo sobre `main` cuando ese PR entre**, con los comandos de la última sección.
+
 > Todos los números de este documento están medidos sobre `main`, con los comandos de la última
 > sección. Si alguna vez se miden sobre la rama de un PR todavía abierto, hay que decirlo acá y
 > **volver a medirlos cuando entre**. La vez anterior quedaron medidos sobre la rama del #34 con
@@ -29,17 +34,18 @@ entró—, no con una corrida local.
 
 | Medida | Estado |
 |---|---|
-| Ítems del reparto cerrados | **11 de 12**: todo el hito 0, más 1.1, 1.2, **1.3**, 1.4, 1.5, 1.7 y 1.8 |
-| Requisitos funcionales implementados | **12 de 16**: RF-00 a RF-10 y RF-15 |
-| Operaciones del contrato con endpoint | **15 de 20**: se sumó `POST /reservas` |
-| Pantallas de producto | **11**: inicio, El club, contacto, canchas, disponibilidad, ingreso, registro, **reservar**, mis reservas con su detalle, y mi perfil |
+| Ítems del reparto cerrados | **11 de 12** en `main`: todo el hito 0, más 1.1, 1.2, 1.3, 1.4, 1.5, 1.7 y 1.8. **1.6 está implementado en su PR** y pasa a 12 de 12 cuando entre |
+| Requisitos funcionales implementados | **16 de 16** con 1.6: RF-00 a RF-15 (12 en `main`) |
+| Operaciones del contrato con endpoint | **20 de 20** con 1.6: se suman las cinco de administración (15 en `main`) |
+| Pantallas de producto | **16** con 1.6: inicio, El club, contacto, canchas, disponibilidad, ingreso, registro, reservar, mis reservas con su detalle, mi perfil, y **las cinco de `/admin`**: panel, reservas con su detalle, canchas y equipamiento |
 | Protección de `main` | ✅ **activa**: 1 aprobación y los cuatro checks |
 
 **El recorrido principal está completo.** Un visitante ya puede entrar al sitio, ver el club y
 los precios, consultar qué turnos hay libres, escribir por el formulario de contacto, registrarse
 e iniciar sesión, **reservar un turno**, y después ver sus reservas y cancelarlas. De punta a
 punta: elige el turno en `/disponibilidad`, lo confirma en `/reservar` y recibe el código.
-**Queda 1.6**, la administración, como único ítem sin empezar.
+**Con 1.6 se completa el MVP**: el administrador ve el panel del día, administra las reservas de
+todos, y da de alta, edita y da de baja canchas y equipamiento.
 
 La infraestructura estaba lista desde el hito 0 —contrato, specs, base de datos, CI, tests,
 README y la base del front—, que era la condición para trabajar en paralelo.
@@ -72,7 +78,7 @@ pantalla en Next que la consume.
 | 1.3 | Crear reserva | RF-04 | **Adrián** | ✅ en `main` (PR #42, 01/10); falta archivar el cambio |
 | 1.4 | Mis reservas, cancelación y mails | RF-05 a RF-08 | **Rocío** | ✅ en `main` (PR #32, 30/09) |
 | 1.5 | Sitio institucional y contacto | RF-09, RF-10 | **Jeremías** | ✅ en `main` (PR #26, 28/09) |
-| 1.6 | Administración | RF-11 a RF-14 | **Renzo** | ❌ sin propuesta todavía: puede arrancar |
+| 1.6 | Administración | RF-11 a RF-14 | **Renzo** | 🟡 propuesta en `main` (PR #47, 04/10); implementación completa en el PR #48, esperando revisión. Después falta archivar `implementar-administracion` |
 | 1.7 | README | — | Jeremías | ✅ hecho el 27/09: la captura de la protección se reemplazó por una tabla con el estado real del ruleset, leída de la API de GitHub y reproducible con un comando |
 | 1.8 | Mi perfil: datos de la cuenta | RF-15 | Jeremías | ✅ en `main` (PR #34, 30/09) |
 
@@ -108,8 +114,8 @@ pasaron a `openspec/specs/reservas`. Entró con el PR #32 y se archivó con el #
 
 ### API (`apps/api`)
 
-Seis módulos de negocio: `auth`, `catalogo`, `disponibilidad`, `contacto`, `reservas` y
-`notificaciones`, más la base
+Siete módulos de negocio con 1.6: `auth`, `catalogo`, `disponibilidad`, `contacto`, `reservas`,
+`notificaciones` y **`administracion`**, más la base
 transversal que las features nuevas reutilizan sin volver a decidir nada:
 
 - **`common/`**: guards globales con `@Publico()`, `@Roles()` y `@UsuarioActual()`, `ErrorDeApi`
@@ -117,12 +123,15 @@ transversal que las features nuevas reutilizan sin volver a decidir nada:
   (todo lo que compara contra el presente pasa por ahí) y el cliente de mail `Correo`.
 - Esquema completo en `prisma/schema.prisma`, con las siete tablas, y migraciones aplicadas.
 - Seed idempotente con disciplinas, canchas, equipamiento y usuarios de prueba.
-- Tests en verde (Node 24 con `--experimental-vm-modules`): 301 unitarios y 151 e2e en serie.
+- Tests en verde (Node 24 con `--experimental-vm-modules`): 301 unitarios y 151 e2e en serie en
+  `main`; **353 y 181 con 1.6**, medidos sobre su rama.
 
-**15 de 20 operaciones del contrato tienen endpoint**: las cinco de `auth` (registro, login, ver
-el perfil, editarlo y cambiar la contraseña), las de catálogo y disponibilidad, `POST /contacto`,
-las cuatro que trajo 1.4 (listar reservas, ver una, cancelarla y reenviar el mail) y
-**`POST /reservas`**, que trae 1.3. **Faltan cinco**, todas de administración (1.6).
+**Con 1.6, las 20 operaciones del contrato tienen endpoint**: las cinco de `auth` (registro,
+login, ver el perfil, editarlo y cambiar la contraseña), las de catálogo y disponibilidad,
+`POST /contacto`, las cuatro que trajo 1.4 (listar reservas, ver una, cancelarla y reenviar el
+mail), **`POST /reservas`**, que trae 1.3, y las cinco de administración que trae 1.6: el alta y
+la edición de canchas y de equipamiento, y `GET /admin/panel`. El contrato pasa a **2.3.0**: las
+cuatro del ABM declaran el 409 `NOMBRE_DUPLICADO`.
 
 El módulo `reservas` cubre el ciclo de vida completo en un solo servicio: la creación, con sus
 ocho reglas de negocio, más el listado, el detalle, la cancelación y el reenvío. Las cinco
@@ -131,18 +140,19 @@ forma de `Reserva`.
 
 ### Front (`apps/web`)
 
-Once pantallas de producto y la base que usan todas:
+Dieciséis pantallas de producto con 1.6 (once en `main`) y la base que usan todas:
 
 | Hay | No hay |
 |---|---|
-| Inicio, El club y Contacto | Pantallas de administración |
+| Inicio, El club y Contacto | |
+| Administración, con 1.6: panel, reservas de todos con su detalle, canchas y equipamiento | |
 | Canchas y precios, y Disponibilidad | |
 | Reservar un turno, con el total a la vista | |
 | Registro e ingreso, con sesión en cookie | |
 | Mis reservas y su detalle, con cancelación | |
 | Mi perfil: datos y cambio de contraseña | |
 | Identidad visual y tokens (`globals.css`) | |
-| Primitivas: `Button`, `Card`, `Input`, `Textarea`, `Badge` | |
+| Primitivas: `Button`, `Card`, `Input`, `Textarea`, `Select` (con 1.6), `Badge` | |
 | Header con menú de mobile y menús por rol | |
 | Pie, logo y favicon | |
 | Pantallas de 404, error y carga | |
@@ -155,6 +165,9 @@ La home dejó de ser la plantilla por defecto de Next en el PR de 1.5.
 
 `openspec/specs/` tiene las siete capacidades vigentes: `administracion`, `autenticacion`,
 `catalogo`, `disponibilidad`, `institucional`, `notificaciones` y `reservas`.
+
+**Con 1.6 se suma un segundo cambio en `openspec/changes/`:** `implementar-administracion`, con
+deltas en `administracion`, `catalogo` y `reservas`, que se archiva cuando su PR entre.
 
 **Queda un cambio en curso en `openspec/changes/`:** `implementar-creacion-de-reserva` (1.3),
 implementado, con sus 31 tareas cerradas y **pendiente de archivar**. El de 1.4 ya se archivó en
@@ -193,7 +206,7 @@ del ruleset:
 | `specs` | OpenSpec en modo estricto y lint del contrato |
 | `api` | Migraciones contra `postgres:17`, lint, build y tests de la API |
 | `web` | Lint y build del front, que además verifica los tipos |
-| `e2e` | 32 tests de navegador con Playwright contra la pila entera: Postgres, la API y el front servido en producción ([ADR 0002](adr/0002-tests-e2e-con-playwright.md)) |
+| `e2e` | 32 tests de navegador (36 con 1.6) con Playwright contra la pila entera: Postgres, la API y el front servido en producción ([ADR 0002](adr/0002-tests-e2e-con-playwright.md)) |
 
 **`e2e` bloquea desde el 30/09.** Hasta esa fecha corría e informaba, así que un PR con los e2e en
 rojo se podía mergear igual. Lo sumó `rociobazan`, porque editar un *ruleset* pide permiso de admin
@@ -293,8 +306,12 @@ Dos cosas que conviene mirar de frente:
      los e2e corren con `maxWorkers: 1` y Playwright con `workers: 1`, así que nunca hay dos
      solicitudes a la vez. Se verifica leyendo el orden de los `await`, no corriendo tests.
    - La rama mergeó `main` y no la rama de 1.4, así que no se repitió el enredo del 28/09.
-3. **Renzo — 1.6.** Sin empezar: arranca con el `/opsx:propose` de administración. Es el único
-   integrante sin ninguna contribución, así que es lo que más mueve la aguja de la evaluación.
+3. **Renzo — 1.6.** La propuesta entró con el #47 el 04/10, aprobada por Jeremías y Rocío, y las
+   cinco observaciones de Rocío quedaron incorporadas antes de implementar. La implementación
+   está completa en `feature/administracion`, con un commit por paso, y lo que deja fijado está
+   en la decisión 34 de [`memoria-proyecto.md`](memoria-proyecto.md). **Falta**: la revisión de
+   su PR, el merge, archivar `implementar-administracion` y volver a medir sobre `main` los
+   números de este documento que están marcados como de rama.
 4. ~~**Rocío — el ruleset.**~~ **Resuelto el 30/09**: `e2e` es el cuarto check obligatorio.
 
 ### Para todos, en cada feature

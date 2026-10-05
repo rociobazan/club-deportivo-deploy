@@ -111,6 +111,17 @@ Para probar el ingreso desde el sitio: <http://localhost:3001/ingresar> con cual
 
 **El recorrido de una reserva, de punta a punta.** Con sesión de socio, en <http://localhost:3001/disponibilidad> se elige la fecha y se toca un turno **Libre**: eso lleva a <http://localhost:3001/reservar> con la cancha, la fecha y la hora en la dirección. Ahí se confirma —con cantidad de jugadores y equipamiento opcionales, acotado a lo que queda libre en ese turno— y la pantalla devuelve el **código de la reserva**. Después aparece en <http://localhost:3001/mis-reservas>, donde se puede ver el detalle y cancelarla. Sin sesión, `/reservar` redirige a `/ingresar` y vuelve sola cuando entrás.
 
+**La administración.** Con `admin@club.test`, el menú cambia a las cuatro pantallas del club:
+
+| Pantalla | Qué hace |
+|---|---|
+| <http://localhost:3001/admin> | El panel de un día (hoy por defecto, otra fecha con el selector): reservas del día y del anterior, facturación prevista, cancelaciones, ocupación del día y de los últimos 7 días por cancha, y los próximos turnos |
+| <http://localhost:3001/admin/reservas> | Las reservas de todos los socios, con filtros por estado y fecha y búsqueda por titular o código. Desde el detalle se cancela **sin** el plazo de los socios, con un motivo opcional, y se reenvía el mail al titular |
+| <http://localhost:3001/admin/canchas> | Todas las canchas, también las dadas de baja: alta, edición y baja o reactivación. Dar de baja no toca las reservas que ya tiene, y un precio nuevo solo vale para las reservas nuevas |
+| <http://localhost:3001/admin/equipamiento> | Lo mismo para el equipamiento, con su stock total |
+
+Con sesión de socio, esas pantallas muestran un aviso de que son solo para administradores; la API, igual, responde 403.
+
 **Mail.** `MAIL_FROM` (`turnos@clubdeploy.com.ar`) es el remitente del sistema y `MAIL_CONTACTO` (`hola@clubdeploy.com.ar`) la casilla que recibe el formulario de contacto; las dos tienen valor por defecto. **Sin `RESEND_API_KEY` no se envía ningún mail**: el cliente de mail es un doble que deja en el log lo que se habría enviado, así se puede probar `/contacto` sin pedir una clave. Si la definís, los mails salen de verdad desde tu máquina a `MAIL_CONTACTO`. En producción la clave es obligatoria y el arranque corta si falta.
 
 **Horario y zona del club.** `HORA_APERTURA` (`08:00`), `HORA_CIERRE` (`23:00`) y `ZONA_HORARIA_CLUB` (`America/Argentina/Cordoba`) tienen valor por defecto, así que no hace falta definirlas. Si las cambiás, van **en los dos** `.env`: la API calcula la grilla con ellas y el sitio la dibuja.

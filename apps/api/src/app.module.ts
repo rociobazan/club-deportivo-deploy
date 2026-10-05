@@ -3,6 +3,7 @@ import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AdministracionModule } from './administracion/administracion.module';
 import { AuthModule } from './auth/auth.module';
 import { CatalogoModule } from './catalogo/catalogo.module';
 import { ContactoModule } from './contacto/contacto.module';
@@ -22,6 +23,7 @@ import { PrismaModule } from './prisma/prisma.module';
   imports: [
     ConfiguracionModule,
     CorreoModule,
+    AdministracionModule,
     AuthModule,
     CatalogoModule,
     ContactoModule,
