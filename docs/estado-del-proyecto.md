@@ -191,7 +191,7 @@ del ruleset:
 | `specs` | OpenSpec en modo estricto y lint del contrato |
 | `api` | Migraciones contra `postgres:17`, lint, build y tests de la API |
 | `web` | Lint y build del front, que además verifica los tipos |
-| `e2e` | 28 tests de navegador con Playwright contra la pila entera: Postgres, la API y el front servido en producción ([ADR 0002](adr/0002-tests-e2e-con-playwright.md)) |
+| `e2e` | 32 tests de navegador con Playwright contra la pila entera: Postgres, la API y el front servido en producción ([ADR 0002](adr/0002-tests-e2e-con-playwright.md)) |
 
 **`e2e` bloquea desde el 30/09.** Hasta esa fecha corría e informaba, así que un PR con los e2e en
 rojo se podía mergear igual. Lo sumó `rociobazan`, porque editar un *ruleset* pide permiso de admin
@@ -271,12 +271,10 @@ Dos cosas que conviene mirar de frente:
 1. ~~**Archivar `implementar-reservas-notificaciones`.**~~ **Resuelto el 30/09**: sus deltas
    pasaron a `openspec/specs/reservas`.
 1. ~~**1.4 entró sin un solo test de navegador.**~~ **Resuelto el 30/09**: `mis-reservas.spec.ts`
-   suma cinco casos y la suite pasa de 20 a **25**, y con los tres de `/reservar` a **28**. **Queda un hueco, y sigue abierto**: la lista
-   **con** reservas, las pestañas con contenido y la cancelación. Dependían de que existiera
-   `POST /reservas`, porque no hay forma de crearle una reserva a un socio desde el navegador; con
-   1.3 en esta rama **ya se puede**, y `reservar.spec.ts` muestra cómo (se registra un socio y
-   reserva un turno que pide a la API). **Quién lo toma está sin decidir**: 1.3 no lo incluyó, su
-   `tasks.md` cubre los escenarios de su propia pantalla.
+   suma cinco casos y la suite pasa de 20 a **25**, y con los tres de `/reservar` a **28**. El
+   hueco que quedaba —la lista **con** reservas, las pestañas con contenido y la cancelación— se
+   cerró el 01/10: Rocío sumó cuatro casos más, que crean las reservas con `POST /reservas` y
+   prueban solo la pantalla, y la suite llega a **32**.
 
 ### Cada quien con su ítem
 
