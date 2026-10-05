@@ -1,0 +1,18 @@
+# Contexto de build de las imágenes de producción (ADR 0003): la raíz del
+# monorepo, porque las dos apps comparten package-lock.json.
+**/node_modules
+**/dist
+**/.next
+**/coverage
+**/*.tsbuildinfo
+**/test-results
+**/playwright-report
+**/.env*
+!**/.env.example
+.git
+.github
+.claude
+.opencode
+docs
+openspec
+deploy

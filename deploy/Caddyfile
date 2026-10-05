@@ -1,0 +1,15 @@
+# Caddy saca y renueva solo el certificado de Let's Encrypt para {$DOMINIO}
+# (ADR 0003). Con DOMINIO=localhost usa su CA local, para probar la pila en
+# una máquina de desarrollo.
+{$DOMINIO} {
+	encode zstd gzip
+
+	# La API es pública: el contrato se puede probar con curl.
+	handle /api/* {
+		reverse_proxy api:3000
+	}
+
+	handle {
+		reverse_proxy web:3001
+	}
+}

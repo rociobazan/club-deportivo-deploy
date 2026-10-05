@@ -195,6 +195,12 @@ gh api repos/rociobazan/club-deportivo-deploy/rulesets/23795821
 | Reescribir la historia | Bloqueado (no se admite *force push*) |
 | Cambios sin atribuir | Piden una aprobación extra |
 
+## Despliegue
+
+El sistema se publica en **https://clubdeploy.online**, en una instancia AWS EC2 con Docker Compose ([ADR 0003](docs/adr/0003-despliegue-en-ec2.md)). Cada merge a `main` con los cuatro checks en verde dispara el job `deploy`: construye las imágenes de la API y el front, las publica en GitHub Container Registry, aplica las migraciones y levanta la versión nueva. El job no es un check obligatorio porque corre después del merge.
+
+La puesta en marcha de la instancia, el dominio, los mails y los secretos está en [`docs/despliegue.md`](docs/despliegue.md).
+
 ## Equipo
 
 | Integrante | GitHub |
