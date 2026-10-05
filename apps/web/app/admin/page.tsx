@@ -34,14 +34,15 @@ export default async function PaginaPanel({ searchParams }: Props) {
   }
 
   const { fecha: pedida } = await searchParams;
-  const hoy = ahoraEnElClub().fecha;
   const fechaValida = typeof pedida === "string" && esFechaValida(pedida);
-  const fecha = fechaValida ? pedida : hoy;
-  const ruta = fechaValida ? `/admin?fecha=${fecha}` : "/admin";
+  const ruta = fechaValida ? `/admin?fecha=${pedida}` : "/admin";
 
   let panel: PanelAdmin;
   try {
-    panel = await apiFetch<PanelAdmin>(`/admin/panel?fecha=${fecha}`, {
+    // Sin una fecha pedida no se manda ninguna: "hoy" lo decide la API con su
+    // reloj, que es el mismo que filtra los turnos que ya empezaron. Con el
+    // reloj del sitio, cerca de la medianoche podían no coincidir.
+    panel = await apiFetch<PanelAdmin>(fechaValida ? `/admin/panel?fecha=${pedida}` : "/admin/panel", {
       token: await leerToken(),
       timeoutMs: 2000,
     });
@@ -56,7 +57,8 @@ export default async function PaginaPanel({ searchParams }: Props) {
     );
   }
 
-  const esHoy = fecha === hoy;
+  const fecha = panel.fecha;
+  const esHoy = !fechaValida || fecha === ahoraEnElClub().fecha;
   const metricas = [
     {
       titulo: "Reservas del día",

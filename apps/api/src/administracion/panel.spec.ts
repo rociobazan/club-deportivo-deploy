@@ -197,6 +197,18 @@ describe('calcularPanel', () => {
       expect(panel.ocupacionDelDia).toBe(Math.round((100 * 5) / 48));
     });
 
+    it('el promedio no pasa de 100 aunque un día tenga más reservas que turnos', () => {
+      // Se reservó con un horario largo y después se achicó el cierre a las 10:
+      // Tenis 1 ofrece 2 turnos por día y tiene 3 reservas cada día de la
+      // semana. Sin tope, el promedio daría 150.
+      const corto = { ...SIEMPRE_ABIERTO, cierre: '10:00', cierreSabado: '10:00' };
+      const reservas = diasDeLaSemana(LUNES).flatMap((fecha) =>
+        ['08:00', '09:00', '20:00'].map((horaInicio) => reserva({ canchaId: 1, fecha, horaInicio })),
+      );
+      const panel = calcularPanel(entrada({ horario: corto, canchas: CANCHAS.slice(0, 1), reservas }));
+      expect(panel).toMatchObject({ ocupacionDelDia: 100, ocupacionPromedioSemanal: 100 });
+    });
+
     it('si los 7 días están cerrados, el promedio es 0', () => {
       const cerrado = { ...HORARIO, diasCerrados: [0, 1, 2, 3, 4, 5, 6] };
       const panel = calcularPanel(entrada({ horario: cerrado, reservas: cincoEnPadel1(LUNES) }));

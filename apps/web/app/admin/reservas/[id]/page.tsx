@@ -31,6 +31,9 @@ export default async function PaginaDetalleReservaAdmin({ params }: Props) {
   }
 
   const { id } = await params;
+  // Un id que no es un entero de la base no puede ser una reserva: es un 404, y
+  // no un "Reintentar" que va a fallar siempre igual.
+  if (!/^\d{1,10}$/.test(id) || Number(id) < 1 || Number(id) > 2_147_483_647) notFound();
   const ruta = `/admin/reservas/${id}`;
 
   let reserva: Reserva;

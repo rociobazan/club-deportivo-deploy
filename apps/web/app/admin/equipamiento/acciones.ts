@@ -8,7 +8,7 @@ import type {
   CrearEquipamientoRequest,
   Equipamiento,
 } from "@/lib/api/types";
-import { aNumeroArgentino, texto } from "@/lib/formularios";
+import { aNumeroArgentino, errorDePrecio, texto } from "@/lib/formularios";
 import { leerToken } from "@/lib/sesion";
 
 /*
@@ -50,10 +50,7 @@ function validar(valores: ValoresEquipamiento, conDisciplina: boolean) {
   if (valores.stockTotal === "" || !Number.isInteger(stock) || stock < 0) {
     return "El stock tiene que ser un número entero, 0 o más.";
   }
-  if (!(aNumeroArgentino(valores.precioPorTurno) > 0)) {
-    return "El precio por turno tiene que ser mayor que 0.";
-  }
-  return null;
+  return errorDePrecio(valores.precioPorTurno);
 }
 
 function mensajeDe(error: unknown): string {

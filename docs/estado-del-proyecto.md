@@ -16,7 +16,7 @@ con el verde del CI del #43, que corrió sobre la rama ya al día con `main` —
 entró—, no con una corrida local.
 
 > **Números de rama, a volver a medir.** Lo que dice este documento sobre el ítem 1.6 —20 de 20
-> operaciones, 16 de 16 RF, 16 pantallas, 352 unitarios, 181 e2e de la API y 36 de navegador— se
+> operaciones, 16 de 16 RF, 16 pantallas, 353 unitarios, 181 e2e de la API y 36 de navegador— se
 > midió el **2026-10-04 sobre la rama `feature/administracion`**, antes de abrir su PR. **Hay que
 > volver a medirlo sobre `main` cuando ese PR entre**, con los comandos de la última sección.
 
@@ -124,7 +124,7 @@ transversal que las features nuevas reutilizan sin volver a decidir nada:
 - Esquema completo en `prisma/schema.prisma`, con las siete tablas, y migraciones aplicadas.
 - Seed idempotente con disciplinas, canchas, equipamiento y usuarios de prueba.
 - Tests en verde (Node 24 con `--experimental-vm-modules`): 301 unitarios y 151 e2e en serie en
-  `main`; **352 y 181 con 1.6**, medidos sobre su rama.
+  `main`; **353 y 181 con 1.6**, medidos sobre su rama.
 
 **Con 1.6, las 20 operaciones del contrato tienen endpoint**: las cinco de `auth` (registro,
 login, ver el perfil, editarlo y cambiar la contraseña), las de catálogo y disponibilidad,

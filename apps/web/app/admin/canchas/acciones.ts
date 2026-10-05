@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { apiFetch, ApiHttpError } from "@/lib/api/client";
 import type { ActualizarCanchaRequest, Cancha, CrearCanchaRequest } from "@/lib/api/types";
-import { aNumeroArgentino, texto } from "@/lib/formularios";
+import { aNumeroArgentino, errorDePrecio, texto } from "@/lib/formularios";
 import { leerToken } from "@/lib/sesion";
 
 /*
@@ -51,9 +51,7 @@ function leerValores(formData: FormData): ValoresCancha {
 function validar(valores: ValoresCancha, conDisciplina: boolean) {
   if (conDisciplina && !valores.disciplinaId) return "Elegí la disciplina.";
   if (!valores.nombre) return "Poné el nombre de la cancha.";
-  const precio = aNumeroArgentino(valores.precioPorTurno);
-  if (!(precio > 0)) return "El precio por turno tiene que ser mayor que 0.";
-  return null;
+  return errorDePrecio(valores.precioPorTurno);
 }
 
 /** `titulo` es el texto apto para la persona; si no vino de la API, es un bug y se propaga. */

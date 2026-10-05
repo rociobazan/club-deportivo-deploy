@@ -24,8 +24,10 @@ export class AdministracionService {
     const fecha = fechaPedida ?? ahora.fecha;
 
     const [canchas, reservas, canceladas] = await Promise.all([
+      // Las mismas que ofrece la disponibilidad: una cancha activa de una
+      // disciplina dada de baja no se puede reservar, y no ofrece turnos.
       this.prisma.cancha.findMany({
-        where: { activa: true },
+        where: { activa: true, disciplina: { activa: true } },
         include: { disciplina: { select: { nombre: true, duracionTurnoMin: true } } },
       }),
       // Los 7 días que terminan en la fecha, que ya incluyen el día anterior.

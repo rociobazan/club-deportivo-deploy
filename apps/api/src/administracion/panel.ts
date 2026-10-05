@@ -126,11 +126,14 @@ export function calcularPanel(entrada: EntradaDelPanel): PanelAdmin {
   // Un día que no ofrece turnos (cerrado, o sin canchas activas) no entra en el
   // promedio: dividiría por cero y bajaría el promedio sin que nadie faltara.
   const diasAbiertos = dias.filter((d) => d.ofrecidos > 0);
+  // Cada día se acota a 1, como el porcentaje de un día: si se achicó el
+  // horario después de reservar, un día puede tener más reservas que turnos.
   const ocupacionPromedioSemanal =
     diasAbiertos.length === 0
       ? 0
       : Math.round(
-          (100 * diasAbiertos.reduce((suma, d) => suma + d.ocupados / d.ofrecidos, 0)) /
+          (100 *
+            diasAbiertos.reduce((suma, d) => suma + Math.min(1, d.ocupados / d.ofrecidos), 0)) /
             diasAbiertos.length,
         );
   const hoy = dias[dias.length - 1];

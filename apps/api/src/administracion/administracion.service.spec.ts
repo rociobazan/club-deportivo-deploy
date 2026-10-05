@@ -62,7 +62,7 @@ describe('AdministracionService', () => {
       estado: 'CANCELADA',
       canceladaEn: { gte: new Date('2026-09-20T00:00:00Z'), lt: new Date('2026-09-23T00:00:00Z') },
     });
-    expect(prisma.cancha.findMany.mock.calls[0][0].where).toEqual({ activa: true });
+    expect(prisma.cancha.findMany.mock.calls[0][0].where).toEqual({ activa: true, disciplina: { activa: true } });
   });
 
   it('arma la reserva para el cálculo con el titular y la facturación en número', async () => {

@@ -151,12 +151,20 @@ export function minutosHastaElTurno(fecha: string, horaInicio: string, ahora: Mo
   return Math.round((comoInstante(fecha, horaInicio) - comoInstante(ahora.fecha, ahora.hora)) / 60_000);
 }
 
-export const precioLegible = (monto: number) =>
-  new Intl.NumberFormat("es-AR", {
+/**
+ * "$ 15.000" si el monto es entero y "$ 15.000,50" si tiene centavos. Los
+ * precios admiten dos decimales (`Decimal(10,2)`): redondearlos mostraba un
+ * monto distinto del que se guardó.
+ */
+export const precioLegible = (monto: number) => {
+  const decimales = Number.isInteger(monto) ? 0 : 2;
+  return new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency: "ARS",
-    maximumFractionDigits: 0,
+    minimumFractionDigits: decimales,
+    maximumFractionDigits: decimales,
   }).format(monto);
+};
 
 /**
  * Un plazo en minutos, como lo leería una persona: "2 horas", "1 hora" o
