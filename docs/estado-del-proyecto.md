@@ -7,7 +7,7 @@
 el historial viven en [`memoria-proyecto.md`](memoria-proyecto.md). Este documento no repite
 esas decisiones: las enlaza.
 
-**Última verificación:** 2026-10-04, después del #48, contra el código y la API de GitHub, no contra lo que
+**Última verificación:** 2026-10-05, después del #50, contra el código y la API de GitHub, no contra lo que
 dice la memoria. Los comandos que producen cada número están en la última sección, para que
 cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla. Los endpoints y las
 pantallas se contaron sobre `main` el 01/10. **Los tests se volvieron a medir el 2026-10-04,
@@ -20,6 +20,12 @@ archiva: 20 operaciones con endpoint, 353 unitarios y 181 e2e de la API corrién
 navegador con `playwright test --list`, y la participación con `git shortlog` y `gh pr list`.
 Coincidieron con lo que el #48 había medido y declarado sobre su rama: esta vez la regla se
 cumplió entera.
+
+**Revisado de nuevo el 2026-10-05, después del #50.** Los ítems, los requisitos, las operaciones,
+las pantallas, los 353 unitarios y los 36 de navegador se volvieron a medir y **coinciden todos**.
+Los 181 e2e de la API son el conteo real, pero el verde sigue siendo el del CI: corridos en local
+sin base levantada fallan los 181, que es lo esperado. Lo único que estaba corrido era la tabla de
+participación, por los merges del #49 y el #50; está corregida más abajo, con el motivo.
 
 > Todos los números de este documento están medidos sobre `main`, con los comandos de la última
 > sección. Si alguna vez se miden sobre la rama de un PR todavía abierto, hay que decirlo acá y
@@ -257,26 +263,37 @@ Cuenta para la evaluación: la lista de *Contributors* es parte de lo que se mir
 |---|---|---|
 | Jeremías | 98 | 37 |
 | Adrián | 28 | 4 |
-| Rocío | 16 | 5 |
-| Renzo | 16 | 2 |
+| Rocío | 18 | 6 |
+| Renzo | 17 | 3 |
 
-Medido sobre `main` el 2026-10-04, después del #48. Los 98 de Jeremías suman sus dos nombres de
-`git shortlog` (95 y 3), que salen del mismo email.
+Medido sobre `main` el 2026-10-05. Los 98 de Jeremías suman sus dos nombres de `git shortlog`
+(95 y 3), que salen del mismo email.
+
+**Esta tabla nace desactualizada, y no hay forma de evitarlo: un PR no puede contar su propio
+merge.** El #49 la remidió bien sobre `main`, pero su propio merge sumó un commit y un PR que ya
+no podía ver, y después entró el #50. Así que o se mide en un PR que no cambie nada más, o se
+acepta el desfasaje y se lo fecha, que es lo que hace la línea de arriba. Si el número tiene que
+estar exacto para la entrega, hay que medirlo **después** del último merge.
 
 Dos cosas que conviene mirar de frente:
 
-- ~~**Renzo sin ninguna contribución.**~~ **Resuelto el 04/10**: la propuesta de 1.6 (#47) y su
-  implementación (#48) le dan 16 commits y 2 PRs. Se commiteó por paso, un commit por grupo de
-  tareas, que es lo que recomienda el punto de abajo.
-- **El reparto está muy desbalanceado, y se agrandó.** Jeremías cerró sus tres ítems del hito 1,
-  sumó el RF-15 y los arreglos del 30/09, y con eso pasó de 84 a 95 commits.
-  `requisitos.md` §8 desaconseja repartir por capas justamente porque desbalancea los commits, y
-  esto se evalúa. El reparto ya está cerrado, así que lo que lo corrige ahora es que **1.3 y 1.6
-  entren**: cada feature completa (spec, endpoint, tests, pantalla) da un volumen parecido al de
-  las que ya entraron. Con una salvedad: **el volumen de *commits* depende de cómo se parta el
-  trabajo, no solo de cuánto se hace.** 1.4 es una feature completa —spec, dos módulos de API,
-  pantalla y tests— y le dio a Rocío **cuatro commits**. Quien quiera que su aporte se vea en
-  *Contributors* conviene que commitee por paso, no de una sola vez al final.
+- ~~**Renzo sin ninguna contribución.**~~ **Resuelto el 04/10**: la propuesta de 1.6 (#47), su
+  implementación (#48) y el archivado (#49) le dan 17 commits y 3 PRs. Se commiteó por paso, un
+  commit por grupo de tareas, que es lo que recomienda el punto de abajo.
+- **El reparto quedó desbalanceado, y ya no hay nada pendiente que lo corrija.** Jeremías tiene
+  98 commits contra 28, 18 y 17 del resto. `requisitos.md` §8 desaconseja repartir por capas
+  justamente porque desbalancea los commits, y esto se evalúa. Con el hito 1 cerrado, lo que
+  quedaba por entrar ya entró: 1.3 el 01/10 y 1.6 el 04/10. Dicho de otro modo, **la diferencia
+  que se ve es la final**, y no el retrato de un trabajo a medio terminar.
+
+  Dos cosas que la explican, y que conviene saber leer:
+
+  - **El volumen de *commits* depende de cómo se parta el trabajo, no solo de cuánto se hace.**
+    1.4 es una feature completa —spec, dos módulos de API, pantalla y tests— y le dio a Rocío
+    **cuatro commits**. 1.6 es de tamaño parecido y le dio a Renzo **16**, porque commiteó por
+    grupo de tareas. El trabajo fue comparable; el número no.
+  - Jeremías se llevó **cuatro ítems** del hito 1 (1.1, 1.2, 1.5 y el RF-15) más el hito 0 y los
+    arreglos sueltos, contra uno por cabeza del resto. Eso es reparto, no ritmo.
 
 > `git shortlog` muestra a Jeremías con dos nombres (`JereDev` y `Jeremias Fernandez`), pero los
 > dos commits salen del mismo email, y GitHub arma *Contributors* por email. Cuenta como una
@@ -299,8 +316,21 @@ Dos cosas que conviene mirar de frente:
 ### Cada quien con su ítem
 
 2. **Adrián — 1.3.** Entró con el PR #42 el 01/10, con las 31 tareas cerradas. **Falta archivar
-   `implementar-creacion-de-reserva`** con `/opsx:archive` desde `main`: hasta que no se corra,
-   `openspec/specs/` no describe la creación de reservas aunque el código ya esté.
+   `implementar-creacion-de-reserva`** con `/opsx:archive` desde `main`. Es el **único pendiente
+   del proyecto**.
+
+   Antes acá decía que sin archivar "`openspec/specs/` no describe la creación de reservas", y
+   **era falso**: la creación está descrita desde el cambio base, con sus requisitos de RN-01,
+   RN-02, RN-03, RN-06, RN-07 y RN-09. Lo que el delta sin aplicar cambia son **dos requisitos**:
+
+   - **Agrega "Pantalla de reserva".** `/reservar` existe, está contada entre las 16 pantallas, y
+     ningún requisito vigente la describe.
+   - **Modifica RN-09, y esta es la que importa.** La versión vigente **no menciona el horario por
+     día**: no dice que el sábado cierra con `HORA_CIERRE_SABADO` ni que `DIAS_CERRADOS` cierra el
+     domingo. Eso está implementado desde la decisión 27 y tiene tests, así que hoy la spec
+     **contradice al código por omisión**: quien la lea cree que el sábado cierra igual que un
+     martes y que los domingos se puede reservar. Los dos escenarios que lo fijan ("Sábado después
+     del cierre propio" y "Día cerrado") están en el delta, sin aplicar.
 
    Las dos cosas que se habían marcado para revisar a mano, porque el CI no puede verlas,
    **quedaron verificadas el 01/10 y las dos están bien**:
