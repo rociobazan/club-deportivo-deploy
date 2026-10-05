@@ -78,7 +78,7 @@ pantalla en Next que la consume.
 | 1.3 | Crear reserva | RF-04 | **Adrián** | ✅ en `main` (PR #42, 01/10); falta archivar el cambio |
 | 1.4 | Mis reservas, cancelación y mails | RF-05 a RF-08 | **Rocío** | ✅ en `main` (PR #32, 30/09) |
 | 1.5 | Sitio institucional y contacto | RF-09, RF-10 | **Jeremías** | ✅ en `main` (PR #26, 28/09) |
-| 1.6 | Administración | RF-11 a RF-14 | **Renzo** | 🟡 propuesta en `main` (PR #47, 04/10); implementación completa en el PR de `feature/administracion`, esperando revisión. Después falta archivar `implementar-administracion` |
+| 1.6 | Administración | RF-11 a RF-14 | **Renzo** | 🟡 propuesta en `main` (PR #47, 04/10); implementación completa en el PR #48, esperando revisión. Después falta archivar `implementar-administracion` |
 | 1.7 | README | — | Jeremías | ✅ hecho el 27/09: la captura de la protección se reemplazó por una tabla con el estado real del ruleset, leída de la API de GitHub y reproducible con un comando |
 | 1.8 | Mi perfil: datos de la cuenta | RF-15 | Jeremías | ✅ en `main` (PR #34, 30/09) |
 
