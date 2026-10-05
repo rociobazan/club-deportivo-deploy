@@ -2,6 +2,17 @@
 
 /* Tokens del prototipo docs/claude-design/Deploy Club.dc.html (decisión 12 de la memoria). */
 :root {
+  /*
+   * Los controles nativos no los dibuja la página sino el sistema, así que el
+   * CSS de acá no los alcanza: lo único que el navegador mira para pintarlos
+   * claros u oscuros es esta propiedad, y sin declararla asume `light`. Por eso
+   * el panel que abre un `<select>` salía blanco sobre un sitio negro. Cubre
+   * también las flechas de los `input type="number"`, el selector de fecha de
+   * /disponibilidad y las barras de scroll. El sitio es oscuro y no tiene tema
+   * claro, así que va fijo y no `light dark`.
+   */
+  color-scheme: dark;
+
   --bg: #060807;
   --surface: #0b0f0e;
   --surface-raised: #0e1211;
