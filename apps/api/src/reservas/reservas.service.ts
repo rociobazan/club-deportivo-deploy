@@ -2,11 +2,12 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { TipoNotificacion } from '@prisma/client';
 import { ErrorDeApi } from '../common/error-de-api';
-import { aFechaDb, comparar, deFechaDb, sumarDias } from '../common/fechas';
+import { aFechaDb, comparar, deFechaDb, duracionLegible, sumarDias } from '../common/fechas';
 import { Bloque, generarGrilla } from '../common/grilla';
 import { ventanaDelDia } from '../common/horario';
 import { Reloj } from '../common/reloj';
 import type { UsuarioAutenticado } from '../common/usuario-actual';
+import { ENTERO_MAXIMO_DB } from '../common/validadores';
 import { CONFIGURACION } from '../configuracion';
 import type { Configuracion } from '../configuracion';
 import { NotificacionesService } from '../notificaciones/notificaciones.service';
@@ -522,7 +523,7 @@ export class ReservasService {
         422,
         'PLAZO_CANCELACION_VENCIDO',
         'Ya no es posible cancelar esta reserva',
-        `La cancelación debe hacerse con al menos ${this.configuracion.cancelacionMinutosMinimos / 60} horas de anticipación.`,
+        `La cancelación debe hacerse con al menos ${duracionLegible(this.configuracion.cancelacionMinutosMinimos)} de anticipación.`,
       );
     }
 
@@ -623,6 +624,13 @@ export class ReservasService {
 
   /** 404, no 403: una reserva ajena no se distingue de una inexistente (RN-13). */
   private async buscar(id: number, usuario: UsuarioAutenticado): Promise<ReservaConDetalle> {
+    // Un id que no entra en la columna no puede existir: sin esto, la base lo
+    // rechazaba con un error que salía como 500 en vez de 404. El rango se
+    // acota por los dos lados, porque `ParseIntPipe` acepta el signo y el INT4
+    // tiene piso además de techo; y por debajo de 1 tampoco hay ids posibles,
+    // porque son `autoincrement()`.
+    if (id < 1 || id > ENTERO_MAXIMO_DB) throw noEncontrada(id);
+
     const reserva = await this.prisma.reserva.findUnique({ where: { id }, include: INCLUDE });
     if (!reserva || (usuario.rol === 'SOCIO' && reserva.usuarioId !== usuario.id)) {
       throw noEncontrada(id);

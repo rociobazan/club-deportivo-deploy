@@ -53,6 +53,20 @@ describe('ContactoDto', () => {
     }
   });
 
+  it('rechaza nombre, teléfono o mensaje de solo espacios', async () => {
+    for (const campo of ['nombre', 'telefono', 'mensaje']) {
+      await expect(validar({ ...valido, [campo]: '   ' })).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    }
+  });
+
+  it('recorta los extremos del mail antes de validarlo', async () => {
+    await expect(validar({ ...valido, email: '  ana@example.com ' })).resolves.toMatchObject({
+      email: 'ana@example.com',
+    });
+  });
+
   it('deja pasar el campo trampa con cualquier contenido, para no darle señal al bot', async () => {
     await expect(
       validar({ ...valido, sitioWeb: 'http://spam.example' }),

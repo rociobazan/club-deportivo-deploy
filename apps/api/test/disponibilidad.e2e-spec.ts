@@ -217,6 +217,11 @@ describe('disponibilidad (e2e)', () => {
       expect(body.canchas.map((c: { canchaId: number }) => c.canchaId)).toEqual([tenis1.id]);
     });
 
+    it('un canchaId o disciplinaId mayor que el máximo de la columna responde 400, no 500', async () => {
+      await consultar(`fecha=${MANIANA}&canchaId=99999999999`).expect(400);
+      await consultar(`fecha=${MANIANA}&disciplinaId=99999999999`).expect(400);
+    });
+
     it('las canchas inactivas y las de disciplinas inactivas no aparecen', async () => {
       const { body } = await consultar(`fecha=${MANIANA}`).expect(200);
       const nombres = body.canchas.map((c: { nombre: string }) => c.nombre);
