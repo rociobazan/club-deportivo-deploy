@@ -1,7 +1,9 @@
 import { BadRequestException } from '@nestjs/common';
 import { crearPipeDeValidacion } from '../../common/validacion';
 import { ActualizarCanchaDto } from './actualizar-cancha.dto';
+import { ActualizarEquipamientoDto } from './actualizar-equipamiento.dto';
 import { CrearCanchaDto } from './crear-cancha.dto';
+import { CrearEquipamientoDto } from './crear-equipamiento.dto';
 import { ListarCanchasDto } from './listar-canchas.dto';
 import { ListarEquipamientoDto } from './listar-equipamiento.dto';
 
@@ -141,5 +143,45 @@ describe('ActualizarCanchaDto', () => {
       await rechaza(ActualizarCanchaDto, { [campo]: null });
     }
     await rechaza(ActualizarCanchaDto, { disciplinaId: 1 });
+  });
+});
+
+const itemValido = { disciplinaId: 1, nombre: 'Visera', stockTotal: 8, precioPorTurno: 1000 };
+
+describe('CrearEquipamientoDto', () => {
+  it('acepta el alta del escenario, y stock 0', async () => {
+    await expect(validarCuerpo(CrearEquipamientoDto, itemValido)).resolves.toBeInstanceOf(CrearEquipamientoDto);
+    await expect(
+      validarCuerpo(CrearEquipamientoDto, { ...itemValido, stockTotal: 0 }),
+    ).resolves.toBeInstanceOf(CrearEquipamientoDto);
+  });
+
+  it('Stock inválido: rechaza negativos, decimales y más que un Int de la base', async () => {
+    for (const stockTotal of [-1, 1.5, 2_147_483_648, null]) {
+      await rechaza(CrearEquipamientoDto, { ...itemValido, stockTotal });
+    }
+  });
+
+  it('rechaza nombre vacío, precio 0 y activo, que no se declara', async () => {
+    await rechaza(CrearEquipamientoDto, { ...itemValido, nombre: '  ' });
+    await rechaza(CrearEquipamientoDto, { ...itemValido, nombre: 'x'.repeat(61) });
+    await rechaza(CrearEquipamientoDto, { ...itemValido, precioPorTurno: 0 });
+    await rechaza(CrearEquipamientoDto, { ...itemValido, activo: false });
+  });
+});
+
+describe('ActualizarEquipamientoDto', () => {
+  it('acepta un solo campo', async () => {
+    await expect(validarCuerpo(ActualizarEquipamientoDto, { stockTotal: 8 })).resolves.toBeInstanceOf(
+      ActualizarEquipamientoDto,
+    );
+  });
+
+  it('Stock inválido también en la edición, y null en cualquier campo', async () => {
+    await rechaza(ActualizarEquipamientoDto, { stockTotal: -1 });
+    for (const campo of ['nombre', 'stockTotal', 'precioPorTurno', 'activo']) {
+      await rechaza(ActualizarEquipamientoDto, { [campo]: null });
+    }
+    await rechaza(ActualizarEquipamientoDto, { disciplinaId: 2 });
   });
 });

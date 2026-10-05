@@ -7,7 +7,9 @@ import { exigirRol, SolicitudConUsuario } from '../common/usuario-actual';
 import { ENTERO_MAXIMO_DB } from '../common/validadores';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActualizarCanchaDto } from './dto/actualizar-cancha.dto';
+import { ActualizarEquipamientoDto } from './dto/actualizar-equipamiento.dto';
 import { CrearCanchaDto } from './dto/crear-cancha.dto';
+import { CrearEquipamientoDto } from './dto/crear-equipamiento.dto';
 import { ListarCanchasDto } from './dto/listar-canchas.dto';
 import { ListarEquipamientoDto } from './dto/listar-equipamiento.dto';
 import {
@@ -194,6 +196,57 @@ export class CatalogoService {
       return aCancha(cancha);
     } catch (error) {
       throw this.nombreDuplicado(error, 'una cancha', actual.disciplina.nombre, datos.nombre);
+    }
+  }
+
+  /** `POST /equipamiento` (RF-13). El ítem se crea activo; el nombre repetido es 409, igual que en canchas. */
+  async crearEquipamiento(datos: CrearEquipamientoDto): Promise<EquipamientoPublico> {
+    const disciplina = await this.disciplinaActiva(datos.disciplinaId);
+    try {
+      const item = await this.prisma.equipamiento.create({
+        data: {
+          disciplinaId: disciplina.id,
+          nombre: datos.nombre,
+          stockTotal: datos.stockTotal,
+          precioPorTurno: aDecimal(datos.precioPorTurno),
+        },
+      });
+      return aEquipamiento(item);
+    } catch (error) {
+      throw this.nombreDuplicado(error, 'un ítem', disciplina.nombre, datos.nombre);
+    }
+  }
+
+  /**
+   * `PATCH /equipamiento/{id}` (RF-13). Ni la baja ni un stock más chico tocan
+   * las reservas que ya lo alquilaron (RN-15): el stock disponible de un turno
+   * se calcula al consultar y se acota a 0. Un precio nuevo no cambia el
+   * `precioUnitario` que cada reserva copió al crearse (RN-06).
+   */
+  async actualizarEquipamiento(
+    id: number,
+    datos: ActualizarEquipamientoDto,
+  ): Promise<EquipamientoPublico> {
+    exigirAlgunCampo(datos, 'nombre, stockTotal, precioPorTurno o activo');
+
+    const actual = await this.buscarPorId(id, (idValido) =>
+      this.prisma.equipamiento.findUnique({
+        where: { id: idValido },
+        include: INCLUDE_DISCIPLINA,
+      }),
+    );
+    if (!actual) throw noEncontrado(`No existe un ítem de equipamiento con id ${id}.`);
+
+    const cambios: Prisma.EquipamientoUpdateInput = {};
+    if (datos.nombre !== undefined) cambios.nombre = datos.nombre;
+    if (datos.stockTotal !== undefined) cambios.stockTotal = datos.stockTotal;
+    if (datos.precioPorTurno !== undefined) cambios.precioPorTurno = aDecimal(datos.precioPorTurno);
+    if (datos.activo !== undefined) cambios.activo = datos.activo;
+
+    try {
+      return aEquipamiento(await this.prisma.equipamiento.update({ where: { id }, data: cambios }));
+    } catch (error) {
+      throw this.nombreDuplicado(error, 'un ítem', actual.disciplina.nombre, datos.nombre);
     }
   }
 

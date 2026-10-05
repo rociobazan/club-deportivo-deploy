@@ -263,4 +263,85 @@ describe('CatalogoService', () => {
       });
     });
   });
+
+  describe('administración de equipamiento', () => {
+    const tenis = { id: 1, nombre: 'Tenis', duracionTurnoMin: 60, activa: true };
+    const visera = {
+      id: 12,
+      disciplinaId: 1,
+      nombre: 'Visera',
+      stockTotal: 8,
+      precioPorTurno: new Prisma.Decimal('1000'),
+      activo: true,
+      disciplina: { nombre: 'Tenis' },
+    };
+    const alta = { disciplinaId: 1, nombre: 'Visera', stockTotal: 8, precioPorTurno: 1000 };
+    const duplicado = new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+      code: 'P2002',
+      clientVersion: '6.19.3',
+      meta: { modelName: 'Equipamiento', target: ['disciplina_id', 'nombre'] },
+    });
+
+    it('Alta de equipamiento: lo crea con el stock y el precio, y responde con la forma del contrato', async () => {
+      prisma.disciplina.findUnique.mockResolvedValue(tenis);
+      prisma.equipamiento.create.mockResolvedValue(visera);
+
+      const item = await servicio.crearEquipamiento(alta);
+
+      const { data } = prisma.equipamiento.create.mock.calls[0][0];
+      expect(data).toMatchObject({ disciplinaId: 1, nombre: 'Visera', stockTotal: 8 });
+      expect(data.precioPorTurno.toString()).toBe('1000');
+      expect(item).toEqual({
+        id: 12,
+        nombre: 'Visera',
+        disciplinaId: 1,
+        stockTotal: 8,
+        precioPorTurno: 1000,
+        activo: true,
+      });
+    });
+
+    it('Disciplina o ítem inexistente: 404 en el alta y en la edición', async () => {
+      prisma.disciplina.findUnique.mockResolvedValue({ ...tenis, activa: false });
+      await expect(servicio.crearEquipamiento(alta)).rejects.toMatchObject({ estado: 404 });
+
+      prisma.equipamiento.findUnique.mockResolvedValue(null);
+      await expect(servicio.actualizarEquipamiento(99, { stockTotal: 3 })).rejects.toMatchObject({
+        estado: 404,
+        tipo: 'NO_ENCONTRADO',
+      });
+      expect(prisma.equipamiento.create).not.toHaveBeenCalled();
+      expect(prisma.equipamiento.update).not.toHaveBeenCalled();
+    });
+
+    it('Nombre repetido en la disciplina: 409 en el alta y en la edición', async () => {
+      prisma.disciplina.findUnique.mockResolvedValue(tenis);
+      prisma.equipamiento.create.mockRejectedValue(duplicado);
+      await expect(servicio.crearEquipamiento(alta)).rejects.toMatchObject({ estado: 409, tipo: 'NOMBRE_DUPLICADO' });
+
+      prisma.equipamiento.findUnique.mockResolvedValue(visera);
+      prisma.equipamiento.update.mockRejectedValue(duplicado);
+      await expect(servicio.actualizarEquipamiento(12, { nombre: 'Raqueta' })).rejects.toMatchObject({
+        estado: 409,
+        tipo: 'NOMBRE_DUPLICADO',
+      });
+    });
+
+    it('la edición cambia solo lo que vino', async () => {
+      prisma.equipamiento.findUnique.mockResolvedValue(visera);
+      prisma.equipamiento.update.mockResolvedValue({ ...visera, stockTotal: 3 });
+
+      const item = await servicio.actualizarEquipamiento(12, { stockTotal: 3 });
+
+      expect(prisma.equipamiento.update.mock.calls[0][0]).toEqual({ where: { id: 12 }, data: { stockTotal: 3 } });
+      expect(item.stockTotal).toBe(3);
+    });
+
+    it('un PATCH sin ningún valor es 400', async () => {
+      await expect(servicio.actualizarEquipamiento(12, {})).rejects.toMatchObject({
+        estado: 400,
+        tipo: 'SOLICITUD_INVALIDA',
+      });
+    });
+  });
 });

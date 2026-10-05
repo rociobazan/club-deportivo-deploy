@@ -5,7 +5,9 @@ import type { SolicitudConUsuario } from '../common/usuario-actual';
 import { PREFIJO_API } from '../configuracion';
 import { CatalogoService } from './catalogo.service';
 import { ActualizarCanchaDto } from './dto/actualizar-cancha.dto';
+import { ActualizarEquipamientoDto } from './dto/actualizar-equipamiento.dto';
 import { CrearCanchaDto } from './dto/crear-cancha.dto';
+import { CrearEquipamientoDto } from './dto/crear-equipamiento.dto';
 import { ListarCanchasDto } from './dto/listar-canchas.dto';
 import { ListarEquipamientoDto } from './dto/listar-equipamiento.dto';
 
@@ -56,5 +58,26 @@ export class CatalogoController {
   @Get('equipamiento')
   equipamiento(@Query() filtros: ListarEquipamientoDto, @Req() solicitud: SolicitudConUsuario) {
     return this.catalogo.listarEquipamiento(filtros, solicitud);
+  }
+
+  /** `POST /equipamiento` → 201 con el `Equipamiento` y el header `Location`. */
+  @Roles('ADMIN')
+  @Post('equipamiento')
+  async crearEquipamiento(
+    @Body() datos: CrearEquipamientoDto,
+    @Res({ passthrough: true }) respuesta: Response,
+  ) {
+    const item = await this.catalogo.crearEquipamiento(datos);
+    respuesta.setHeader('Location', `/${PREFIJO_API}/equipamiento/${item.id}`);
+    return item;
+  }
+
+  @Roles('ADMIN')
+  @Patch('equipamiento/:id')
+  actualizarEquipamiento(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() datos: ActualizarEquipamientoDto,
+  ) {
+    return this.catalogo.actualizarEquipamiento(id, datos);
   }
 }

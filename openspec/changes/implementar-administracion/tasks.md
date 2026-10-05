@@ -21,10 +21,10 @@ Referencias: los requisitos del panel en `openspec/specs/administracion/spec.md`
 
 ## 3. API: ABM de equipamiento (RF-13)
 
-- [ ] 3.1 Crear `crear-equipamiento.dto.ts` y `actualizar-equipamiento.dto.ts` con el mismo criterio que 2.1: nombre hasta 60, `stockTotal` entero entre 0 y `ENTERO_MAXIMO_DB`, `activo` solo en la edición. Verificar con unitarios del pipe: `stockTotal: -1` → 400 (escenario "Stock inválido"), `stockTotal: 1.5` → 400, nombre vacío → 400.
-- [ ] 3.2 Implementar `crearEquipamiento()` y `actualizarEquipamiento()` en `CatalogoService`, con los mismos 404, 400 y 409 que las canchas. Verificar con unitarios con Prisma mockeado.
-- [ ] 3.3 Sumar `POST /equipamiento` (201 y `Location: /api/v1/equipamiento/{id}`) y `PATCH /equipamiento/{id}` con `@Roles('ADMIN')`. Verificar con lint y build de `api`.
-- [ ] 3.4 Sumar a `catalogo.e2e-spec.ts` un `describe('Administración de equipamiento')` con un `it` por escenario no cubierto: alta, stock inválido, disciplina o ítem inexistente, nombre repetido, ajuste de stock (6 → 8 da `stockTotal` 8 y `stockDisponible` 8), stock reducido por debajo de lo alquilado (4 alquiladas y stock 3 → las reservas siguen con 4 y `stockDisponible` 0), cambio de precio (la reserva vieja conserva `precioUnitario` 2500), baja (sale de `GET /equipamiento` y el `POST /reservas` que lo pide da 404) y los 403/401. **Los que cambian ítems del seed los restauran** en un `afterEach`, porque los usan otros e2e. Verificar con `npm run test:e2e --workspace api` en verde.
+- [x] 3.1 Crear `crear-equipamiento.dto.ts` y `actualizar-equipamiento.dto.ts` con el mismo criterio que 2.1: nombre hasta 60, `stockTotal` entero entre 0 y `ENTERO_MAXIMO_DB`, `activo` solo en la edición. Verificar con unitarios del pipe: `stockTotal: -1` → 400 (escenario "Stock inválido"), `stockTotal: 1.5` → 400, nombre vacío → 400.
+- [x] 3.2 Implementar `crearEquipamiento()` y `actualizarEquipamiento()` en `CatalogoService`, con los mismos 404, 400 y 409 que las canchas. Verificar con unitarios con Prisma mockeado.
+- [x] 3.3 Sumar `POST /equipamiento` (201 y `Location: /api/v1/equipamiento/{id}`) y `PATCH /equipamiento/{id}` con `@Roles('ADMIN')`. Verificar con lint y build de `api`.
+- [x] 3.4 Sumar a `catalogo.e2e-spec.ts` un `describe('Administración de equipamiento')` con un `it` por escenario no cubierto: alta, stock inválido, disciplina o ítem inexistente, nombre repetido, ajuste de stock (6 → 8 da `stockTotal` 8 y `stockDisponible` 8), stock reducido por debajo de lo alquilado (4 alquiladas y stock 3 → las reservas siguen con 4 y `stockDisponible` 0), cambio de precio (la reserva vieja conserva `precioUnitario` 2500), baja (sale de `GET /equipamiento` y el `POST /reservas` que lo pide da 404) y los 403/401. **Los que cambian ítems del seed los restauran** en un `afterEach`, porque los usan otros e2e. Verificar con `npm run test:e2e --workspace api` en verde.
 
 ## 4. API: panel del club (RF-11)
 
