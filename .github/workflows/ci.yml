@@ -180,29 +180,21 @@ jobs:
             api.log
           retention-days: 7
 
-  # Despliegue en la instancia EC2 (ADR 0003). Solo después de un merge a main
-  # con todo en verde; en los PRs no corre, así que no es un check obligatorio.
-  deploy:
-    name: deploy
+  # Despliegue en la instancia EC2 (ADR 0003), en dos jobs. Solo corren después
+  # de un merge a main con todo en verde; en los PRs no, así que no son checks
+  # obligatorios. Están separados para que la clave SSH de producción nunca
+  # comparta runner con actions de terceros: `imagenes` usa las de Docker y
+  # puede publicar en GHCR, y `deploy` solo tiene la clave y comandos propios.
+  imagenes:
+    name: imagenes
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [e2e]
     runs-on: ubuntu-latest
-    # Dos merges seguidos no pueden desplegar a la vez: el segundo espera.
-    concurrency:
-      group: deploy-produccion
-      cancel-in-progress: false
-    environment:
-      name: produccion
-      url: https://clubdeploy.online
     permissions:
       contents: read
       packages: write
-    # Los secretos entran como variables y no con ${{ }} dentro de los scripts:
-    # así nunca forman parte del texto del comando.
     env:
       IMAGE_TAG: ${{ github.sha }}
-      EC2_HOST: ${{ secrets.EC2_HOST }}
-      EC2_USER: ${{ secrets.EC2_USER }}
     steps:
       - uses: actions/checkout@v7
       # GHCR exige el dueño en minúsculas.
@@ -211,8 +203,7 @@ jobs:
 
       # Las imágenes se construyen acá y no en la instancia: el build de Next no
       # entra en la memoria de una t3.micro. Las actions de terceros van fijadas
-      # por SHA y no por tag: este job maneja la clave SSH de producción y puede
-      # publicar en GHCR, y un tag se puede volver a apuntar a otro código.
+      # por SHA y no por tag: un tag se puede volver a apuntar a otro código.
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
@@ -237,6 +228,31 @@ jobs:
           tags: ghcr.io/${{ env.GHCR_OWNER }}/club-deploy-web:${{ env.IMAGE_TAG }}
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
+
+  deploy:
+    name: deploy
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [imagenes]
+    runs-on: ubuntu-latest
+    # Dos merges seguidos no pueden desplegar a la vez: el segundo espera.
+    concurrency:
+      group: deploy-produccion
+      cancel-in-progress: false
+    environment:
+      name: produccion
+      url: https://clubdeploy.online
+    # Sin `packages: write`: este job solo descarga, y lo hace la instancia.
+    permissions:
+      contents: read
+    # Los secretos entran como variables y no con ${{ }} dentro de los scripts:
+    # así nunca forman parte del texto del comando.
+    env:
+      IMAGE_TAG: ${{ github.sha }}
+      EC2_HOST: ${{ secrets.EC2_HOST }}
+      EC2_USER: ${{ secrets.EC2_USER }}
+    steps:
+      # Solo para copiar deploy/ a la instancia.
+      - uses: actions/checkout@v7
 
       # La huella del servidor va en un secreto y no se pide con ssh-keyscan: así
       # una máquina que se hiciera pasar por la instancia no recibe el deploy.

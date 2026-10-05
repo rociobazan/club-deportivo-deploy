@@ -4,7 +4,7 @@ Paso a paso para dejar el sistema publicado en `https://clubdeploy.online`. El p
 decisión está en el [ADR 0003](adr/0003-despliegue-en-ec2.md).
 
 Una vez hecha la puesta en marcha, **cada merge a `main` con el CI en verde se despliega solo**
-(job `deploy` de [`ci.yml`](../.github/workflows/ci.yml)). Lo de abajo se hace una sola vez, a
+(jobs `imagenes` y `deploy` de [`ci.yml`](../.github/workflows/ci.yml)). Lo de abajo se hace una sola vez, a
 mano, porque son cuentas, credenciales y recursos que el CI no puede crear.
 
 ```
@@ -117,8 +117,8 @@ Borrar `deploy_ci` de la máquina local cuando quede cargado.
 
 ## 6. Primer deploy
 
-1. Mergear a `main` (o re-ejecutar el último workflow de `main`). El job `deploy` construye y
-   publica las imágenes.
+1. Mergear a `main` (o re-ejecutar el último workflow de `main`). El job `imagenes`
+   construye y publica las imágenes, y `deploy` las levanta en la instancia.
 2. **Imágenes públicas.** Si el job falla en `docker compose pull` con *denied*, los paquetes
    quedaron privados. En GitHub → perfil de la dueña del repo → *Packages* →
    `club-deploy-api` y `club-deploy-web` → *Package settings* → *Change visibility* →
@@ -149,7 +149,7 @@ Todo se corre en `/opt/club`, que ya tiene `COMPOSE_FILE` en el `.env`.
 | Ver el estado | `docker compose ps` |
 | Ver los logs de la API | `docker compose logs -f api` |
 | Backup de la base | `docker compose exec db pg_dump -U club club_reservas > backup-$(date +%F).sql` |
-| Volver a un commit anterior | En GitHub, re-ejecutar el job `deploy` del workflow de ese commit |
+| Volver a un commit anterior | En GitHub, re-ejecutar solo el job `deploy` del workflow de ese commit: sus imágenes ya están en GHCR |
 
 Antes de mergear una migración riesgosa, hacer el backup.
 

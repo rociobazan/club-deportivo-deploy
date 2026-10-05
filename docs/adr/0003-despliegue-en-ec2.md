@@ -76,9 +76,13 @@ Un script de carga para producción, separado del seed:
 
 ### Imágenes y deploy
 
-- **Un job `deploy` en `ci.yml`**, que corre solo en push a `main` y después de que `e2e`
-  pasa: construye `api` y `web`, las publica en GHCR con el SHA del commit como tag y entra
-  por SSH a la instancia para hacer `pull` y `up -d`.
+- **Dos jobs en `ci.yml`**, que corren solo en push a `main` y después de que `e2e` pasa:
+  `imagenes` construye `api` y `web` y las publica en GHCR con el SHA del commit como tag, y
+  `deploy` entra por SSH a la instancia para hacer `pull` y `up -d`. **Van separados para que
+  la clave SSH nunca comparta runner con actions de terceros**: las de Docker corren en
+  `imagenes`, que tiene permiso de publicar paquetes pero no la clave; `deploy` tiene la clave
+  y solo usa `actions/checkout` y comandos propios. Las actions de Docker además van fijadas
+  por SHA.
 - **Las migraciones corren en cada deploy**, con `prisma migrate deploy` antes de levantar la
   API nueva. Si fallan, el deploy se corta y queda corriendo la versión anterior.
 - **Después de `up -d`, el job comprueba que `https://clubdeploy.online/api/v1` responda.**
@@ -114,9 +118,10 @@ Un script de carga para producción, separado del seed:
 ## Consecuencias
 
 - **Archivos nuevos:** un `Dockerfile` por app, `docker-compose.prod.yml`, un `Caddyfile`, el
-  script de carga para producción y el job `deploy` en `.github/workflows/ci.yml`. El
+  script de carga para producción y los jobs `imagenes` y `deploy` en
+  `.github/workflows/ci.yml`. El
   `docker-compose.yml` actual sigue siendo solo para desarrollo.
-- **El job `deploy` no es un check obligatorio** de la protección de `main`: corre después del
+- **`imagenes` y `deploy` no son checks obligatorios** de la protección de `main`: corren después del
   merge, no en los PRs.
 - **Variables del front:** todas las páginas son dinámicas (verificado con `next build`), así
   que el servidor de Next lee `API_URL` y las variables de horario en cada request y la
