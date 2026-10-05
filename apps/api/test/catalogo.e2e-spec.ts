@@ -4,7 +4,9 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
-import { aFechaDb } from '../src/common/fechas';
+import { aFechaDb, sumarDias } from '../src/common/fechas';
+import { diaDeLaSemana, DOMINGO } from '../src/common/horario';
+import { Reloj } from '../src/common/reloj';
 import { configurarApp } from '../src/configurar-app';
 import { PrismaService } from '../src/prisma/prisma.service';
 
@@ -28,6 +30,7 @@ describe('catalogo (e2e)', () => {
   let usuarioId: number;
   let tenis: { id: number };
   let padel: { id: number };
+  let inactiva: { id: number };
   let tenis1: { id: number };
   let padel1: { id: number };
   let padel2: { id: number };
@@ -93,7 +96,7 @@ describe('catalogo (e2e)', () => {
 
     tenis = await prisma.disciplina.create({ data: { nombre: 'e2e Tenis', duracionTurnoMin: 60 } });
     padel = await prisma.disciplina.create({ data: { nombre: 'e2e Pádel', duracionTurnoMin: 90 } });
-    await prisma.disciplina.create({
+    inactiva = await prisma.disciplina.create({
       data: { nombre: 'e2e Inactiva', duracionTurnoMin: 60, activa: false },
     });
 
@@ -286,6 +289,173 @@ describe('catalogo (e2e)', () => {
         .set('Authorization', bearer('ADMIN'))
         .expect(200);
       expect(body.some((e: { nombre: string }) => e.nombre === 'e2e Item baja')).toBe(true);
+    });
+  });
+
+  describe('Administración de canchas', () => {
+    /** El próximo día que el club abre, en su hora local: los domingos no hay turnos. */
+    const proximoDiaAbierto = () => {
+      let fecha = sumarDias(app.get(Reloj).ahora().fecha, 1);
+      while (diaDeLaSemana(fecha) === DOMINGO) fecha = sumarDias(fecha, 1);
+      return fecha;
+    };
+
+    const alta = (cuerpo: object, rol: 'ADMIN' | 'SOCIO' = 'ADMIN') =>
+      api().post('/api/v1/canchas').set('Authorization', bearer(rol)).send(cuerpo);
+    const editar = (id: number, cuerpo: object, rol: 'ADMIN' | 'SOCIO' = 'ADMIN') =>
+      api().patch(`/api/v1/canchas/${id}`).set('Authorization', bearer(rol)).send(cuerpo);
+    // ADMIN para no toparse con el límite de reservas activas de un socio (RN-07).
+    const reservarPorApi = (canchaId: number, fecha: string, horaInicio: string) =>
+      api()
+        .post('/api/v1/reservas')
+        .set('Authorization', bearer('ADMIN'))
+        .send({ canchaId, fecha, horaInicio });
+    const nombresDe = (lista: { nombre: string }[]) => lista.map((x) => x.nombre);
+    const disponibilidad = async (fecha: string) => {
+      const { body } = await api()
+        .get(`/api/v1/disponibilidad?fecha=${fecha}&disciplinaId=${padel.id}`)
+        .expect(200);
+      return (body.canchas as { canchaId: number }[]).map((c) => c.canchaId);
+    };
+
+    afterEach(() => prisma.reserva.deleteMany({ where: { usuarioId } }));
+
+    it('Alta de una cancha: 201 activa, con Location, y aparece en el catálogo y en la disponibilidad', async () => {
+      const respuesta = await alta({
+        disciplinaId: padel.id,
+        nombre: 'e2e Pádel 4',
+        techada: false,
+        precioPorTurno: 15000,
+      }).expect(201);
+
+      expect(respuesta.body).toMatchObject({
+        nombre: 'e2e Pádel 4',
+        disciplinaId: padel.id,
+        disciplina: 'e2e Pádel',
+        techada: false,
+        precioPorTurno: 15000,
+        activa: true,
+      });
+      expect(respuesta.headers.location).toBe(`/api/v1/canchas/${respuesta.body.id}`);
+
+      const { body: catalogo } = await api().get('/api/v1/canchas').expect(200);
+      expect(nombresDe(catalogo)).toContain('e2e Pádel 4');
+      expect(await disponibilidad(proximoDiaAbierto())).toContain(respuesta.body.id);
+    });
+
+    it('Precio inválido: 400 en el alta y en la edición', async () => {
+      for (const respuesta of [
+        await alta({ disciplinaId: padel.id, nombre: 'e2e Precio cero', precioPorTurno: 0 }),
+        await editar(padel1.id, { precioPorTurno: 0 }),
+      ]) {
+        expect(respuesta.status).toBe(400);
+        expect(respuesta.body.tipo).toBe('SOLICITUD_INVALIDA');
+      }
+    });
+
+    it('Nombre vacío: 400 en el alta y en la edición', async () => {
+      for (const respuesta of [
+        await alta({ disciplinaId: padel.id, nombre: '   ', precioPorTurno: 1000 }),
+        await editar(padel1.id, { nombre: '   ' }),
+      ]) {
+        expect(respuesta.status).toBe(400);
+        expect(respuesta.body.tipo).toBe('SOLICITUD_INVALIDA');
+      }
+    });
+
+    it('Disciplina o cancha inexistente: 404, también con una disciplina inactiva', async () => {
+      for (const respuesta of [
+        await alta({ disciplinaId: 999_999, nombre: 'e2e Huérfana', precioPorTurno: 1000 }),
+        await alta({ disciplinaId: inactiva.id, nombre: 'e2e Huérfana', precioPorTurno: 1000 }),
+        await editar(999_999, { precioPorTurno: 1000 }),
+      ]) {
+        expect(respuesta.status).toBe(404);
+        expect(respuesta.body.tipo).toBe('NO_ENCONTRADO');
+      }
+    });
+
+    it('Nombre repetido en la disciplina: 409 NOMBRE_DUPLICADO y ninguna cancha cambia', async () => {
+      const enAlta = await alta({ disciplinaId: padel.id, nombre: 'e2e Pádel 1', precioPorTurno: 1000 });
+      expect(enAlta.status).toBe(409);
+      expect(enAlta.body.tipo).toBe('NOMBRE_DUPLICADO');
+
+      const enEdicion = await editar(padel2.id, { nombre: 'e2e Pádel 1' });
+      expect(enEdicion.status).toBe(409);
+      expect(enEdicion.body.tipo).toBe('NOMBRE_DUPLICADO');
+
+      const pistas = await prisma.cancha.findMany({ where: { disciplinaId: padel.id, nombre: 'e2e Pádel 1' } });
+      expect(pistas).toHaveLength(1);
+      expect((await prisma.cancha.findUnique({ where: { id: padel2.id } }))?.nombre).toBe('e2e Pádel 2');
+    });
+
+    it('Mismo nombre en otra disciplina: 201', async () => {
+      await alta({ disciplinaId: tenis.id, nombre: 'e2e Pádel 1', precioPorTurno: 9000 }).expect(201);
+    });
+
+    it('Cambio de precio: la reserva nueva usa el precio nuevo y la anterior conserva el suyo', async () => {
+      const fecha = proximoDiaAbierto();
+      try {
+        const vieja = await reservarPorApi(padel1.id, fecha, '09:30').expect(201);
+        await editar(padel1.id, { precioPorTurno: 16000 }).expect(200);
+        const nueva = await reservarPorApi(padel1.id, fecha, '11:00').expect(201);
+
+        expect(nueva.body.montoCancha).toBe(16000);
+        const { body: releida } = await api()
+          .get(`/api/v1/reservas/${vieja.body.id}`)
+          .set('Authorization', bearer('ADMIN'))
+          .expect(200);
+        expect(releida.montoCancha).toBe(14000);
+      } finally {
+        await prisma.cancha.update({ where: { id: padel1.id }, data: { precioPorTurno: 14000 } });
+      }
+    });
+
+    it('Baja de una cancha con reservas futuras: sale del catálogo y la disponibilidad, no admite reservas y la existente sigue CONFIRMADA', async () => {
+      const fecha = proximoDiaAbierto();
+      try {
+        const reserva = await reservarPorApi(padel2.id, fecha, '09:30').expect(201);
+
+        const { body: baja } = await editar(padel2.id, { activa: false }).expect(200);
+        expect(baja.activa).toBe(false);
+
+        const { body: catalogo } = await api().get('/api/v1/canchas').expect(200);
+        expect(nombresDe(catalogo)).not.toContain('e2e Pádel 2');
+        expect(await disponibilidad(fecha)).not.toContain(padel2.id);
+
+        const rechazo = await reservarPorApi(padel2.id, fecha, '11:00').expect(404);
+        expect(rechazo.body.tipo).toBe('NO_ENCONTRADO');
+
+        const enLaBase = await prisma.reserva.findUnique({ where: { id: reserva.body.id } });
+        expect(enLaBase?.estado).toBe('CONFIRMADA');
+      } finally {
+        await prisma.cancha.update({ where: { id: padel2.id }, data: { activa: true } });
+      }
+    });
+
+    it('Reactivación: la cancha vuelve al catálogo y a la disponibilidad', async () => {
+      try {
+        await editar(padel2.id, { activa: false }).expect(200);
+        const { body } = await editar(padel2.id, { activa: true }).expect(200);
+        expect(body.activa).toBe(true);
+
+        const { body: catalogo } = await api().get('/api/v1/canchas').expect(200);
+        expect(nombresDe(catalogo)).toContain('e2e Pádel 2');
+        expect(await disponibilidad(proximoDiaAbierto())).toContain(padel2.id);
+      } finally {
+        await prisma.cancha.update({ where: { id: padel2.id }, data: { activa: true } });
+      }
+    });
+
+    it('Operaciones de administración sin permiso: 403 para un SOCIO y 401 sin token', async () => {
+      const cuerpo = { disciplinaId: padel.id, nombre: 'e2e Sin permiso', precioPorTurno: 1000 };
+      expect((await alta(cuerpo, 'SOCIO')).body.tipo).toBe('SIN_PERMISOS');
+      expect((await editar(padel1.id, { precioPorTurno: 1 }, 'SOCIO')).status).toBe(403);
+
+      const sinToken = await api().post('/api/v1/canchas').send(cuerpo).expect(401);
+      expect(sinToken.body.tipo).toBe('NO_AUTENTICADO');
+      await api().patch(`/api/v1/canchas/${padel1.id}`).send({ activa: false }).expect(401);
+
+      expect(await prisma.cancha.count({ where: { nombre: 'e2e Sin permiso' } })).toBe(0);
     });
   });
 });
