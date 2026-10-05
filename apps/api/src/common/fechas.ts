@@ -54,6 +54,22 @@ export function sumarDias(fecha: string, dias: number): string {
 }
 
 /**
+ * Minutos que van de `desde` a `hasta`, dos momentos en la hora local del club;
+ * negativo si `hasta` es anterior. Se arman los dos en UTC a propósito: ya
+ * vienen resueltos en la zona del club, y pasarlos por el huso del servidor
+ * movería los dos igual, salvo en un cambio de horario. Lo usan el plazo de
+ * cancelación (RN-04) y las cancelaciones "dentro del plazo" del panel.
+ */
+export function minutosEntre(
+  desde: { fecha: string; hora: string },
+  hasta: { fecha: string; hora: string },
+): number {
+  const comoInstante = ({ fecha, hora }: { fecha: string; hora: string }) =>
+    new Date(`${fecha}T${hora}:00.000Z`).getTime();
+  return Math.round((comoInstante(hasta) - comoInstante(desde)) / 60_000);
+}
+
+/**
  * Un plazo en minutos, como lo leería una persona: "2 horas", "1 hora" o
  * "90 minutos". Dividir por 60 a secas daba "1.5 horas" o "1 horas" apenas el
  * plazo no era un múltiplo de dos horas.

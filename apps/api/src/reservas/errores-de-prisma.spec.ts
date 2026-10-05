@@ -1,9 +1,6 @@
 import { Prisma } from '@prisma/client';
-import {
-  COLUMNAS_CODIGO,
-  COLUMNAS_SLOT_ACTIVO,
-  esViolacionDe,
-} from './errores-de-prisma';
+import { esViolacionDe } from '../common/errores-de-prisma';
+import { COLUMNAS_CODIGO, COLUMNAS_SLOT_ACTIVO } from './errores-de-prisma';
 
 /** Los `meta.target` son los que devolvió la base de verdad, no inventados. */
 const p2002 = (target: unknown) =>
