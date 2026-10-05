@@ -9,9 +9,11 @@ esas decisiones: las enlaza.
 
 **Última verificación:** 2026-10-01, contra el código y la API de GitHub, no contra lo que
 dice la memoria. Los comandos que producen cada número están en la última sección, para que
-cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla. Los unitarios, los endpoints
-y las pantallas se contaron corriéndolos sobre `main`; los e2e de la API son el verde del CI del
-#42, no una corrida local.
+cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla. Los endpoints y las
+pantallas se contaron sobre `main` el 01/10. **Los tests se volvieron a medir el 2026-10-04,
+después del #43**: los unitarios corriéndolos sobre `main`, y los e2e de la API y de navegador
+con el verde del CI del #43, que corrió sobre la rama ya al día con `main` —el mismo árbol que
+entró—, no con una corrida local.
 
 > Todos los números de este documento están medidos sobre `main`, con los comandos de la última
 > sección. Si alguna vez se miden sobre la rama de un PR todavía abierto, hay que decirlo acá y
@@ -115,7 +117,7 @@ transversal que las features nuevas reutilizan sin volver a decidir nada:
   (todo lo que compara contra el presente pasa por ahí) y el cliente de mail `Correo`.
 - Esquema completo en `prisma/schema.prisma`, con las siete tablas, y migraciones aplicadas.
 - Seed idempotente con disciplinas, canchas, equipamiento y usuarios de prueba.
-- Tests en verde (Node 24 con `--experimental-vm-modules`): 293 unitarios y 143 e2e en serie.
+- Tests en verde (Node 24 con `--experimental-vm-modules`): 301 unitarios y 151 e2e en serie.
 
 **15 de 20 operaciones del contrato tienen endpoint**: las cinco de `auth` (registro, login, ver
 el perfil, editarlo y cambiar la contraseña), las de catálogo y disponibilidad, `POST /contacto`,
