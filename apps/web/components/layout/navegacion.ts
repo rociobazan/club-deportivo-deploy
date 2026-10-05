@@ -7,7 +7,12 @@ export type UsuarioDelHeader = {
   rol: "ADMIN" | "SOCIO";
 };
 
-export type ItemDeNavegacion = { href: string; label: string };
+/**
+ * `exacto`: el link se marca activo solo en su propia ruta y no en las de
+ * abajo. Lo usa "Panel" (`/admin`), que si no quedaría marcado junto con
+ * Reservas, Canchas y Equipamiento, que cuelgan de la misma ruta.
+ */
+export type ItemDeNavegacion = { href: string; label: string; exacto?: boolean };
 
 /** Sin sesión, según la spec de `institucional`. */
 const PUBLICA: ItemDeNavegacion[] = [
@@ -33,7 +38,7 @@ const SOCIO: ItemDeNavegacion[] = [
 
 /** Administrador: las pantallas de RF-11 a RF-13. */
 const ADMIN: ItemDeNavegacion[] = [
-  { href: "/admin", label: "Panel" },
+  { href: "/admin", label: "Panel", exacto: true },
   { href: "/admin/reservas", label: "Reservas" },
   { href: "/admin/canchas", label: "Canchas" },
   { href: "/admin/equipamiento", label: "Equipamiento" },

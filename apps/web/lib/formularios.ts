@@ -13,3 +13,17 @@ export const texto = (formData: FormData, campo: string) =>
  * algo, un arroba y un dominio con punto. La validación fina la hace la API.
  */
 export const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Un número como se escribe en Argentina: "15000", "15.000", "15000,50" o
+ * "$ 15.000,50". Un punto seguido de grupos de tres dígitos es separador de
+ * miles, no decimal: "15.000" son quince mil. Lo que no se entiende da `NaN`,
+ * y la validación lo rechaza.
+ */
+export function aNumeroArgentino(valor: string): number {
+  const limpio = valor.replace(/[\s$]/g, "");
+  if (limpio === "") return Number.NaN;
+  if (limpio.includes(",")) return Number(limpio.replace(/\./g, "").replace(",", "."));
+  if (/^\d{1,3}(\.\d{3})+$/.test(limpio)) return Number(limpio.replace(/\./g, ""));
+  return Number(limpio);
+}

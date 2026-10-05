@@ -24,7 +24,7 @@ export function SiteHeader({ usuario }: { usuario?: UsuarioDelHeader }) {
       {/* En pantalla chica la navegación vive en el panel de MobileNav. */}
       <nav aria-label="Principal" className="order-2 hidden gap-4 sm:flex">
         {navegacion.map((item) => (
-          <NavLink key={item.href} href={item.href}>
+          <NavLink key={item.href} href={item.href} exacto={item.exacto}>
             {item.label}
           </NavLink>
         ))}

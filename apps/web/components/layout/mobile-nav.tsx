@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
 import { NavLink } from "@/components/layout/nav-link";
+import type { ItemDeNavegacion } from "@/components/layout/navegacion";
 
 // Cliente porque el panel abre y cierra: es estado de la pantalla.
 export function MobileNav({
   items,
 }: {
-  items: { href: string; label: string }[];
+  items: ItemDeNavegacion[];
 }) {
   const [abierto, setAbierto] = useState(false);
   const pathname = usePathname();
@@ -68,7 +69,7 @@ export function MobileNav({
           className="order-4 flex w-full flex-col gap-1 border-t border-border-subtle pt-3 sm:hidden"
         >
           {items.map((item) => (
-            <NavLink key={item.href} href={item.href} className="py-2 text-base">
+            <NavLink key={item.href} href={item.href} exacto={item.exacto} className="py-2 text-base">
               {item.label}
             </NavLink>
           ))}
