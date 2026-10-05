@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import type { CreateEmailResponse } from 'resend';
 
 import { CorreoNoEnviadoError } from './correo';
@@ -12,6 +13,16 @@ const aceptado = {
 } as CreateEmailResponse;
 
 describe('CorreoResend', () => {
+  let log: jest.SpyInstance;
+
+  beforeEach(() => {
+    log = jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    log.mockRestore();
+  });
+
   it('traduce el mail al payload del SDK, con replyTo cuando corresponde', async () => {
     const enviar = jest.fn<ReturnType<EnviarConResend>, [unknown]>(() =>
       Promise.resolve(aceptado),
@@ -76,5 +87,54 @@ describe('CorreoResend', () => {
     await expect(
       correo.enviar({ para: 'ana@test', asunto: 'Hola', texto: 'Texto' }),
     ).rejects.toThrow(CorreoNoEnviadoError);
+  });
+
+  it('registra el id con el que Resend lista el mensaje en su panel', async () => {
+    const correo = new CorreoResend(
+      () => Promise.resolve(aceptado),
+      'turnos@clubdeploy.com.ar',
+    );
+
+    await correo.enviar({
+      para: 'ana@example.com',
+      asunto: 'Contacto desde el sitio · Ana',
+      texto: 'Texto',
+    });
+
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('mail-1'));
+  });
+
+  it('no escribe en el log el destinatario ni el asunto, que son datos personales', async () => {
+    const correo = new CorreoResend(
+      () => Promise.resolve(aceptado),
+      'turnos@clubdeploy.com.ar',
+    );
+
+    await correo.enviar({
+      para: 'ana@example.com',
+      asunto: 'Contacto desde el sitio · Ana',
+      texto: 'Texto',
+    });
+
+    const escrito = log.mock.calls.flat().join(' ');
+    expect(escrito).not.toContain('ana@example.com');
+    expect(escrito).not.toContain('Ana');
+  });
+
+  it('no registra ningún id cuando el proveedor rechaza el mail', async () => {
+    const rechazado = {
+      data: null,
+      error: { name: 'validation_error', message: 'Domain not verified', statusCode: 403 },
+      headers: null,
+    } as unknown as CreateEmailResponse;
+    const correo = new CorreoResend(
+      () => Promise.resolve(rechazado),
+      'turnos@clubdeploy.com.ar',
+    );
+
+    await expect(
+      correo.enviar({ para: 'ana@test', asunto: 'Hola', texto: 'Texto' }),
+    ).rejects.toThrow(CorreoNoEnviadoError);
+    expect(log).not.toHaveBeenCalled();
   });
 });

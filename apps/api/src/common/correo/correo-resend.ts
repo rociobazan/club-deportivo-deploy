@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import type { CreateEmailOptions, CreateEmailResponse } from 'resend';
 
 import { CorreoNoEnviadoError } from './correo';
@@ -15,6 +16,8 @@ export type EnviarConResend = (
 
 /** Cliente real. Lo arma `CorreoModule` cuando hay `RESEND_API_KEY`. */
 export class CorreoResend implements Correo {
+  private readonly logger = new Logger('CorreoResend');
+
   constructor(
     private readonly enviarConResend: EnviarConResend,
     private readonly remitente: string,
@@ -44,5 +47,17 @@ export class CorreoResend implements Correo {
         `${respuesta.error.name}: ${respuesta.error.message}`,
       );
     }
+
+    /*
+     * Que Resend acepte el mail no quiere decir que lo entregue: acepta acá y
+     * entrega después, así que un rebote —remitente sin verificar, destino que
+     * rechaza— ocurre fuera de este proceso y no deja ningún rastro de este
+     * lado. El id es lo único que cruza "la API contestó bien" con el mensaje
+     * concreto que el panel de Resend lista con su estado real.
+     *
+     * Va el id y nada más: el destinatario es un dato personal, y el asunto
+     * puede llevar el nombre de quien escribió por el formulario de contacto.
+     */
+    this.logger.log(`Mail aceptado por Resend con id ${respuesta.data.id}.`);
   }
 }
