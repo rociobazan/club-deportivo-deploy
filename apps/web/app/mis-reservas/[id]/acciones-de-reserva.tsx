@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   cancelarReserva,
   reenviarMail,
@@ -19,9 +20,12 @@ import {
 export function AccionesDeReserva({
   id,
   puedeCancelar,
+  conMotivo = false,
 }: {
   id: number;
   puedeCancelar: boolean;
+  /** El detalle de administración deja escribir el motivo de la cancelación (RN-10). */
+  conMotivo?: boolean;
 }) {
   const [estadoCancelacion, accionCancelar, cancelando] = useActionState<
     EstadoAccionReserva,
@@ -35,8 +39,14 @@ export function AccionesDeReserva({
   return (
     <div className="mt-6 flex flex-wrap items-center gap-3">
       {puedeCancelar ? (
-        <form action={accionCancelar}>
+        <form action={accionCancelar} className="flex flex-wrap items-end gap-3">
           <input type="hidden" name="id" value={id} />
+          {conMotivo ? (
+            <label className="flex flex-col gap-1.5 text-sm font-semibold">
+              Motivo (opcional)
+              <Input name="motivo" maxLength={200} className="sm:w-72" />
+            </label>
+          ) : null}
           <Button
             type="submit"
             variant="secondary"
