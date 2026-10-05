@@ -90,20 +90,23 @@ Con eso, una **función pura** `calcularPanel(entrada)` en `administracion/panel
 - **Cancelaciones dentro del plazo**: minutos entre `canceladaEn` (convertida a fecha y hora del club) y el inicio del turno, `>= cancelacionMinutosMinimos`. Para eso, `minutosHastaElTurno` sale de `ReservasService` a `common/fechas.ts` como función pura `minutosEntre(desde, hasta)` y la usan los dos, en lugar de quedar copiada.
 - **Próximos turnos**: reservas no canceladas del día, ordenadas por `horaInicio`. Si `fecha` es hoy, solo las de `horaInicio > ahora.hora`: una que empieza justo ahora ya empezó.
 
-### 7. Front: un layout de `/admin` que exige el rol
+### 7. Front: cada página de `/admin` exige el rol
 
-`app/admin/layout.tsx` (Server Component) llama a `obtenerUsuario()` y **solo chequea el rol**: si hay un usuario con un rol distinto de `ADMIN`, muestra el aviso "Esta sección es solo para administradores" **sin renderizar `children`**. Así ninguna de las cuatro pantallas pide datos para un SOCIO. La autorización de verdad sigue siendo el 403 de la API; esto evita que un SOCIO vea una pantalla rota llena de errores.
+**Corregido al implementar** (tarea 5.1). La versión anterior de esta decisión ponía el chequeo en un `app/admin/layout.tsx` que no renderizaba `children` para un SOCIO, "así ninguna pantalla pide datos". La guía de autenticación de la versión instalada (`node_modules/next/dist/docs/01-app/02-guides/authentication.md`, "Layouts and auth checks") dice lo contrario: *un layout no controla si el resto de la ruta se renderiza; los segmentos los renderiza el router, así que un layout que los oculta no impide que corran*. La página igual le pediría los datos a la API. Además, el layout no se vuelve a renderizar al navegar y no recibe el pathname ni los `searchParams`. La guía recomienda hacer el chequeo cerca de los datos, y eso es lo que se hace.
 
-**El layout no redirige al login** (observación de la review del #47). Un layout de Next no recibe el pathname ni los `searchParams`, así que no podría armar el `volver=` con la subpágina en la que estaba la persona. Los dos casos sin sesión se resuelven en otro lado:
+**Cada página empieza preguntando quién es**, con `obtenerUsuario()` de `lib/sesion.ts`. Está memoizada por request y el layout raíz ya la llama para el header, así que no suma ningún pedido a la API:
 
-- **Sin cookie**: ya lo resuelve `proxy.ts`, que sí arma el `volver=` con la ruta completa y su query.
-- **Con la cookie vencida o inválida**: `obtenerUsuario()` devuelve `null`, el layout renderiza `children` y **la página** recibe el 401 de la API y redirige a `/ingresar?volver=<su ruta>`, que conoce porque es suya. Es lo que ya hacen `/mis-reservas/[id]` y `/perfil`.
+- **Sesión de otro rol** → la página devuelve `AvisoSoloAdmin` ("Esta sección es solo para administradores") **sin pedir sus datos**.
+- **ADMIN** → pide sus datos.
+- **`null`** → no se puede saber si la sesión venció o si la API no respondió, porque `obtenerUsuario()` trata los dos casos igual a propósito: las páginas públicas tienen que funcionar con la API caída. La página pide sus datos igual y **el error de la API decide**: un 401 redirige a `/ingresar?volver=<ruta>`, con la ruta que la página conoce porque es suya; y sin conexión muestra `EstadoError` con reintentar, que es el escenario "API sin respuesta".
 
-**Cada página distingue el 401 del 403**, a diferencia de `/mis-reservas/[id]`, que manda los dos al login. En `/admin`, un 403 quiere decir que la sesión es de un SOCIO: mandarlo a ingresar lo llevaría a un bucle, porque ya está logueado. Así que **401 → `/ingresar?volver=<ruta>`** y **403 → el mismo aviso del layout**, extraído a un componente `AvisoSoloAdmin` que usan los dos. Hace falta en la página aunque el layout ya lo muestre, porque un layout no se vuelve a renderizar al navegar entre sus páginas y el rol puede cambiar entre una navegación y otra.
+**Cada página distingue el 401 del 403** (observación de la review del #47), a diferencia de `/mis-reservas/[id]`, que manda los dos al login. En `/admin`, un 403 quiere decir que la sesión es de un SOCIO: mandarlo a ingresar lo llevaría a un bucle, porque ya está logueado. Así que **401 → `/ingresar?volver=<ruta>`** y **403 → `AvisoSoloAdmin`**. El 403 sigue haciendo falta aunque el chequeo de arriba ya lo filtre: es la autorización de verdad, y es la que vale si alguna vez `obtenerUsuario()` y la API no coinciden. Las dos cosas las resuelve un helper de `lib/admin.ts` que usan las seis páginas.
+
+**Sin cookie** no se llega a la página: `proxy.ts` ya redirige con el `volver=` completo, con su query.
 
 - *Por qué no en `proxy.ts`*: corre en cada prefetch y solo mira si la cookie existe (decisión 23). Validar el rol ahí exigiría decodificar el JWT en el borde, que es lo que ese archivo evita a propósito.
 - *Por qué no `forbidden()` de Next*: es experimental (`authInterrupts`) en Next 16, el mismo motivo por el que no se usó `global-not-found`.
-- *Por qué no leer el pathname con `headers()`*: Next no expone la ruta en un header estable, y depender de uno interno (`x-invoke-path`, `next-url`) se rompe en cualquier actualización. La tarea 5.1 lo confirma contra la documentación de la versión instalada.
+- *Por qué no leer el pathname con `headers()`*: Next no expone la ruta en un header estable, y depender de uno interno (`x-invoke-path`, `next-url`) se rompe en cualquier actualización. No hace falta: cada página conoce su propia ruta.
 
 ### 8. Front: cada pantalla
 
@@ -126,7 +129,7 @@ Con eso, una **función pura** `calcularPanel(entrada)` en `administracion/panel
 - **[Tests de panel sensibles a los datos de otros tests]** → La ocupación suma **todas** las canchas activas, incluidas las que crean otros e2e. Mitigación: los e2e de panel fijan una fecha propia lejana con `Reloj`, y los de catálogo borran las canchas que crean. Los e2e ya corren en serie (`maxWorkers: 1`).
 - **[Bajar el stock por debajo de lo alquilado]** → Es válido por spec (RN-15) y `stockDisponible` se acota a 0. La pantalla no lo impide, pero tampoco lo avisa; se acepta para el MVP.
 - **[Listado de reservas sin paginar]** → Con años de reservas sería pesado. Se acepta para el MVP: la API ya devuelve primero las más nuevas, y el filtro por fecha acota el listado cuando haga falta. No se filtra por hoy de entrada, porque la spec pide ver todas las reservas al entrar. Paginar es un cambio de contrato para otro momento.
-- **[El layout de `/admin` no es seguridad]** → Es una comodidad de interfaz. Si alguien lo saltea, la API responde 403. Por eso cada página sigue manejando el 401 y el 403 en lugar de confiar en el layout (§7).
+- **[El chequeo de rol en la página no es seguridad]** → Es una comodidad de interfaz: evita que un SOCIO vea una pantalla rota. La autorización de verdad es el 403 de la API, que cada página sigue manejando (§7).
 
 ## Migration Plan
 
