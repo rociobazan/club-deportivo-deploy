@@ -57,7 +57,13 @@ export class CorreoResend implements Correo {
      *
      * Va el id y nada más: el destinatario es un dato personal, y el asunto
      * puede llevar el nombre de quien escribió por el formulario de contacto.
+     *
+     * El `?.` no es de adorno aunque los tipos del SDK digan que `data` no
+     * puede ser null cuando `error` lo es: esto es JSON parseado de una API
+     * ajena, así que el tipo es una promesa, no una garantía de runtime. Sin
+     * él, un `data` nulo haría explotar esta línea **después** de que el mail
+     * ya salió, y el envío exitoso se reportaría como fallido.
      */
-    this.logger.log(`Mail aceptado por Resend con id ${respuesta.data.id}.`);
+    this.logger.log(`Mail aceptado por Resend con id ${respuesta.data?.id}.`);
   }
 }

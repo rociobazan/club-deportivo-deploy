@@ -121,6 +121,20 @@ describe('CorreoResend', () => {
     expect(escrito).not.toContain('Ana');
   });
 
+  it('no rompe el envío si el proveedor acepta el mail sin devolver data', async () => {
+    // El tipo del SDK dice que no pasa, pero es JSON de una API ajena: si esta
+    // línea explotara, un mail ya enviado se reportaría como fallido.
+    const sinData = { data: null, error: null, headers: null } as unknown as CreateEmailResponse;
+    const correo = new CorreoResend(
+      () => Promise.resolve(sinData),
+      'turnos@clubdeploy.com.ar',
+    );
+
+    await expect(
+      correo.enviar({ para: 'ana@test', asunto: 'Hola', texto: 'Texto' }),
+    ).resolves.toBeUndefined();
+  });
+
   it('no registra ningún id cuando el proveedor rechaza el mail', async () => {
     const rechazado = {
       data: null,
