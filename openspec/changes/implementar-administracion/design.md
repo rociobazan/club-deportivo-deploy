@@ -47,6 +47,7 @@ Se captura el `P2002` del único `(disciplina_id, nombre)` en `crear` y en `actu
 
 - `esViolacionDe()` se mueve de `reservas/errores-de-prisma.ts` a `common/errores-de-prisma.ts`, porque ahora lo usan dos módulos. Las constantes de columnas de `reserva` se quedan en `reservas/`; las de `cancha` y `equipamiento` van con el servicio de catálogo.
 - El contrato suma la respuesta `409` a las cuatro operaciones y pasa a **2.3.0**, una versión menor, porque el cambio es aditivo.
+- **De paso, el contrato declara lo que la API va a rechazar** (observación de la review del #47), para que no acepte en el papel lo que la API responde con 400: `minLength: 1` en el `nombre` de los cuatro request, `maximum: 99999999.99` en `precioPorTurno` (el máximo de `Decimal(10,2)`), con la aclaración de que admite hasta dos decimales en su `description`, y `maximum: 2147483647` en `stockTotal`. Es más restrictivo en el papel, pero no rompe a nadie: las cuatro operaciones todavía no tienen endpoint, así que no hay ningún cliente que dependa de lo que se restringe.
 - **El nombre se recorta** (`@Transform(recortar)`) y debe quedar con al menos un carácter: si no, "Pádel 1" y "Pádel 1 " serían dos canchas distintas para la base, y una de "   " no tendría nombre.
 
 *Alternativa descartada*: 400 `SOLICITUD_INVALIDA` sin tocar el contrato. El dato está bien formado; lo que choca es el estado del sistema. Eso es un conflicto, y el repo ya responde 409 en casos iguales (`EMAIL_YA_REGISTRADO`).
@@ -91,11 +92,18 @@ Con eso, una **función pura** `calcularPanel(entrada)` en `administracion/panel
 
 ### 7. Front: un layout de `/admin` que exige el rol
 
-`app/admin/layout.tsx` (Server Component) llama a `obtenerUsuario()`: sin usuario redirige a `/ingresar?volver=...` y con un rol distinto de `ADMIN` muestra el aviso "Esta sección es solo para administradores" **sin renderizar `children`**. Así ninguna de las cuatro pantallas pide datos para un SOCIO. La autorización de verdad sigue siendo el 403 de la API; esto evita que un SOCIO vea una pantalla rota llena de errores.
+`app/admin/layout.tsx` (Server Component) llama a `obtenerUsuario()` y **solo chequea el rol**: si hay un usuario con un rol distinto de `ADMIN`, muestra el aviso "Esta sección es solo para administradores" **sin renderizar `children`**. Así ninguna de las cuatro pantallas pide datos para un SOCIO. La autorización de verdad sigue siendo el 403 de la API; esto evita que un SOCIO vea una pantalla rota llena de errores.
+
+**El layout no redirige al login** (observación de la review del #47). Un layout de Next no recibe el pathname ni los `searchParams`, así que no podría armar el `volver=` con la subpágina en la que estaba la persona. Los dos casos sin sesión se resuelven en otro lado:
+
+- **Sin cookie**: ya lo resuelve `proxy.ts`, que sí arma el `volver=` con la ruta completa y su query.
+- **Con la cookie vencida o inválida**: `obtenerUsuario()` devuelve `null`, el layout renderiza `children` y **la página** recibe el 401 de la API y redirige a `/ingresar?volver=<su ruta>`, que conoce porque es suya. Es lo que ya hacen `/mis-reservas/[id]` y `/perfil`.
+
+**Cada página distingue el 401 del 403**, a diferencia de `/mis-reservas/[id]`, que manda los dos al login. En `/admin`, un 403 quiere decir que la sesión es de un SOCIO: mandarlo a ingresar lo llevaría a un bucle, porque ya está logueado. Así que **401 → `/ingresar?volver=<ruta>`** y **403 → el mismo aviso del layout**, extraído a un componente `AvisoSoloAdmin` que usan los dos. Hace falta en la página aunque el layout ya lo muestre, porque un layout no se vuelve a renderizar al navegar entre sus páginas y el rol puede cambiar entre una navegación y otra.
 
 - *Por qué no en `proxy.ts`*: corre en cada prefetch y solo mira si la cookie existe (decisión 23). Validar el rol ahí exigiría decodificar el JWT en el borde, que es lo que ese archivo evita a propósito.
 - *Por qué no `forbidden()` de Next*: es experimental (`authInterrupts`) en Next 16, el mismo motivo por el que no se usó `global-not-found`.
-- **Ojo con el layout**: un layout no se vuelve a renderizar al navegar entre sus páginas, así que el chequeo **no reemplaza** que cada página maneje el 401 y el 403 de la API, igual que hoy hace `/mis-reservas/[id]`.
+- *Por qué no leer el pathname con `headers()`*: Next no expone la ruta en un header estable, y depender de uno interno (`x-invoke-path`, `next-url`) se rompe en cualquier actualización. La tarea 5.1 lo confirma contra la documentación de la versión instalada.
 
 ### 8. Front: cada pantalla
 
@@ -109,7 +117,8 @@ Con eso, una **función pura** `calcularPanel(entrada)` en `administracion/panel
 
 - **Unitarios**: `calcularPanel` con los escenarios de la spec y los bordes (día cerrado, sábado, cancha dada de baja con reservas, 7 días cerrados, próximo turno que empieza ahora); los DTOs nuevos con el pipe; `CatalogoService` con Prisma mockeado para el 404 y el 409; `minutosEntre`.
 - **e2e de la API**: un `it` por escenario de *Administración de canchas*, *Administración de equipamiento* y los cuatro requisitos del panel, con datos propios con prefijo `e2e` y `Reloj` reemplazado donde el escenario fija la hora. Las canchas que crean los tests van con un nombre `e2e …` y se borran al final, porque **cuentan en la ocupación** de los otros tests de panel.
-- **Playwright**: `admin.spec.ts` con el ADMIN del seed (`admin@club.test`): el panel carga, un SOCIO ve el aviso, alta y baja de una cancha `E2E-…`, y cancelación sin plazo desde `/admin/reservas/{id}`. El resto de los escenarios de pantalla se verifican a mano.
+- **Playwright**: `admin.spec.ts` con el ADMIN del seed (`admin@club.test`): el panel carga, un SOCIO ve el aviso, alta, baja y reactivación de una cancha, y cancelación sin plazo desde `/admin/reservas/{id}`. El resto de los escenarios de pantalla se verifican a mano.
+  - **La cancha que crea el test no se puede borrar** (observación de la review del #47): la API no tiene ningún `DELETE`, y las specs de `apps/web/e2e` no tienen acceso a la base. Por eso lleva un **nombre único con timestamp** (`E2E-<Date.now()>`), para no chocar con el 409 en una segunda corrida local, y el test la **deja dada de baja** al terminar: después de "Baja y reactivación" la vuelve a dar de baja en un `afterAll`, por la API. Si quedara activa, como `admin.spec.ts` corre primero (orden alfabético, `workers: 1`), aparecería en el catálogo y en la disponibilidad que prueban las specs siguientes. En el CI la base arranca limpia, así que el problema es sobre todo local, donde se acumula una cancha inactiva por corrida, que no se ve en ninguna pantalla pública.
 
 ## Risks / Trade-offs
 
@@ -117,7 +126,7 @@ Con eso, una **función pura** `calcularPanel(entrada)` en `administracion/panel
 - **[Tests de panel sensibles a los datos de otros tests]** → La ocupación suma **todas** las canchas activas, incluidas las que crean otros e2e. Mitigación: los e2e de panel fijan una fecha propia lejana con `Reloj`, y los de catálogo borran las canchas que crean. Los e2e ya corren en serie (`maxWorkers: 1`).
 - **[Bajar el stock por debajo de lo alquilado]** → Es válido por spec (RN-15) y `stockDisponible` se acota a 0. La pantalla no lo impide, pero tampoco lo avisa; se acepta para el MVP.
 - **[Listado de reservas sin paginar]** → Con años de reservas sería pesado. Se acepta para el MVP: la API ya devuelve primero las más nuevas, y el filtro por fecha acota el listado cuando haga falta. No se filtra por hoy de entrada, porque la spec pide ver todas las reservas al entrar. Paginar es un cambio de contrato para otro momento.
-- **[El layout de `/admin` no es seguridad]** → Es una comodidad de interfaz. Si alguien lo saltea, la API responde 403. Por eso cada página sigue manejando el 403 en lugar de confiar en el layout.
+- **[El layout de `/admin` no es seguridad]** → Es una comodidad de interfaz. Si alguien lo saltea, la API responde 403. Por eso cada página sigue manejando el 401 y el 403 en lugar de confiar en el layout (§7).
 
 ## Migration Plan
 
