@@ -7,7 +7,7 @@
 el historial viven en [`memoria-proyecto.md`](memoria-proyecto.md). Este documento no repite
 esas decisiones: las enlaza.
 
-**Última verificación:** 2026-10-05, después del #50, contra el código y la API de GitHub, no contra lo que
+**Última verificación:** 2026-10-05, después del #52, contra el código y la API de GitHub, no contra lo que
 dice la memoria. Los comandos que producen cada número están en la última sección, para que
 cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla. Los endpoints y las
 pantallas se contaron sobre `main` el 01/10. **Los tests se volvieron a medir el 2026-10-04,
@@ -26,6 +26,15 @@ las pantallas, los 353 unitarios y los 36 de navegador se volvieron a medir y **
 Los 181 e2e de la API son el conteo real, pero el verde sigue siendo el del CI: corridos en local
 sin base levantada fallan los 181, que es lo esperado. Lo único que estaba corrido era la tabla de
 participación, por los merges del #49 y el #50; está corregida más abajo, con el motivo.
+
+**Remedido sobre `main` el 2026-10-05, en el mismo PR que archiva 1.3.** La rama estaba al día con
+`main` (mismo árbol salvo el archivado), así que vale como medida de `main`. Coincidieron las 20
+operaciones, las 16 pantallas de producto, los 181 e2e de la API (el conteo real; el verde es el
+del CI, que pasó en todos los push a `main` hasta el #52) y los 36 de navegador. **No coincidió un
+número: los unitarios son 357, no 353.** El #53 (el log del id de Resend) sumó cuatro tests a
+`correo-resend.spec.ts` y entró después de la última medición. Además el comando de los PRs
+mergeados traía `--limit 50` y hay 53, así que cortaba los más viejos y le quitaba un PR a Adrián;
+quedó en `--limit 200`.
 
 > Todos los números de este documento están medidos sobre `main`, con los comandos de la última
 > sección. Si alguna vez se miden sobre la rama de un PR todavía abierto, hay que decirlo acá y
@@ -82,7 +91,7 @@ pantalla en Next que la consume.
 | 1.1 | Autenticación: registro, login, JWT, guards | RF-00 | **Jeremías** | ✅ en `main` (PR #19, 28/09) |
 | 1.1b | Login con Google | — | — | ⛔ **descartado el 27/09**: el equipo decidió no hacerlo ([ADR 0001](adr/0001-login-con-google.md), marcada como descartada) |
 | 1.2 | Catálogo y disponibilidad | RF-01 a RF-03 | **Jeremías** | ✅ en `main` (PR #25, 28/09) |
-| 1.3 | Crear reserva | RF-04 | **Adrián** | ✅ en `main` (PR #42, 01/10); falta archivar el cambio |
+| 1.3 | Crear reserva | RF-04 | **Adrián** | ✅ en `main` (PR #42, 01/10); archivado el 05/10 |
 | 1.4 | Mis reservas, cancelación y mails | RF-05 a RF-08 | **Rocío** | ✅ en `main` (PR #32, 30/09) |
 | 1.5 | Sitio institucional y contacto | RF-09, RF-10 | **Jeremías** | ✅ en `main` (PR #26, 28/09) |
 | 1.6 | Administración | RF-11 a RF-14 | **Renzo** | ✅ en `main` (propuesta en el PR #47 e implementación en el #48, 04/10); archivado |
@@ -130,7 +139,7 @@ transversal que las features nuevas reutilizan sin volver a decidir nada:
   (todo lo que compara contra el presente pasa por ahí) y el cliente de mail `Correo`.
 - Esquema completo en `prisma/schema.prisma`, con las siete tablas, y migraciones aplicadas.
 - Seed idempotente con disciplinas, canchas, equipamiento y usuarios de prueba.
-- Tests en verde (Node 24 con `--experimental-vm-modules`): 353 unitarios y 181 e2e en serie.
+- Tests en verde (Node 24 con `--experimental-vm-modules`): 357 unitarios y 181 e2e en serie.
 
 **Las 20 operaciones del contrato tienen endpoint**: las cinco de `auth` (registro,
 login, ver el perfil, editarlo y cambiar la contraseña), las de catálogo y disponibilidad,
@@ -176,15 +185,11 @@ La home dejó de ser la plantilla por defecto de Next en el PR de 1.5.
 requisito de pantalla a `administracion`, `catalogo` y `reservas`, y modificó los dos de
 administración de `catalogo` (nombre repetido, disciplina inactiva).
 
-**Queda un cambio en curso en `openspec/changes/`:** `implementar-creacion-de-reserva` (1.3),
-implementado, con sus 31 tareas cerradas y **pendiente de archivar**. El de 1.4 ya se archivó en
-`main` con el PR #40. Hasta que no se corra `/opsx:archive` desde `main`, los deltas de 1.3 no
-pasan a `openspec/specs/` y las specs dejan de describir lo que la API hace. Se archivan de a
-uno, avisando por el grupo.
-
-El delta de 1.3 además **corrige** el requisito RN-09 de `reservas`: cuando entró el horario por
-día se actualizó la spec de `disponibilidad` pero no la de `reservas`, que seguía hablando de un
-solo cierre y no decía qué pasa al reservar un domingo.
+`implementar-creacion-de-reserva` (1.3) **se archivó el 05/10**, con sus 31 tareas cerradas: sumó
+el requisito de pantalla de `/reservar` a `reservas` y **corrigió** RN-09, que no decía nada del
+horario por día (el cierre del sábado y `DIAS_CERRADOS`) aunque el código y sus tests ya lo
+cumplían. Con eso **no queda ningún cambio en curso en `openspec/changes/`**: el de 1.4 se había
+archivado con el PR #40 y el de 1.6 con el #49.
 
 Los tres de Jeremías se archivaron el 28/09
 —`implementar-autenticacion` (1.1), `implementar-catalogo-y-disponibilidad` (1.2) e
@@ -261,13 +266,14 @@ Cuenta para la evaluación: la lista de *Contributors* es parte de lo que se mir
 
 | Persona | Commits en `main` | PRs mergeados |
 |---|---|---|
-| Jeremías | 98 | 37 |
+| Jeremías | 103 | 40 |
 | Adrián | 28 | 4 |
 | Rocío | 18 | 6 |
 | Renzo | 17 | 3 |
 
-Medido sobre `main` el 2026-10-05. Los 98 de Jeremías suman sus dos nombres de `git shortlog`
-(95 y 3), que salen del mismo email.
+Medido sobre `main` el 2026-10-05, después del #52. Los 103 de Jeremías suman sus dos nombres de
+`git shortlog` (100 y 3), que salen del mismo email. El archivado de 1.3 suma un commit y un PR de
+Adrián que esta tabla no puede ver.
 
 **Esta tabla nace desactualizada, y no hay forma de evitarlo: un PR no puede contar su propio
 merge.** El #49 la remidió bien sobre `main`, pero su propio merge sumó un commit y un PR que ya
@@ -281,7 +287,7 @@ Dos cosas que conviene mirar de frente:
   implementación (#48) y el archivado (#49) le dan 17 commits y 3 PRs. Se commiteó por paso, un
   commit por grupo de tareas, que es lo que recomienda el punto de abajo.
 - **El reparto quedó desbalanceado, y ya no hay nada pendiente que lo corrija.** Jeremías tiene
-  98 commits contra 28, 18 y 17 del resto. `requisitos.md` §8 desaconseja repartir por capas
+  103 commits contra 28, 18 y 17 del resto. `requisitos.md` §8 desaconseja repartir por capas
   justamente porque desbalancea los commits, y esto se evalúa. Con el hito 1 cerrado, lo que
   quedaba por entrar ya entró: 1.3 el 01/10 y 1.6 el 04/10. Dicho de otro modo, **la diferencia
   que se ve es la final**, y no el retrato de un trabajo a medio terminar.
@@ -315,22 +321,12 @@ Dos cosas que conviene mirar de frente:
 
 ### Cada quien con su ítem
 
-2. **Adrián — 1.3.** Entró con el PR #42 el 01/10, con las 31 tareas cerradas. **Falta archivar
-   `implementar-creacion-de-reserva`** con `/opsx:archive` desde `main`. Es el **único pendiente
-   del proyecto**.
-
-   Antes acá decía que sin archivar "`openspec/specs/` no describe la creación de reservas", y
-   **era falso**: la creación está descrita desde el cambio base, con sus requisitos de RN-01,
-   RN-02, RN-03, RN-06, RN-07 y RN-09. Lo que el delta sin aplicar cambia son **dos requisitos**:
-
-   - **Agrega "Pantalla de reserva".** `/reservar` existe, está contada entre las 16 pantallas, y
-     ningún requisito vigente la describe.
-   - **Modifica RN-09, y esta es la que importa.** La versión vigente **no menciona el horario por
-     día**: no dice que el sábado cierra con `HORA_CIERRE_SABADO` ni que `DIAS_CERRADOS` cierra el
-     domingo. Eso está implementado desde la decisión 27 y tiene tests, así que hoy la spec
-     **contradice al código por omisión**: quien la lea cree que el sábado cierra igual que un
-     martes y que los domingos se puede reservar. Los dos escenarios que lo fijan ("Sábado después
-     del cierre propio" y "Día cerrado") están en el delta, sin aplicar.
+2. ~~**Adrián — 1.3.**~~ **Resuelto el 05/10**: entró con el #42 el 01/10, con las 31 tareas
+   cerradas, y el cambio se archivó en un PR aparte, que también remidió este documento sobre
+   `main`. El archivado agregó el requisito "Pantalla de reserva" y **modificó RN-09**, que hasta
+   entonces contradecía al código por omisión: no decía que el sábado cierra con
+   `HORA_CIERRE_SABADO` ni que `DIAS_CERRADOS` cierra el domingo. Los dos escenarios que lo fijan
+   ("Sábado después del cierre propio" y "Día cerrado") ya están en `openspec/specs/reservas`.
 
    Las dos cosas que se habían marcado para revisar a mano, porque el CI no puede verlas,
    **quedaron verificadas el 01/10 y las dos están bien**:
@@ -369,7 +365,7 @@ git shortlog -sn --no-merges main
 ```
 
 ```bash
-gh pr list --state merged --limit 50 --json number,author --jq '.[].author.login' | sort | uniq -c | sort -rn
+gh pr list --state merged --limit 200 --json number,author --jq '.[].author.login' | sort | uniq -c | sort -rn
 ```
 
 ```bash
