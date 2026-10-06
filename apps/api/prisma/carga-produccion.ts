@@ -9,9 +9,14 @@ import { cargarCatalogo } from './catalogo';
  * las credenciales de `ADMIN_EMAIL` y `ADMIN_PASSWORD`. No crea socios de
  * prueba, a diferencia de `seed.ts`, que está bloqueado en producción.
  *
- * Se corre a mano, una vez, después del primer deploy. Volver a correrla deja
- * el catálogo al día y no toca la contraseña del administrador: si la pisara,
- * sería un reseteo de credenciales en silencio.
+ * Se corre a mano, una vez, después del primer deploy. Volver a correrla no
+ * cambia nada de lo que ya existe:
+ * - El catálogo se carga **solo si la base no tiene ninguna disciplina**. A
+ *   diferencia del seed, no lo pone "al día": en producción el admin cambia
+ *   precios, stock y nombres desde el panel, y recargar `catalogo.ts` se los
+ *   pisaría, o crearía una cancha nueva con el nombre viejo de una renombrada.
+ * - La contraseña del administrador no se toca: si la pisara, sería un reseteo
+ *   de credenciales en silencio.
  */
 
 /** El mismo mínimo que el registro (`RegistroDto`) y el cambio de contraseña. */
@@ -39,12 +44,24 @@ export function leerAdmin(entorno: NodeJS.ProcessEnv): AdminInicial {
   return { email, password };
 }
 
+export interface ResultadoCarga {
+  catalogo: 'cargado' | 'existente';
+  admin: 'creado' | 'existente';
+}
+
 export async function cargarProduccion(
   tx: Prisma.TransactionClient,
   admin: AdminInicial,
-): Promise<'creado' | 'existente'> {
-  await cargarCatalogo(tx);
+): Promise<ResultadoCarga> {
+  // Se decide antes de tocar nada: si la cuenta no se puede usar, la
+  // transacción se revierte entera y el catálogo tampoco queda cargado.
+  const catalogo = (await tx.disciplina.count()) === 0 ? 'cargado' : 'existente';
+  if (catalogo === 'cargado') await cargarCatalogo(tx);
 
+  return { catalogo, admin: await crearAdmin(tx, admin) };
+}
+
+async function crearAdmin(tx: Prisma.TransactionClient, admin: AdminInicial): Promise<'creado' | 'existente'> {
   const existente = await tx.usuario.findUnique({ where: { email: admin.email } });
   if (existente) {
     // Si alguien se registró con ese mail antes de la carga, ascenderlo le
@@ -75,9 +92,14 @@ async function main() {
   try {
     const resultado = await prisma.$transaction((tx) => cargarProduccion(tx, admin));
     console.log(
-      resultado === 'creado'
-        ? `Catálogo cargado y administrador ${admin.email} creado.`
-        : `Catálogo al día. El administrador ${admin.email} ya existía: no se tocó su contraseña.`,
+      resultado.catalogo === 'cargado'
+        ? 'Catálogo cargado.'
+        : 'La base ya tenía catálogo: no se tocó, para no pisar lo cambiado desde el panel.',
+    );
+    console.log(
+      resultado.admin === 'creado'
+        ? `Administrador ${admin.email} creado.`
+        : `El administrador ${admin.email} ya existía: no se tocó su contraseña.`,
     );
   } finally {
     await prisma.$disconnect();

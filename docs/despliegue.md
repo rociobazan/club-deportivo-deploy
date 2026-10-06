@@ -117,14 +117,18 @@ Borrar `deploy_ci` de la máquina local cuando quede cargado.
 
 ## 6. Primer deploy
 
-1. Mergear a `main` (o re-ejecutar el último workflow de `main`). El job `imagenes`
+1. **Habilitar el deploy.** En *Settings → Secrets and variables → Actions → Variables*,
+   crear `DEPLOY_HABILITADO` con el valor `true`. Hasta que exista, los jobs `imagenes` y
+   `deploy` figuran como omitidos en cada merge a `main`, en lugar de fallar contra una
+   instancia que no está lista. Se crea **después** de las secciones 1 a 5.
+2. Re-ejecutar el último workflow de `main`, o esperar al próximo merge. El job `imagenes`
    construye y publica las imágenes, y `deploy` las levanta en la instancia.
-2. **Imágenes públicas.** Si el job falla en `docker compose pull` con *denied*, los paquetes
+3. **Imágenes públicas.** Si el job falla en `docker compose pull` con *denied*, los paquetes
    quedaron privados. En GitHub → perfil de la dueña del repo → *Packages* →
    `club-deploy-api` y `club-deploy-web` → *Package settings* → *Change visibility* →
    **Public**, y re-ejecutar el job. No tienen secretos: el `.dockerignore` deja afuera todos
    los `.env`.
-3. **Carga inicial**, una sola vez. `read -s` pide la contraseña sin mostrarla ni dejarla en
+4. **Carga inicial**, una sola vez. `read -s` pide la contraseña sin mostrarla ni dejarla en
    el historial:
 
    ```bash
@@ -135,9 +139,13 @@ Borrar `deploy_ci` de la máquina local cuando quede cargado.
    unset ADMIN_PASSWORD
    ```
 
-   Carga el catálogo y crea el administrador. Correrla de nuevo no le cambia la contraseña.
-4. Abrir `https://clubdeploy.online`, ingresar con el admin y hacer una reserva de prueba.
-5. **Probar los mails**: reservar con una casilla de Gmail y revisar que la confirmación no
+   Carga el catálogo y crea el administrador. Correrla de nuevo **no cambia nada de lo que
+   ya existe**: si la base tiene catálogo no lo toca, para no pisar precios, stock ni nombres
+   que el admin haya cambiado desde el panel, y si el admin existe no le cambia la contraseña.
+   **No sirve para actualizar el catálogo**: los cambios de canchas y equipamiento en
+   producción se hacen desde `/admin`.
+5. Abrir `https://clubdeploy.online`, ingresar con el admin y hacer una reserva de prueba.
+6. **Probar los mails**: reservar con una casilla de Gmail y revisar que la confirmación no
    caiga en spam.
 
 ## Operación

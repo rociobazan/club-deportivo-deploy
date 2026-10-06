@@ -69,8 +69,11 @@ Un script de carga para producción, separado del seed:
 
 - Carga el **catálogo** (disciplinas, canchas y equipamiento) y crea **un administrador** con
   `ADMIN_EMAIL` y `ADMIN_PASSWORD` tomados del entorno. No crea socios de prueba.
-- Es **idempotente**: si el administrador ya existe, no le cambia la contraseña. Volver a
-  correrlo no puede resetear credenciales.
+- **Volver a correrlo no cambia nada de lo que ya existe.** El catálogo se carga solo si la
+  base no tiene ninguna disciplina: a diferencia del seed, no lo pone "al día", porque en
+  producción el admin cambia precios, stock y nombres desde el panel y recargar el archivo
+  se los pisaría, o crearía una cancha nueva con el nombre viejo de una renombrada. Si el
+  administrador ya existe, no le cambia la contraseña.
 - Corre **una vez, a mano**, después del primer deploy. No forma parte del deploy automático.
 - El seed de desarrollo sigue igual y sigue bloqueado en producción.
 
@@ -83,6 +86,10 @@ Un script de carga para producción, separado del seed:
   `imagenes`, que tiene permiso de publicar paquetes pero no la clave; `deploy` tiene la clave
   y solo usa `actions/checkout` y comandos propios. Las actions de Docker además van fijadas
   por SHA.
+- **Los dos jobs esperan a la variable del repo `DEPLOY_HABILITADO=true`.** Hasta que la
+  instancia y los secretos estén listos, figuran como omitidos y no en rojo: la consigna
+  evalúa las ejecuciones en verde, y un deploy contra una instancia que no existe fallaría
+  en cada merge a `main`.
 - **Las migraciones corren en cada deploy**, con `prisma migrate deploy` antes de levantar la
   API nueva. Si fallan, el deploy se corta y queda corriendo la versión anterior.
 - **Después de `up -d`, el job comprueba que `https://clubdeploy.online/api/v1` responda.**
@@ -97,7 +104,8 @@ Un script de carga para producción, separado del seed:
 - **GitHub guarda solo lo necesario para entrar por SSH**: `EC2_HOST`, `EC2_USER`,
   `EC2_SSH_KEY` y `EC2_KNOWN_HOSTS`. El último es la huella de la instancia: el CI no la pide
   con `ssh-keyscan` en cada corrida, así que una máquina que se hiciera pasar por la
-  instancia no recibe el deploy. Los carga Rocío, que es la administradora del repositorio.
+  instancia no recibe el deploy. Los carga Rocío, que es la administradora del repositorio,
+  igual que la variable `DEPLOY_HABILITADO`.
 - **`ADMIN_PASSWORD` no se guarda en el `.env`**: se pide por consola la única vez que se
   corre la carga inicial.
 

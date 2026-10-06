@@ -185,9 +185,14 @@ jobs:
   # obligatorios. Están separados para que la clave SSH de producción nunca
   # comparta runner con actions de terceros: `imagenes` usa las de Docker y
   # puede publicar en GHCR, y `deploy` solo tiene la clave y comandos propios.
+  #
+  # Los dos esperan a la variable del repo DEPLOY_HABILITADO=true, que se activa
+  # cuando la instancia y los secretos EC2_* están listos (docs/despliegue.md).
+  # Hasta entonces figuran como omitidos y no en rojo: un deploy contra una
+  # instancia que no existe fallaría en cada merge a main.
   imagenes:
     name: imagenes
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_HABILITADO == 'true'
     needs: [e2e]
     runs-on: ubuntu-latest
     permissions:
@@ -231,7 +236,7 @@ jobs:
 
   deploy:
     name: deploy
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_HABILITADO == 'true'
     needs: [imagenes]
     runs-on: ubuntu-latest
     # Dos merges seguidos no pueden desplegar a la vez: el segundo espera.
