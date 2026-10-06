@@ -36,6 +36,12 @@ número: los unitarios son 357, no 353.** El #53 (el log del id de Resend) sumó
 mergeados traía `--limit 50` y hay 53, así que cortaba los más viejos y le quitaba un PR a Adrián;
 quedó en `--limit 200`.
 
+**Medido sobre la rama del #54 (despliegue en EC2) el 2026-10-05, no sobre `main`.** La rama
+tenía `main` al día, con el archivado de 1.3 incluido. El #54 suma la carga de producción con
+sus tests: **363 unitarios** (357 + 6) y **187 e2e de la API** (181 + 6), y dos jobs al CI,
+`imagenes` y `deploy`. Las 20 operaciones y los 36 de navegador no cambian. **Hay que volver a
+medir sobre `main` cuando entre el #54.**
+
 > Todos los números de este documento están medidos sobre `main`, con los comandos de la última
 > sección. Si alguna vez se miden sobre la rama de un PR todavía abierto, hay que decirlo acá y
 > **volver a medirlos cuando entre**. La vez anterior quedaron medidos sobre la rama del #34 con
@@ -139,7 +145,9 @@ transversal que las features nuevas reutilizan sin volver a decidir nada:
   (todo lo que compara contra el presente pasa por ahí) y el cliente de mail `Correo`.
 - Esquema completo en `prisma/schema.prisma`, con las siete tablas, y migraciones aplicadas.
 - Seed idempotente con disciplinas, canchas, equipamiento y usuarios de prueba.
-- Tests en verde (Node 24 con `--experimental-vm-modules`): 357 unitarios y 181 e2e en serie.
+- Carga de producción aparte (`npm run carga:produccion`): catálogo, si la base no tiene, y un
+  administrador desde el entorno ([ADR 0003](adr/0003-despliegue-en-ec2.md)).
+- Tests en verde (Node 24 con `--experimental-vm-modules`): 363 unitarios y 187 e2e en serie.
 
 **Las 20 operaciones del contrato tienen endpoint**: las cinco de `auth` (registro,
 login, ver el perfil, editarlo y cambiar la contraseña), las de catálogo y disponibilidad,
@@ -227,6 +235,20 @@ y es la única cuenta que lo tiene —el resto figura como `write`—.
 Ese mismo día se activaron en el repo **Allow auto-merge** y **Automatically delete head
 branches**: se puede dejar un PR con auto-merge para que entre solo cuando tenga la aprobación y
 los checks en verde, y la rama se borra sola al mergear.
+
+**Dos jobs más desde el #54, que no son checks obligatorios:** `imagenes` y `deploy` corren solo
+en push a `main`, después de `e2e`, y publican el sistema en `https://clubdeploy.online`
+([ADR 0003](adr/0003-despliegue-en-ec2.md)). Esperan a la variable del repo
+`DEPLOY_HABILITADO=true`; mientras no esté, figuran como omitidos.
+
+### Despliegue
+
+| Qué | Estado |
+|---|---|
+| Código del despliegue (Dockerfiles, compose, CI, carga) | En el #54 |
+| Dominio `clubdeploy.online` | ✅ comprado en Porkbun, sin renovación automática |
+| Instancia EC2, DNS y Resend | ⏳ pendiente, a mano ([`despliegue.md`](despliegue.md)) |
+| Secretos `EC2_*` y `DEPLOY_HABILITADO` | ⏳ pendiente: los carga Rocío, única admin del repo |
 
 ### Protección de `main` — activa desde el 24/09
 
