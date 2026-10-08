@@ -249,7 +249,7 @@ en push a `main`, después de `e2e`, y publican el sistema en `https://clubdeplo
 | Dominio `clubdeploy.online` | ✅ comprado en Porkbun, sin renovación automática |
 | Instancia EC2 e IP elástica | ✅ en la cuenta de Adrián, `54.87.65.63` |
 | Registro A del dominio | ✅ apunta a la IP elástica |
-| Resend | ⏳ dominio agregado; faltan sus registros en Porkbun |
+| Resend | ✅ dominio verificado (DKIM, SPF y DMARC en Porkbun) |
 | Docker, `.env` y clave del CI en la instancia | ⏳ pendiente, a mano ([`despliegue.md`](despliegue.md)) |
 | Secretos `EC2_*` y `DEPLOY_HABILITADO` | ⏳ pendiente: los carga Rocío, única admin del repo |
 
