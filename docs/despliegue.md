@@ -14,6 +14,21 @@ GitHub Actions ──build──► GHCR (imágenes api y web, tag = SHA)
                                                        └─ api ─┴─ db (volumen)
 ```
 
+## Cuentas
+
+Cada cuenta externa es de una persona del equipo y los cambios los hace su dueño: quien necesite
+algo se lo pide.
+
+| Cuenta | Dueño | Qué tiene | Al cerrar la materia |
+|---|---|---|---|
+| AWS | Adrián | Instancia EC2, IP elástica `54.87.65.63`, presupuestos de gasto | Terminar la instancia, liberar la IP elástica y revisar que no queden volúmenes ni instantáneas |
+| Porkbun | Jeremías | Dominio `clubdeploy.online` y su DNS | Nada: se compró sin renovación automática y vence solo |
+| Resend | Rocío | Dominio de envío y API key | Borrar la API key y el dominio |
+| GitHub | Rocío | Secretos `EC2_*`, variable `DEPLOY_HABILITADO`, paquetes de GHCR | Borrar la variable y los secretos, y los paquetes si no se quieren conservar |
+
+Una IP elástica asociada a una instancia detenida **se cobra**. Si el servidor se apaga por más
+de unos días, conviene liberarla.
+
 ## 1. Instancia EC2
 
 1. En la consola de AWS, **EC2 → Launch instance**:
@@ -65,7 +80,8 @@ En **Porkbun → Domain Management → clubdeploy.online → DNS**:
 
 1. Un registro **A**, host vacío (`@`), apuntando a la Elastic IP.
 2. En **Resend → Domains → Add domain**, cargar `clubdeploy.online`. Resend muestra los
-   registros (SPF, DKIM y DMARC): copiarlos tal cual en Porkbun y esperar a que Resend los
+   registros (DKIM, SPF y DMARC; hoy el de SPF son dos CNAME, `send` y `rsend`): copiarlos en
+   Porkbun con el host sin `.clubdeploy.online`, que Porkbun agrega solo, y esperar a que Resend los
    marque como verificados.
 3. En **Resend → API Keys**, crear una clave con permiso de envío. Va en el `.env` del paso 4.
 
