@@ -4,7 +4,7 @@ MVP de una plataforma de reservas para **Deploy**, un club deportivo con canchas
 
 Es el trabajo práctico grupal de *OpenSpec & CI/CD*, con enfoque **API-First**: el contrato de la API y las specs de OpenSpec se escriben antes que el código.
 
-> **Estado:** la base está lista: contrato OpenAPI 2.2.0, specs de OpenSpec, base de datos con migraciones y seed, y CI. Las funcionalidades (autenticación, disponibilidad, reservas, notificaciones, administración y sitio institucional) se implementan cada una en su rama. Mientras tanto, la API responde el "Hello World" de Nest y el front muestra la página inicial de Next. El avance al día está en [`docs/memoria-proyecto.md`](docs/memoria-proyecto.md).
+> **Estado:** el MVP está completo. Los 16 requisitos funcionales (RF-00 a RF-15) están implementados, las 20 operaciones del contrato OpenAPI 2.3.0 tienen endpoint, y el sitio tiene 16 pantallas: el sitio institucional, el catálogo y la disponibilidad, el registro y el ingreso, la reserva de un turno, mis reservas con su cancelación, mi perfil y el panel de administración. Las siete capacidades de OpenSpec están archivadas y describen lo que el sistema hace. El despliegue en EC2 está codificado y se activa con una variable del repo (ver [Despliegue](#despliegue)). El estado al día, con los números y los comandos que los reproducen, está en [`docs/estado-del-proyecto.md`](docs/estado-del-proyecto.md).
 
 ## Arquitectura
 
@@ -36,11 +36,12 @@ Las decisiones que definen el sistema:
 - **Un solo formato de error**, el `Error` del contrato, que un filtro global de Nest aplica a todas las respuestas.
 
 ```text
-apps/api/             Nest: módulos por dominio, prisma/ (schema, migraciones, seed) y test/ (e2e)
-apps/web/             Next.js
+apps/api/             Nest: módulos por dominio, prisma/ (schema, migraciones, seed y carga de producción), test/ (e2e) y su Dockerfile
+apps/web/             Next.js: app/ (pantallas y Server Actions), components/, lib/ (sesión y cliente de la API), e2e/ (Playwright) y su Dockerfile
 contratos/            openapi.yaml
-openspec/             specs y cambios de OpenSpec
-docs/                 requisitos, arquitectura, identidad, memoria del proyecto y prototipo de diseño
+openspec/             specs vigentes y cambios archivados de OpenSpec
+docs/                 requisitos, arquitectura, identidad, estado del proyecto, memoria, despliegue, ADRs y prototipo de diseño
+deploy/               docker-compose.prod.yml y Caddyfile de la instancia EC2
 .github/workflows/    ci.yml
 docker-compose.yml    PostgreSQL 17 local
 ```
@@ -70,14 +71,14 @@ cd club-deportivo-deploy
 npm install
 ```
 
-Crear las variables de entorno de la API. `DATABASE_URL` ya viene completa y apunta al contenedor; las demás claves se completan cuando las necesita cada funcionalidad.
+Crear las variables de entorno de la API. `DATABASE_URL` ya viene completa y apunta al contenedor; `JWT_SECRET` y `JWT_EXPIRES_IN` son obligatorias (ver más abajo) y las demás tienen valor por defecto.
 
 ```bash
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local
 ```
 
-El front solo necesita `API_URL`, que apunta a la API local.
+El front necesita `API_URL`, que apunta a la API local. Las otras seis variables de su `.env.example` (horario, días cerrados, zona horaria y plazo de cancelación) repiten los valores por defecto de la API y solo hay que tocarlas si se cambian en los dos lados.
 
 Levantar la base y cargarle los datos:
 
@@ -124,7 +125,7 @@ Con sesión de socio, esas pantallas muestran un aviso de que son solo para admi
 
 **Mail.** `MAIL_FROM` (`turnos@clubdeploy.com.ar`) es el remitente del sistema y `MAIL_CONTACTO` (`hola@clubdeploy.com.ar`) la casilla que recibe el formulario de contacto; las dos tienen valor por defecto. **Sin `RESEND_API_KEY` no se envía ningún mail**: el cliente de mail es un doble que deja en el log lo que se habría enviado, así se puede probar `/contacto` sin pedir una clave. Si la definís, los mails salen de verdad desde tu máquina a `MAIL_CONTACTO`. En producción la clave es obligatoria y el arranque corta si falta.
 
-**Horario y zona del club.** `HORA_APERTURA` (`08:00`), `HORA_CIERRE` (`23:00`) y `ZONA_HORARIA_CLUB` (`America/Argentina/Cordoba`) tienen valor por defecto, así que no hace falta definirlas. Si las cambiás, van **en los dos** `.env`: la API calcula la grilla con ellas y el sitio la dibuja.
+**Horario y zona del club.** `HORA_APERTURA` (`08:00`), `HORA_CIERRE` (`23:00`), `HORA_CIERRE_SABADO` (`18:00`), `DIAS_CERRADOS` (`0`, el domingo; de 0 a 6 separados por coma) y `ZONA_HORARIA_CLUB` (`America/Argentina/Cordoba`) tienen valor por defecto. Si las cambiás, van **en los dos** `.env`: la API calcula la grilla con ellas y el sitio la dibuja. Una trampa: `DIAS_CERRADOS` vacía no significa "por defecto" sino "abre todos los días", por eso el `.env.example` la trae en `0`.
 
 **Reglas de reserva.** Cuatro variables con valor por defecto: sin ninguna de ellas la API arranca igual. Si una tiene un valor inválido, el arranque **corta** con un mensaje que dice qué poner, en vez de fallar más tarde en la primera reserva. Las tres primeras son solo de la API; **`CANCELACION_MINUTOS_MINIMOS` va en los dos** `.env`, como el horario: la API decide si acepta la cancelación y el sitio decide si muestra el botón, así que con valores distintos el botón aparece y el PATCH responde 422.
 
@@ -140,7 +141,10 @@ Con sesión de socio, esas pantallas muestran un aviso de que son solo para admi
 | Comando | Qué hace |
 |---|---|
 | `npm run test:api` | Tests unitarios de la API |
-| `npm run test:e2e --workspace api` | Tests e2e de la API |
+| `npm run test:e2e --workspace api` | Tests e2e de la API, contra la base del contenedor |
+| `npm run test:e2e:web` | Tests de navegador con Playwright. Necesitan la pila entera: `npm run db:up`, `npm run db:seed`, `npm run dev:api` y `npm run dev:web` en marcha, y Chromium instalado una vez con `npm exec --workspace web -- playwright install chromium`. Si el 3001 está ocupado, `E2E_BASE_URL=http://localhost:3010` |
+| `npm run lint --workspace api` / `--workspace web` | Lint de cada aplicación, el mismo que corre el CI |
+| `npm run generate:api-types` | Regenera los tipos del front desde el contrato; se corre después de tocar `openapi.yaml` |
 | `npm run spec:validate` | Valida las specs de OpenSpec en modo estricto |
 | `npm run contrato:lint` | Valida el contrato OpenAPI |
 | `npm run spec:view` | Muestra las specs y los cambios de OpenSpec |
@@ -208,6 +212,6 @@ La puesta en marcha de la instancia, el dominio, los mails y los secretos está 
 | Jeremías Fernández | [@Jere3200](https://github.com/Jere3200) |
 | Adrián Ramírez | [@AdrianRamirezok](https://github.com/AdrianRamirezok) |
 | Rocío Bazán | [@rociobazan](https://github.com/rociobazan) |
-| Renzo Bazán | — |
+| Renzo Bazán | [@Renzo-Bazan](https://github.com/Renzo-Bazan) |
 
 El reparto de las funcionalidades está en [`docs/memoria-proyecto.md`](docs/memoria-proyecto.md).
