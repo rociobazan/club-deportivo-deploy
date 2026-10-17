@@ -21,7 +21,7 @@ export const CLUB = {
   telefono: "351 482 7719",
   /** Para el `href` del enlace: el mismo número en formato internacional. */
   telefonoLink: "tel:+543514827719",
-  email: "hola@clubdeploy.com.ar",
+  email: "hola@clubdeploy.online",
   buffet: "Buffet hasta el último turno",
 } as const;
 
