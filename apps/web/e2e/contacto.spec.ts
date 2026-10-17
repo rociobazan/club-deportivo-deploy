@@ -105,12 +105,13 @@ test.describe("Formulario de contacto", () => {
  * heredar el contador de otra corrida ni dejárselo a los demás tests.
  */
 test.describe("Límite de envíos por visitante", () => {
-  const marca = Date.now();
-  const ipDe = (n: number) => `10.${(marca >> 16) & 255}.${(marca >> 8) & 255}.${n}`;
-
   test("el sexto envío de un visitante da 429 y otro visitante sigue pudiendo escribir", async ({
     browser,
   }) => {
+    // Dentro del test y no del módulo: un reintento o una segunda corrida en
+    // el mismo minuto tienen que arrancar con IPs sin gastar.
+    const marca = Date.now() ^ Math.floor(Math.random() * 0xffff);
+    const ipDe = (n: number) => `10.${(marca >> 16) & 255}.${(marca >> 8) & 255}.${n}`;
     const primero = await browser.newContext({
       extraHTTPHeaders: { "x-forwarded-for": ipDe(1) },
     });

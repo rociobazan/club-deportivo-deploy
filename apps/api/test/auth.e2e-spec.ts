@@ -276,7 +276,8 @@ describe('autenticacion (e2e)', () => {
 
   describe('Largo máximo de credenciales', () => {
     it('Mail demasiado largo: 400 SOLICITUD_INVALIDA', async () => {
-      const largo = `${'a'.repeat(121 - DOMINIO.length)}${DOMINIO}`;
+      // Etiquetas de 60 (válidas para @IsEmail): lo único que corta es el largo total.
+      const largo = `a@${'b'.repeat(60)}.${'c'.repeat(60)}.test`;
 
       const { body } = await ingresar(largo, 'cualquiera').expect(400);
 

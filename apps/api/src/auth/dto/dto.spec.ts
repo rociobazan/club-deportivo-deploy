@@ -63,10 +63,14 @@ describe('RegistroDto', () => {
     ).resolves.toBeInstanceOf(RegistroDto);
   });
 
-  it('Mail demasiado largo: rechaza más de 120 caracteres', async () => {
+  // Etiquetas de 60 caracteres, válidas para @IsEmail: lo que corta es el largo total.
+  it('Mail demasiado largo: rechaza más de 120 caracteres aunque sea un mail bien formado', async () => {
     await expect(
-      validar(RegistroDto, { ...registroValido, email: `${'a'.repeat(112)}@club.test` }),
+      validar(RegistroDto, { ...registroValido, email: `a@${'b'.repeat(60)}.${'c'.repeat(60)}.test` }),
     ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      validar(RegistroDto, { ...registroValido, email: `a@${'b'.repeat(60)}.${'c'.repeat(52)}.test` }),
+    ).resolves.toBeInstanceOf(RegistroDto);
   });
 
   it('Solo espacios: rechaza en vez de guardar el nombre vacío', async () => {
@@ -122,7 +126,7 @@ describe('LoginDto', () => {
 
   it('Mail demasiado largo o contraseña demasiado larga: 400 antes de tocar la base', async () => {
     for (const caso of [
-      { email: `${'a'.repeat(112)}@club.test`, password: 'x' },
+      { email: `a@${'b'.repeat(60)}.${'c'.repeat(60)}.test`, password: 'x' },
       { email: 'ana@club.test', password: 'x'.repeat(73) },
     ]) {
       await expect(validar(LoginDto, caso)).rejects.toBeInstanceOf(BadRequestException);
@@ -170,7 +174,7 @@ describe('ActualizarPerfilDto', () => {
 
   it('rechaza un mail de más de 120 caracteres', async () => {
     await expect(
-      validar(ActualizarPerfilDto, { email: `${'a'.repeat(112)}@club.test` }),
+      validar(ActualizarPerfilDto, { email: `a@${'b'.repeat(60)}.${'c'.repeat(60)}.test` }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 

@@ -89,12 +89,18 @@ describe('GuardDeLimiteDeAuth', () => {
     });
 
     it('el registro tiene su propio contador: 5 por minuto, y los intentos de login no lo gastan', async () => {
-      // La IP .30 ya agotó el login en el test anterior y el registro sigue libre.
+      for (let numero = 1; numero <= 10; numero += 1) {
+        await desde('203.0.113.32', 'login', login).expect(401);
+      }
+      await desde('203.0.113.32', 'login', login).expect(429);
+
+      // Con el login agotado, el registro de la misma IP sigue libre.
+      prisma.usuario.create.mockClear();
       for (let numero = 1; numero <= 5; numero += 1) {
-        await desde('203.0.113.30', 'registro', { ...registro, email: `ana${numero}@club.test` }).expect(201);
+        await desde('203.0.113.32', 'registro', { ...registro, email: `ana${numero}@club.test` }).expect(201);
       }
 
-      await desde('203.0.113.30', 'registro', registro).expect(429);
+      await desde('203.0.113.32', 'registro', registro).expect(429);
       expect(prisma.usuario.create).toHaveBeenCalledTimes(5);
     });
   });

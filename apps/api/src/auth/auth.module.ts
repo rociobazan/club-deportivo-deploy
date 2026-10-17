@@ -9,7 +9,7 @@ import { VENTANA_MS } from './guard-de-limite';
 @Module({
   // Acotado a este módulo, como en `ContactoModule`: el guard no es APP_GUARD.
   // Dos throttlers con nombre, uno por endpoint, porque tienen máximos
-  // distintos; cada ruta elige el suyo con `@Throttle` (decisión 36).
+  // distintos; cada ruta salta el del otro con `@SkipThrottle` (decisión 36).
   imports: [
     ThrottlerModule.forRootAsync({
       inject: [CONFIGURACION],

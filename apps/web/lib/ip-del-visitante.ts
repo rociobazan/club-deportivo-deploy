@@ -10,10 +10,10 @@
  * usa la IP del socket. Módulo sin dependencias para probarlo con Node a secas.
  */
 
-// IPv4 con puntos o IPv6 con dos puntos y hexadecimales: lo que puede haber
-// puesto un proxy. Cualquier otra cosa (texto, saltos de línea, puerto) se
-// descarta en vez de reenviarse.
-const IP = /^(\d{1,3}(\.\d{1,3}){3}|[0-9a-fA-F:]+)$/;
+// IPv4 con puntos o IPv6 con al menos un `:` y hexadecimales: lo que puede
+// haber puesto un proxy. Cualquier otra cosa (texto, aunque sea hexadecimal,
+// saltos de línea, puerto) se descarta en vez de reenviarse.
+const IP = /^(\d{1,3}(\.\d{1,3}){3}|(?=[0-9a-fA-F]*:)[0-9a-fA-F:]+)$/;
 
 export function ipDelVisitante(xForwardedFor: string | null | undefined): string | undefined {
   if (!xForwardedFor) return undefined;

@@ -22,9 +22,10 @@
 
 	# HSTS solo fuera de localhost: el navegador lo aplica por host sin mirar el
 	# puerto, así que probar la pila local dejaría a localhost:3001 y :3000 de
-	# desarrollo exigiendo HTTPS durante un año.
+	# desarrollo exigiendo HTTPS durante un año. Sin includeSubDomains: los
+	# únicos subdominios son los CNAME de Resend y no sirven páginas.
 	@produccion not host localhost
-	header @produccion Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	header @produccion Strict-Transport-Security "max-age=31536000"
 
 	# La API es pública: el contrato se puede probar con curl.
 	handle /api/* {
