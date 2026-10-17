@@ -38,5 +38,5 @@ Referencias: los deltas en `specs/` de este cambio y las decisiones en `design.m
 
 ## 8. Cierre
 
-- [ ] 8.1 `npm run spec:validate`, lint, build y tests de los dos lados en verde; e2e de la API contra la base local.
-- [ ] 8.2 Decisión 36 y ampliación de la nota del 2026-10-04 en `docs/memoria-proyecto.md`; `docs/estado-del-proyecto.md` al día; PR con base `main`.
+- [ ] 8.1 `npm run spec:validate`, lint, build y tests de los dos lados en verde; e2e de la API contra la base local. **Parcial**: todo en verde en local salvo `auth.e2e-spec.ts` y Playwright, que quedaron para el CI porque Docker Desktop se cayó (socket huérfano) a mitad del trabajo.
+- [x] 8.2 Decisión 36 (PR #59) y ampliación de la nota del 2026-10-04 en `docs/memoria-proyecto.md`; `docs/estado-del-proyecto.md` al día; PR con base `main`.

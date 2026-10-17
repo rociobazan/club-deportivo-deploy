@@ -42,7 +42,7 @@ sus tests: **363 unitarios** (357 + 6) y **187 e2e de la API** (181 + 6), y dos 
 `imagenes` y `deploy`. Las 20 operaciones y los 36 de navegador no cambian. **Hay que volver a
 medir sobre `main` cuando entre el #54.**
 
-**Medido sobre la rama de `endurecer-seguridad-antes-del-deploy` el 2026-10-16, no sobre `main`.**
+**Medido sobre la rama del #59 (`endurecer-seguridad-antes-del-deploy`) el 2026-10-16, no sobre `main`.**
 La rama tenía `main` al día (hasta el #57). Cierra los hallazgos de seguridad de la auditoría del
 15/10 (decisión 36 de la memoria) y suma tests en los tres niveles: **379 unitarios de la API**
 (363 + 16), **195 e2e de la API** (187 + 8), **37 de navegador** (36 + 1) y los **12 primeros
@@ -257,7 +257,7 @@ en push a `main`, después de `e2e`, y publican el sistema en `https://clubdeplo
 | Instancia EC2 e IP elástica | ✅ en la cuenta de Adrián, `54.87.65.63` |
 | Registro A del dominio | ✅ apunta a la IP elástica |
 | Resend | ✅ dominio verificado (DKIM, SPF y DMARC en Porkbun) |
-| Hallazgos de seguridad de la auditoría del 15/10 | En el PR de `endurecer-seguridad-antes-del-deploy` (decisión 36): hay que mergearlo **antes** de activar `DEPLOY_HABILITADO` |
+| Hallazgos de seguridad de la auditoría del 15/10 | En el #59 (`endurecer-seguridad-antes-del-deploy`, decisión 36): hay que mergearlo **antes** de activar `DEPLOY_HABILITADO` |
 | Docker, `.env` y clave del CI en la instancia | ⏳ pendiente, a mano ([`despliegue.md`](despliegue.md)). El `.env` necesita `MAIL_CONTACTO` y un `JWT_SECRET` de 32 caracteres: la API no arranca sin ellos |
 | Secretos `EC2_*` y `DEPLOY_HABILITADO` | ⏳ pendiente: los carga Rocío, única admin del repo |
 
