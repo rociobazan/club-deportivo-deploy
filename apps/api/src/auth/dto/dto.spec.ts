@@ -54,6 +54,21 @@ describe('RegistroDto', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
+  it('Contraseña demasiado larga: rechaza más de 72 caracteres, que es lo que bcrypt compara', async () => {
+    await expect(
+      validar(RegistroDto, { ...registroValido, password: 'x'.repeat(73) }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      validar(RegistroDto, { ...registroValido, password: 'x'.repeat(72) }),
+    ).resolves.toBeInstanceOf(RegistroDto);
+  });
+
+  it('Mail demasiado largo: rechaza más de 120 caracteres', async () => {
+    await expect(
+      validar(RegistroDto, { ...registroValido, email: `${'a'.repeat(112)}@club.test` }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
   it('Solo espacios: rechaza en vez de guardar el nombre vacío', async () => {
     for (const campo of ['nombre', 'apellido']) {
       await expect(
@@ -105,6 +120,15 @@ describe('LoginDto', () => {
     }
   });
 
+  it('Mail demasiado largo o contraseña demasiado larga: 400 antes de tocar la base', async () => {
+    for (const caso of [
+      { email: `${'a'.repeat(112)}@club.test`, password: 'x' },
+      { email: 'ana@club.test', password: 'x'.repeat(73) },
+    ]) {
+      await expect(validar(LoginDto, caso)).rejects.toBeInstanceOf(BadRequestException);
+    }
+  });
+
   it('acepta un mail pegado con espacios, que es como llega del portapapeles', async () => {
     const dto = (await validar(LoginDto, {
       email: ' ana@club.test ',
@@ -144,6 +168,12 @@ describe('ActualizarPerfilDto', () => {
     }
   });
 
+  it('rechaza un mail de más de 120 caracteres', async () => {
+    await expect(
+      validar(ActualizarPerfilDto, { email: `${'a'.repeat(112)}@club.test` }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
   it('rechaza null en nombre, apellido o mail: solo el teléfono se borra con null', async () => {
     for (const caso of [{ nombre: null }, { apellido: null }, { email: null }]) {
       await expect(validar(ActualizarPerfilDto, caso)).rejects.toBeInstanceOf(BadRequestException);
@@ -171,6 +201,15 @@ describe('CambiarPasswordDto', () => {
   it('Contraseña nueva demasiado corta: 400', async () => {
     await expect(
       validar(CambiarPasswordDto, { actual: 'clave1234', nueva: '1234567' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rechaza una contraseña de más de 72 caracteres, actual o nueva', async () => {
+    await expect(
+      validar(CambiarPasswordDto, { actual: 'x'.repeat(73), nueva: 'claveNueva9' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      validar(CambiarPasswordDto, { actual: 'clave1234', nueva: 'x'.repeat(73) }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 

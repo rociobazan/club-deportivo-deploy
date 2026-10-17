@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
+import { ThrottlerStorage, ThrottlerStorageService } from '@nestjs/throttler';
 import * as bcrypt from 'bcrypt';
 import request from 'supertest';
 import { App } from 'supertest/types';
@@ -42,20 +43,39 @@ describe('autenticacion (e2e)', () => {
   const ingresar = (email: string, password: string) =>
     api().post('/api/v1/auth/login').send({ email, password });
 
+  /*
+   * Login y registro tienen límite por IP y todos los pedidos salen de
+   * 127.0.0.1: el almacén del throttler se renueva antes de cada test, con el
+   * mismo truco que `contacto.e2e-spec.ts`, para que ningún test herede los
+   * golpes del anterior y el límite igual se pruebe de verdad.
+   */
+  let almacen = new ThrottlerStorageService();
+  const almacenReiniciable: ThrottlerStorage = {
+    increment: (...argumentos) => almacen.increment(...argumentos),
+  };
+
   beforeAll(async () => {
     process.env.JWT_SECRET = 'secreto-de-prueba';
     process.env.JWT_EXPIRES_IN = '1h';
 
-    const modulo = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const modulo = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(ThrottlerStorage)
+      .useValue(almacenReiniciable)
+      .compile();
     app = modulo.createNestApplication();
     await configurarApp(app);
     await app.init();
     prisma = app.get(PrismaService);
   });
 
-  beforeEach(limpiar);
+  beforeEach(async () => {
+    almacen.onApplicationShutdown();
+    almacen = new ThrottlerStorageService();
+    await limpiar();
+  });
 
   afterAll(async () => {
+    almacen.onApplicationShutdown();
     await limpiar();
     await app.close();
   });
@@ -177,8 +197,97 @@ describe('autenticacion (e2e)', () => {
       expect(porMail.detalle).toBe(porClave.detalle);
     });
 
+    it('Cuenta inactiva: 401 igual que ante credenciales inválidas, sin token', async () => {
+      await prisma.usuario.update({ where: { email: registro.email }, data: { activo: false } });
+
+      const { body: inactiva } = await ingresar(registro.email, registro.password).expect(401);
+      const { body: porClave } = await ingresar(registro.email, 'incorrecta').expect(401);
+
+      expect(inactiva).not.toHaveProperty('accessToken');
+      expect(inactiva.tipo).toBe(porClave.tipo);
+      expect(inactiva.titulo).toBe(porClave.titulo);
+    });
+
     it('acepta el mail con otras mayúsculas', async () => {
       await ingresar(`ANA${DOMINIO.toUpperCase()}`, registro.password).expect(200);
+    });
+  });
+
+  describe('Límite de intentos de ingreso y registro por IP', () => {
+    const desde = (ip: string, ruta: string, cuerpo: object) =>
+      api().post(ruta).set('X-Forwarded-For', ip).send(cuerpo);
+
+    it('Undécimo intento de ingreso en un minuto: los primeros 10 responden y el 11.º da 429', async () => {
+      for (let numero = 1; numero <= 10; numero += 1) {
+        await desde('203.0.113.20', '/api/v1/auth/login', {
+          email: `nadie${DOMINIO}`,
+          password: 'equivocada',
+        }).expect(401);
+      }
+
+      const { body } = await desde('203.0.113.20', '/api/v1/auth/login', {
+        email: `nadie${DOMINIO}`,
+        password: 'equivocada',
+      }).expect(429);
+
+      expect(body).toMatchObject({
+        tipo: 'DEMASIADAS_SOLICITUDES',
+        estado: 429,
+        instancia: '/auth/login',
+      });
+    });
+
+    it('Sexto registro en un minuto: los primeros 5 responden y el sexto da 429 sin crear la cuenta', async () => {
+      for (let numero = 1; numero <= 5; numero += 1) {
+        await desde('203.0.113.21', '/api/v1/auth/registro', {
+          ...registro,
+          email: `ana${numero}${DOMINIO}`,
+        }).expect(201);
+      }
+
+      const { body } = await desde('203.0.113.21', '/api/v1/auth/registro', {
+        ...registro,
+        email: `ana6${DOMINIO}`,
+      }).expect(429);
+
+      expect(body).toMatchObject({ tipo: 'DEMASIADAS_SOLICITUDES', estado: 429 });
+      expect(await prisma.usuario.count({ where: { email: `ana6${DOMINIO}` } })).toBe(0);
+    });
+
+    it('Otro visitante no comparte el límite: con otra IP las credenciales válidas dan 200', async () => {
+      await registrar().expect(201);
+      for (let numero = 1; numero <= 10; numero += 1) {
+        await desde('203.0.113.22', '/api/v1/auth/login', {
+          email: registro.email,
+          password: 'equivocada',
+        }).expect(401);
+      }
+      await desde('203.0.113.22', '/api/v1/auth/login', {
+        email: registro.email,
+        password: registro.password,
+      }).expect(429);
+
+      await desde('203.0.113.23', '/api/v1/auth/login', {
+        email: registro.email,
+        password: registro.password,
+      }).expect(200);
+    });
+  });
+
+  describe('Largo máximo de credenciales', () => {
+    it('Mail demasiado largo: 400 SOLICITUD_INVALIDA', async () => {
+      const largo = `${'a'.repeat(121 - DOMINIO.length)}${DOMINIO}`;
+
+      const { body } = await ingresar(largo, 'cualquiera').expect(400);
+
+      expect(body).toMatchObject({ tipo: 'SOLICITUD_INVALIDA', estado: 400 });
+    });
+
+    it('Contraseña demasiado larga: 400 y no se crea ninguna cuenta', async () => {
+      const { body } = await registrar({ ...registro, password: 'x'.repeat(73) }).expect(400);
+
+      expect(body).toMatchObject({ tipo: 'SOLICITUD_INVALIDA', estado: 400 });
+      expect(await prisma.usuario.count({ where: { email: registro.email } })).toBe(0);
     });
   });
 

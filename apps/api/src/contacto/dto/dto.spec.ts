@@ -32,6 +32,12 @@ describe('ContactoDto', () => {
     );
   });
 
+  it('Mail demasiado largo: rechaza más de 120 caracteres', async () => {
+    await expect(
+      validar({ ...valido, email: `${'a'.repeat(112)}@example.com` }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
   it('Mensaje demasiado largo: rechaza 1001 caracteres y acepta 1000', async () => {
     await expect(validar({ ...valido, mensaje: 'a'.repeat(1001) })).rejects.toBeInstanceOf(
       BadRequestException,
