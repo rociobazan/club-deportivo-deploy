@@ -4,6 +4,28 @@
 {$DOMINIO} {
 	encode zstd gzip
 
+	# Un cuerpo más grande que esto no lo manda ninguna pantalla: el mensaje de
+	# contacto son 1000 caracteres y no hay subida de archivos (decisión 36).
+	request_body {
+		max_size 1MB
+	}
+
+	# Encabezados de seguridad para las dos apps. `-Server` y `-X-Powered-By`
+	# sacan los que delatan la pila (Caddy y Next).
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+		-X-Powered-By
+	}
+
+	# HSTS solo fuera de localhost: el navegador lo aplica por host sin mirar el
+	# puerto, así que probar la pila local dejaría a localhost:3001 y :3000 de
+	# desarrollo exigiendo HTTPS durante un año.
+	@produccion not host localhost
+	header @produccion Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
 	# La API es pública: el contrato se puede probar con curl.
 	handle /api/* {
 		reverse_proxy api:3000
