@@ -96,3 +96,56 @@ test.describe("Formulario de contacto", () => {
     await expect(page.getByRole("textbox", { name: "Sitio web" })).toHaveCount(0);
   });
 });
+
+/**
+ * Requisito "Límite de envíos de contacto por IP": la IP es la del visitante
+ * aunque el envío salga del servidor del sitio. Acá no hay Caddy, así que el
+ * navegador manda el `X-Forwarded-For` que en producción pondría Caddy, y el
+ * sitio tiene que reenviárselo a la API. Cada corrida usa IPs propias para no
+ * heredar el contador de otra corrida ni dejárselo a los demás tests.
+ */
+test.describe("Límite de envíos por visitante", () => {
+  test("el sexto envío de un visitante da 429 y otro visitante sigue pudiendo escribir", async ({
+    browser,
+  }) => {
+    // Dentro del test y no del módulo: un reintento o una segunda corrida en
+    // el mismo minuto tienen que arrancar con IPs sin gastar.
+    const marca = Date.now() ^ Math.floor(Math.random() * 0xffff);
+    const ipDe = (n: number) => `10.${(marca >> 16) & 255}.${(marca >> 8) & 255}.${n}`;
+    const primero = await browser.newContext({
+      extraHTTPHeaders: { "x-forwarded-for": ipDe(1) },
+    });
+    const page = await primero.newPage();
+    await page.goto("/contacto");
+
+    for (let numero = 1; numero <= 5; numero += 1) {
+      await completar(page, datosDePrueba());
+      await page.getByRole("button", { name: "Enviar mensaje" }).click();
+      await expect(
+        page.locator("p:not(.sr-only)", { hasText: "Recibimos tu consulta" }),
+      ).toBeVisible();
+    }
+
+    const datos = datosDePrueba();
+    await completar(page, datos);
+    await page.getByRole("button", { name: "Enviar mensaje" }).click();
+    // El título del 429 de la API, y lo escrito se conserva.
+    await expect(
+      page.locator("p:not(.sr-only)", { hasText: "Superaste el límite de mensajes" }),
+    ).toBeVisible();
+    await expect(page.getByLabel("Mensaje")).toHaveValue(datos.mensaje);
+    await primero.close();
+
+    const segundo = await browser.newContext({
+      extraHTTPHeaders: { "x-forwarded-for": ipDe(2) },
+    });
+    const otraPagina = await segundo.newPage();
+    await otraPagina.goto("/contacto");
+    await completar(otraPagina, datosDePrueba());
+    await otraPagina.getByRole("button", { name: "Enviar mensaje" }).click();
+    await expect(
+      otraPagina.locator("p:not(.sr-only)", { hasText: "Recibimos tu consulta" }),
+    ).toBeVisible();
+    await segundo.close();
+  });
+});

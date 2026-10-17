@@ -6,6 +6,7 @@ import { DetalleDeReserva } from "@/components/reservas/detalle-de-reserva";
 import { EstadoError } from "@/components/ui/estado-error";
 import { apiFetch, ApiHttpError } from "@/lib/api/client";
 import type { Reserva } from "@/lib/api/types";
+import { esIdDeBase } from "@/lib/ids";
 import {
   ahoraEnElClub,
   CANCELACION_MINUTOS_MINIMOS,
@@ -21,6 +22,8 @@ type Props = { params: Promise<{ id: string }> };
 
 export default async function PaginaDetalleReserva({ params }: Props) {
   const { id } = await params;
+  // Mismo criterio que la administración: lo que no puede ser un id es un 404.
+  if (!esIdDeBase(id)) notFound();
   const token = await leerToken();
 
   let reserva: Reserva;

@@ -1,6 +1,6 @@
 "use server";
 
-import { apiFetch, ApiHttpError } from "@/lib/api/client";
+import { apiFetch, ApiHttpError, encabezadosDelVisitante } from "@/lib/api/client";
 import type { ContactoResponse } from "@/lib/api/types";
 import { EMAIL, texto } from "@/lib/formularios";
 
@@ -64,6 +64,7 @@ export async function enviarContacto(
     respuesta = await apiFetch<ContactoResponse>("/contacto", {
       method: "POST",
       timeoutMs: 2000,
+      headers: await encabezadosDelVisitante(),
       body: {
         nombre: valores.nombre,
         email: valores.email,

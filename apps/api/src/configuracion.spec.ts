@@ -13,14 +13,35 @@ describe('leerConfiguracion', () => {
       horaCierreSabado: '18:00',
       diasCerrados: [0],
       zonaHoraria: 'America/Argentina/Cordoba',
-      mailFrom: 'turnos@clubdeploy.com.ar',
-      mailContacto: 'hola@clubdeploy.com.ar',
+      mailFrom: 'turnos@clubdeploy.online',
+      mailContacto: 'hola@clubdeploy.online',
       horizonteReservaDias: 30,
       maxReservasActivasSocio: 3,
       prefijoCodigoReserva: 'RES',
       cancelacionMinutosMinimos: 120,
+      limiteLoginPorMinuto: 10,
+      limiteRegistroPorMinuto: 5,
       resendApiKey: undefined,
     });
+  });
+
+  it('toma los límites de login y registro del entorno', () => {
+    expect(
+      leerConfiguracion({
+        ...completo,
+        LIMITE_LOGIN_POR_MINUTO: '100',
+        LIMITE_REGISTRO_POR_MINUTO: '50',
+      }),
+    ).toMatchObject({ limiteLoginPorMinuto: 100, limiteRegistroPorMinuto: 50 });
+  });
+
+  it('corta el arranque si un límite no es un entero positivo', () => {
+    expect(() => leerConfiguracion({ ...completo, LIMITE_LOGIN_POR_MINUTO: '0' })).toThrow(
+      'LIMITE_LOGIN_POR_MINUTO',
+    );
+    expect(() =>
+      leerConfiguracion({ ...completo, LIMITE_REGISTRO_POR_MINUTO: 'muchos' }),
+    ).toThrow('LIMITE_REGISTRO_POR_MINUTO');
   });
 
   it('toma el horario de atención y la zona del entorno', () => {
@@ -133,10 +154,39 @@ describe('leerConfiguracion', () => {
     ).toBe('https://club.test');
   });
 
+  /** Todo lo que producción exige, para que cada test quite una sola cosa. */
+  const produccion = {
+    NODE_ENV: 'production',
+    JWT_SECRET: 's'.repeat(32),
+    JWT_EXPIRES_IN: '8h',
+    FRONTEND_URL: 'https://club.test',
+    RESEND_API_KEY: 're_algo',
+    MAIL_CONTACTO: 'equipo@club.test',
+  };
+
+  it('en producción arranca con todo lo obligatorio definido', () => {
+    expect(leerConfiguracion(produccion)).toMatchObject({
+      frontendUrl: 'https://club.test',
+      mailContacto: 'equipo@club.test',
+      resendApiKey: 're_algo',
+    });
+  });
+
   it('en producción exige FRONTEND_URL', () => {
-    expect(() =>
-      leerConfiguracion({ ...completo, NODE_ENV: 'production' }),
-    ).toThrow('FRONTEND_URL');
+    expect(() => leerConfiguracion({ ...produccion, FRONTEND_URL: '' })).toThrow('FRONTEND_URL');
+  });
+
+  it('en producción exige MAIL_CONTACTO: la casilla del club no puede ser el default', () => {
+    expect(() => leerConfiguracion({ ...produccion, MAIL_CONTACTO: '' })).toThrow('MAIL_CONTACTO');
+    expect(() => leerConfiguracion({ ...produccion, MAIL_CONTACTO: 'hola' })).toThrow('MAIL_CONTACTO');
+  });
+
+  it('en producción exige un JWT_SECRET de al menos 32 caracteres', () => {
+    expect(() => leerConfiguracion({ ...produccion, JWT_SECRET: 's'.repeat(31) })).toThrow(
+      'JWT_SECRET',
+    );
+    // Fuera de producción el largo no se exige: los tests usan secretos cortos.
+    expect(leerConfiguracion({ ...completo, JWT_SECRET: 'corto' }).jwtSecret).toBe('corto');
   });
 
   it('toma las casillas de mail del entorno', () => {
@@ -181,15 +231,7 @@ describe('leerConfiguracion', () => {
   });
 
   it('en producción exige RESEND_API_KEY', () => {
-    const produccion = {
-      ...completo,
-      NODE_ENV: 'production',
-      FRONTEND_URL: 'https://club.test',
-    };
-    expect(() => leerConfiguracion(produccion)).toThrow('RESEND_API_KEY');
-    expect(
-      leerConfiguracion({ ...produccion, RESEND_API_KEY: 're_algo' }).resendApiKey,
-    ).toBe('re_algo');
+    expect(() => leerConfiguracion({ ...produccion, RESEND_API_KEY: '' })).toThrow('RESEND_API_KEY');
   });
 
   it('toma las reglas de reserva del entorno', () => {

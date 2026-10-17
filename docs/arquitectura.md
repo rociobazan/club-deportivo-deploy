@@ -20,7 +20,7 @@ club-deportivo-deploy/
 ├── apps/
 │   ├── api/                       # Nest
 │   │   ├── src/
-│   │   │   ├── auth/              # RF-00 y RF-15: registro, login, JWT, perfil
+│   │   │   ├── auth/              # RF-00 y RF-15: registro, login, JWT, perfil; login y registro con límite por IP
 │   │   │   ├── catalogo/          # RF-01, RF-02, RF-07, RF-12, RF-13
 │   │   │   ├── disponibilidad/    # RF-03
 │   │   │   ├── reservas/          # RF-04, RF-05, RF-06, RF-14
@@ -30,7 +30,7 @@ club-deportivo-deploy/
 │   │   │   ├── common/            # guards, decoradores, filtro de errores, pipe, Reloj, horario y cliente de mail
 │   │   │   ├── prisma/            # PrismaService
 │   │   │   ├── configuracion.ts   # lee y valida el entorno; corta el arranque si falta algo
-│   │   │   └── configurar-app.ts  # prefijo /api/v1, CORS y el 404 fuera del prefijo
+│   │   │   └── configurar-app.ts  # prefijo /api/v1, CORS, trust proxy y el 404 fuera del prefijo
 │   │   ├── prisma/                # schema.prisma, migrations/, seed.ts y carga-produccion.ts
 │   │   ├── test/                  # e2e con Supertest, uno por módulo
 │   │   └── Dockerfile

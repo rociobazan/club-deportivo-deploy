@@ -20,6 +20,7 @@ const socio = {
   email: 'socio@club.test',
   telefono: null,
   rol: 'SOCIO' as const,
+  activo: true,
   passwordHash: bcrypt.hashSync('clave1234', 10),
 };
 
@@ -146,6 +147,14 @@ describe('AuthService', () => {
         .catch((e: { getResponse(): object }) => e.getResponse());
 
       expect(porMail).toEqual(porClave);
+    });
+
+    it('Cuenta inactiva: el mismo 401 genérico aunque la contraseña sea correcta', async () => {
+      prisma.usuario.findUnique.mockResolvedValue({ ...socio, activo: false });
+
+      await expect(
+        servicio.ingresar({ email: 'socio@club.test', password: 'clave1234' }),
+      ).rejects.toMatchObject({ estado: 401, tipo: 'CREDENCIALES_INVALIDAS' });
     });
 
     it('normaliza el mail antes de buscar', async () => {

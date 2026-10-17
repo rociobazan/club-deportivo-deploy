@@ -1,5 +1,7 @@
 import { Transform } from 'class-transformer';
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MaxLength } from 'class-validator';
+
+import { LARGO_MAXIMO_EMAIL, LARGO_MAXIMO_PASSWORD } from '../../common/largos';
 
 import { recortar } from '../../common/transformaciones';
 
@@ -11,10 +13,12 @@ export class LoginDto {
    */
   @Transform(recortar)
   @IsEmail()
+  @MaxLength(LARGO_MAXIMO_EMAIL)
   email: string;
 
   /** La contraseña **no** se recorta: los espacios de los extremos son parte de ella. */
   @IsString()
   @IsNotEmpty()
+  @MaxLength(LARGO_MAXIMO_PASSWORD)
   password: string;
 }

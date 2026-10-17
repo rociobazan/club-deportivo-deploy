@@ -1,4 +1,5 @@
-import { Body, Controller, Get, HttpCode, Patch, Post, Put } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Patch, Post, Put, UseGuards } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { Publico } from '../common/decoradores';
 import { UsuarioActual } from '../common/usuario-actual';
 import type { UsuarioAutenticado } from '../common/usuario-actual';
@@ -7,20 +8,31 @@ import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
 import { CambiarPasswordDto } from './dto/cambiar-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegistroDto } from './dto/registro.dto';
+import { GuardDeLimiteDeAuth } from './guard-de-limite';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
-  /** `POST /auth/registro` → 201 con el `Usuario` creado. */
+  /**
+   * `POST /auth/registro` → 201 con el `Usuario` creado. Limitado por IP con
+   * el throttler `registro`; el `login` se salta para que no cuente dos veces.
+   */
   @Publico()
+  @UseGuards(GuardDeLimiteDeAuth)
+  @SkipThrottle({ login: true })
   @Post('registro')
   registrar(@Body() datos: RegistroDto) {
     return this.auth.registrar(datos);
   }
 
-  /** `POST /auth/login` → 200 (no el 201 por defecto de POST) con `LoginResponse`. */
+  /**
+   * `POST /auth/login` → 200 (no el 201 por defecto de POST) con `LoginResponse`.
+   * Limitado por IP con el throttler `login`.
+   */
   @Publico()
+  @UseGuards(GuardDeLimiteDeAuth)
+  @SkipThrottle({ registro: true })
   @HttpCode(200)
   @Post('login')
   ingresar(@Body() datos: LoginDto) {
