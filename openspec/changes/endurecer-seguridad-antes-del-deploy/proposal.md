@@ -34,4 +34,4 @@ Ninguna.
 - **`apps/api/test`**: escenarios nuevos en `contacto.e2e-spec.ts` y `auth.e2e-spec.ts`.
 - **`apps/web`**: `lib/destino-seguro.ts`, `lib/ids.ts`, `lib/ip-del-visitante.ts`, `lib/api/client.ts`, las Server Actions públicas, las dos páginas de detalle de reserva, y el primer runner unitario del front (`node --test`), con su paso en el job `web` del CI.
 - **`deploy/`**: `Caddyfile` y `.env.example`. **`.github/workflows/ci.yml`**: el job `e2e` sube los límites de login y registro, porque la suite de navegador ingresa decenas de veces por minuto desde la misma IP.
-- **Docs, en el mismo PR**: README, `apps/api/.env.example`, `docs/memoria-proyecto.md` (decisión 36 y ampliación de la nota del 2026-10-04 sobre usuarios inactivos) y `docs/estado-del-proyecto.md`.
+- **Docs, en el mismo PR**: README, `apps/api/.env.example`, `docs/memoria-proyecto.md` (decisión 37 y ampliación de la nota del 2026-10-04 sobre usuarios inactivos) y `docs/estado-del-proyecto.md`.

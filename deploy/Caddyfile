@@ -5,7 +5,7 @@
 	encode zstd gzip
 
 	# Un cuerpo más grande que esto no lo manda ninguna pantalla: el mensaje de
-	# contacto son 1000 caracteres y no hay subida de archivos (decisión 36).
+	# contacto son 1000 caracteres y no hay subida de archivos (decisión 37).
 	request_body {
 		max_size 1MB
 	}

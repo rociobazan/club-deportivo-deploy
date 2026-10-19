@@ -21,7 +21,7 @@ export async function configurarApp(app: INestApplication): Promise<void> {
    * siempre `caddy` (llamadas directas a /api/v1, y Caddy pisa el encabezado
    * que traiga el cliente) o `web` (Server Actions, que reenvían la IP del
    * visitante). Sin esto, el límite por IP de `POST /contacto` contaba a todos
-   * los visitantes sobre la IP del contenedor `web` (decisión 36).
+   * los visitantes sobre la IP del contenedor `web` (decisión 37).
    */
   // getInstance() devuelve `any`; la anotación tipa `set` y el handler del 404.
   const express: Express = app.getHttpAdapter().getInstance();

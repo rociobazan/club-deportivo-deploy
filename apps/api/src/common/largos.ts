@@ -1,6 +1,6 @@
 /**
  * Largos máximos de las credenciales, compartidos por los DTOs que reciben un
- * mail o una contraseña (decisión 36). El contrato no los declara, así que
+ * mail o una contraseña (decisión 37). El contrato no los declara, así que
  * viven acá y no en cada DTO.
  */
 

@@ -43,7 +43,7 @@ export type Configuracion = {
   maxReservasActivasSocio: number;
   /** Prefijo del código de reserva: `<prefijo>-XXXXXX`. Máximo 5 letras, porque la columna es VarChar(12). */
   prefijoCodigoReserva: string;
-  /** Intentos de `POST /auth/login` por minuto y por IP antes del 429 (decisión 36). */
+  /** Intentos de `POST /auth/login` por minuto y por IP antes del 429 (decisión 37). */
   limiteLoginPorMinuto: number;
   /** Lo mismo para `POST /auth/registro`. */
   limiteRegistroPorMinuto: number;

@@ -7,7 +7,7 @@ import { ErrorDeApi } from '../common/error-de-api';
 export const VENTANA_MS = 60_000;
 
 /**
- * El límite por IP de `POST /auth/login` y `POST /auth/registro` (decisión 36),
+ * El límite por IP de `POST /auth/login` y `POST /auth/registro` (decisión 37),
  * con el mismo patrón que `contacto/guard-de-limite.ts`: el texto vive junto
  * al límite que lo aplica. Frena un diccionario de contraseñas o un alta
  * masiva de cuentas sin molestar a quien se equivoca de contraseña un par de

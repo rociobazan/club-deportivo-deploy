@@ -3,7 +3,7 @@
  * `https://otro.test` y `//otro.test` se descartan (spec: "Destino externo
  * ignorado"). Módulo sin dependencias para poder probarlo con Node a secas.
  *
- * Dos filtros y una resolución (decisión 36). Primero lo que ningún destino
+ * Dos filtros y una resolución (decisión 37). Primero lo que ningún destino
  * legítimo tiene: una barra invertida, que los navegadores leen como barra
  * (`/\evil.com` → `//evil.com`), y los caracteres de control, que el parser
  * de URL descarta antes de resolver (`/\t/evil.com` → `//evil.com`). Después

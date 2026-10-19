@@ -24,7 +24,7 @@ algo se lo pide.
 | AWS | Adrián | Instancia EC2, IP elástica `54.87.65.63`, presupuestos de gasto | Terminar la instancia, liberar la IP elástica y revisar que no queden volúmenes ni instantáneas |
 | Porkbun | Jeremías | Dominio `clubdeploy.online` y su DNS | Nada: se compró sin renovación automática y vence solo |
 | Resend | Rocío | Dominio de envío y API key | Borrar la API key y el dominio |
-| GitHub | Rocío | Secretos `EC2_*`, variable `DEPLOY_HABILITADO`, paquetes de GHCR | Borrar la variable y los secretos, y los paquetes si no se quieren conservar |
+| GitHub | Rocío | Secretos `EC2_*` y `CI_POSTGRES_PASSWORD`, variable `DEPLOY_HABILITADO`, paquetes de GHCR | Borrar la variable y los secretos, y los paquetes si no se quieren conservar |
 
 Una IP elástica asociada a una instancia detenida **se cobra**. Si el servidor se apaga por más
 de unos días, conviene liberarla.

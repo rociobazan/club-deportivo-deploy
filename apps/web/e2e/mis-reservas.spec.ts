@@ -288,7 +288,7 @@ test.describe("Detalle de una reserva", () => {
   });
 
   // Lo que no puede ser un id de la base es un 404 sin preguntarle a la API,
-  // igual que en la administración (decisión 36).
+  // igual que en la administración (decisión 37).
   test("un id que no es un entero da 404 y no un Reintentar", async ({ page }) => {
     await registrarse(page);
 

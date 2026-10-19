@@ -204,7 +204,7 @@ verdad; acá va el resumen.
 | Job | Qué hace |
 |---|---|
 | `specs` | `npm ci`, `npm run spec:validate` (`openspec validate --all --strict`) y `npm run contrato:lint` (Redocly) |
-| `api` | Espera a `specs`. Con un service container `postgres:17`: `prisma migrate deploy` sobre una base vacía, y lint, build, tests unitarios y e2e de la API. El `JWT_SECRET` se genera al azar en cada corrida: nunca hay uno escrito en el repo |
+| `api` | Espera a `specs`. Con un service container `postgres:17`: `prisma migrate deploy` sobre una base vacía, y lint, build, tests unitarios y e2e de la API. El `JWT_SECRET` se genera al azar en cada corrida: nunca hay uno escrito en el repo. La clave de la base sale del secreto `CI_POSTGRES_PASSWORD` |
 | `web` | Espera a `specs`. Lint y build de Next; el build corre TypeScript, así que también verifica los tipos generados desde el contrato |
 | `e2e` | Espera a `api` y `web`. Levanta la pila entera (Postgres con el seed, la API con `start:prod` y el front construido) y corre los tests de navegador con Playwright ([ADR 0002](adr/0002-tests-e2e-con-playwright.md)). Si falla, sube el reporte como artefacto |
 | `imagenes` y `deploy` | Solo en push a `main`, después de `e2e`, y solo si la variable del repo `DEPLOY_HABILITADO` es `true`. Construyen las imágenes, las publican en GHCR y despliegan por SSH en la instancia ([ADR 0003](adr/0003-despliegue-en-ec2.md)). No son checks obligatorios porque corren después del merge |
