@@ -9,6 +9,7 @@ import { AccionesDeReserva } from "@/app/mis-reservas/[id]/acciones-de-reserva";
 import { pantallaDeErrorAdmin, sesionDeOtroRol } from "@/lib/admin";
 import { apiFetch, ApiHttpError } from "@/lib/api/client";
 import type { Reserva } from "@/lib/api/types";
+import { esIdDeBase } from "@/lib/ids";
 import { leerToken } from "@/lib/sesion";
 
 export const metadata: Metadata = { title: "Detalle de la reserva — Deploy" };
@@ -33,7 +34,7 @@ export default async function PaginaDetalleReservaAdmin({ params }: Props) {
   const { id } = await params;
   // Un id que no es un entero de la base no puede ser una reserva: es un 404, y
   // no un "Reintentar" que va a fallar siempre igual.
-  if (!/^\d{1,10}$/.test(id) || Number(id) < 1 || Number(id) > 2_147_483_647) notFound();
+  if (!esIdDeBase(id)) notFound();
   const ruta = `/admin/reservas/${id}`;
 
   let reserva: Reserva;

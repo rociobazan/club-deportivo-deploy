@@ -43,6 +43,10 @@ export type Configuracion = {
   maxReservasActivasSocio: number;
   /** Prefijo del código de reserva: `<prefijo>-XXXXXX`. Máximo 5 letras, porque la columna es VarChar(12). */
   prefijoCodigoReserva: string;
+  /** Intentos de `POST /auth/login` por minuto y por IP antes del 429 (decisión 37). */
+  limiteLoginPorMinuto: number;
+  /** Lo mismo para `POST /auth/registro`. */
+  limiteRegistroPorMinuto: number;
   /**
    * Clave de Resend. Sin ella el cliente de mail es un doble, así cualquiera
    * puede levantar la API sin pedir una clave (design.md, decisión 1). En
@@ -57,12 +61,16 @@ const HORA_CIERRE_POR_DEFECTO = '23:00';
 const HORA_CIERRE_SABADO_POR_DEFECTO = '18:00';
 const DIAS_CERRADOS_POR_DEFECTO = '0';
 const ZONA_HORARIA_POR_DEFECTO = 'America/Argentina/Cordoba';
-const MAIL_FROM_POR_DEFECTO = 'turnos@clubdeploy.com.ar';
-const MAIL_CONTACTO_POR_DEFECTO = 'hola@clubdeploy.com.ar';
+const MAIL_FROM_POR_DEFECTO = 'turnos@clubdeploy.online';
+const MAIL_CONTACTO_POR_DEFECTO = 'hola@clubdeploy.online';
 const HORIZONTE_RESERVA_DIAS_POR_DEFECTO = 30;
 const MAX_RESERVAS_ACTIVAS_SOCIO_POR_DEFECTO = 3;
 const PREFIJO_CODIGO_RESERVA_POR_DEFECTO = 'RES';
 const CANCELACION_MINUTOS_MINIMOS_POR_DEFECTO = 120;
+const LIMITE_LOGIN_POR_MINUTO_POR_DEFECTO = 10;
+const LIMITE_REGISTRO_POR_MINUTO_POR_DEFECTO = 5;
+/** Lo que da `openssl rand -hex 16`; el ejemplo de producción pide `-hex 32`. */
+const LARGO_MINIMO_JWT_SECRET = 32;
 
 const HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -190,6 +198,15 @@ export function leerConfiguracion(
 
   const enProduccion = entorno.NODE_ENV === 'production';
 
+  // Fuera de producción no se exige el largo: los tests y el desarrollo usan
+  // secretos cortos. En producción uno corto es adivinable por fuerza bruta.
+  const jwtSecret = obligatoria('JWT_SECRET');
+  if (enProduccion && jwtSecret.length < LARGO_MINIMO_JWT_SECRET) {
+    throw new Error(
+      `JWT_SECRET tiene ${jwtSecret.length} caracteres y en producción necesita al menos ${LARGO_MINIMO_JWT_SECRET}. Generalo con: openssl rand -hex 32`,
+    );
+  }
+
   const horaApertura = hora('HORA_APERTURA', entorno.HORA_APERTURA, HORA_APERTURA_POR_DEFECTO);
   const horaCierre = hora('HORA_CIERRE', entorno.HORA_CIERRE, HORA_CIERRE_POR_DEFECTO);
   if (horaApertura >= horaCierre) {
@@ -210,7 +227,7 @@ export function leerConfiguracion(
   }
 
   return {
-    jwtSecret: obligatoria('JWT_SECRET'),
+    jwtSecret,
     jwtExpiresIn: vigencia(obligatoria('JWT_EXPIRES_IN')),
     frontendUrl: enProduccion
       ? obligatoria('FRONTEND_URL')
@@ -221,7 +238,13 @@ export function leerConfiguracion(
     diasCerrados: diasCerrados(entorno.DIAS_CERRADOS),
     zonaHoraria: zonaHoraria(entorno.ZONA_HORARIA_CLUB),
     mailFrom: mail('MAIL_FROM', entorno.MAIL_FROM, MAIL_FROM_POR_DEFECTO),
-    mailContacto: mail('MAIL_CONTACTO', entorno.MAIL_CONTACTO, MAIL_CONTACTO_POR_DEFECTO),
+    // En producción el default no sirve de nada: el formulario de contacto le
+    // escribiría a una casilla que nadie lee.
+    mailContacto: mail(
+      'MAIL_CONTACTO',
+      enProduccion ? obligatoria('MAIL_CONTACTO') : entorno.MAIL_CONTACTO,
+      MAIL_CONTACTO_POR_DEFECTO,
+    ),
     horizonteReservaDias: entero(
       'HORIZONTE_RESERVA_DIAS',
       entorno.HORIZONTE_RESERVA_DIAS,
@@ -241,6 +264,18 @@ export function leerConfiguracion(
       CANCELACION_MINUTOS_MINIMOS_POR_DEFECTO,
       // Mínimo 1 y no 0: un plazo de cero significaría poder cancelar en el
       // segundo en que arranca el turno, que es quedarse sin regla (RN-04).
+      1,
+    ),
+    limiteLoginPorMinuto: entero(
+      'LIMITE_LOGIN_POR_MINUTO',
+      entorno.LIMITE_LOGIN_POR_MINUTO,
+      LIMITE_LOGIN_POR_MINUTO_POR_DEFECTO,
+      1,
+    ),
+    limiteRegistroPorMinuto: entero(
+      'LIMITE_REGISTRO_POR_MINUTO',
+      entorno.LIMITE_REGISTRO_POR_MINUTO,
+      LIMITE_REGISTRO_POR_MINUTO_POR_DEFECTO,
       1,
     ),
     resendApiKey: enProduccion

@@ -159,5 +159,49 @@ describe('contacto (e2e)', () => {
       expect(sexta.body.detalle).toContain('5 mensajes por minuto');
       expect(correo.enviados).toHaveLength(5);
     });
+
+    /*
+     * En producción la API nunca ve al visitante: le llega la IP de `caddy` o
+     * la del contenedor `web`, que reenvía la del visitante en
+     * `X-Forwarded-For`. Con `trust proxy` en un salto, el límite se cuenta
+     * sobre esa IP reenviada y no sobre la del socket.
+     */
+    it('IP reenviada por el servidor del sitio: el límite se cuenta por visitante y no por servidor', async () => {
+      for (let numero = 1; numero <= 5; numero += 1) {
+        await api()
+          .post('/api/v1/contacto')
+          .set('X-Forwarded-For', '203.0.113.10')
+          .send(valido)
+          .expect(202);
+      }
+
+      await api()
+        .post('/api/v1/contacto')
+        .set('X-Forwarded-For', '203.0.113.10')
+        .send(valido)
+        .expect(429);
+      // Otro visitante detrás del mismo servidor sigue pudiendo escribir.
+      await api()
+        .post('/api/v1/contacto')
+        .set('X-Forwarded-For', '203.0.113.11')
+        .send(valido)
+        .expect(202);
+
+      expect(correo.enviados).toHaveLength(6);
+    });
+
+    it('Sin IP reenviada: se cuenta la del socket, como en local', async () => {
+      for (let numero = 1; numero <= 5; numero += 1) {
+        await api().post('/api/v1/contacto').send(valido).expect(202);
+      }
+
+      await api().post('/api/v1/contacto').send(valido).expect(429);
+      // Un visitante con IP propia reenviada no comparte ese contador.
+      await api()
+        .post('/api/v1/contacto')
+        .set('X-Forwarded-For', '203.0.113.12')
+        .send(valido)
+        .expect(202);
+    });
   });
 });

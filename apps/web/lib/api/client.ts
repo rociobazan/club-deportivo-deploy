@@ -1,3 +1,8 @@
+import "server-only";
+
+import { headers } from "next/headers";
+
+import { ipDelVisitante } from "../ip-del-visitante";
 import type { ApiError } from "./types";
 
 /**
@@ -19,6 +24,17 @@ export class ApiHttpError extends Error {
     this.detalle = error.detalle;
     this.instancia = error.instancia;
   }
+}
+
+/**
+ * El `X-Forwarded-For` para los endpoints públicos que la API limita por IP
+ * (contacto, login y registro): sin él, la API vería siempre la IP del servidor
+ * del sitio y el límite sería uno solo para todos los visitantes. Vacío cuando
+ * el pedido no trajo la IP (local sin Caddy): la API usa entonces la del socket.
+ */
+export async function encabezadosDelVisitante(): Promise<HeadersInit> {
+  const ip = ipDelVisitante((await headers()).get("x-forwarded-for"));
+  return ip ? { "X-Forwarded-For": ip } : {};
 }
 
 /** `estado: 0` es la API inalcanzable: no hubo respuesta HTTP. */

@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-import { apiFetch, ApiHttpError } from "@/lib/api/client";
+import { apiFetch, ApiHttpError, encabezadosDelVisitante } from "@/lib/api/client";
 import type { LoginResponse, Usuario } from "@/lib/api/types";
 import { EMAIL, texto } from "@/lib/formularios";
 import { borrarSesion, destinoSeguro, guardarSesion } from "@/lib/sesion";
@@ -49,6 +49,7 @@ export async function ingresar(
   try {
     sesion = await apiFetch<LoginResponse>("/auth/login", {
       method: "POST",
+      headers: await encabezadosDelVisitante(),
       body: { email, password },
     });
   } catch (error) {
@@ -79,6 +80,7 @@ export async function registrarse(
   try {
     await apiFetch<Usuario>("/auth/registro", {
       method: "POST",
+      headers: await encabezadosDelVisitante(),
       body: {
         nombre: valores.nombre,
         apellido: valores.apellido,
@@ -102,6 +104,7 @@ export async function registrarse(
   try {
     sesion = await apiFetch<LoginResponse>("/auth/login", {
       method: "POST",
+      headers: await encabezadosDelVisitante(),
       body: { email: valores.email, password },
     });
   } catch (error) {

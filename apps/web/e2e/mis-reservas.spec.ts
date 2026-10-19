@@ -286,4 +286,15 @@ test.describe("Detalle de una reserva", () => {
     await expect(page.getByRole("heading", { name: /no encontramos/i })).toBeVisible();
     await expect(page.getByRole("link", { name: "Reintentar" })).toHaveCount(0);
   });
+
+  // Lo que no puede ser un id de la base es un 404 sin preguntarle a la API,
+  // igual que en la administración (decisión 37).
+  test("un id que no es un entero da 404 y no un Reintentar", async ({ page }) => {
+    await registrarse(page);
+
+    await page.goto("/mis-reservas/abc");
+
+    await expect(page.getByRole("heading", { name: /no encontramos/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Reintentar" })).toHaveCount(0);
+  });
 });

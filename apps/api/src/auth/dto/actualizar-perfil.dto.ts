@@ -1,6 +1,7 @@
 import { Transform } from 'class-transformer';
 import { IsEmail, IsOptional, IsString, MaxLength, MinLength, ValidateIf } from 'class-validator';
 
+import { LARGO_MAXIMO_EMAIL } from '../../common/largos';
 import { recortar } from '../../common/transformaciones';
 
 /**
@@ -43,6 +44,7 @@ export class ActualizarPerfilDto {
   @ValidateIf(enviado)
   @Transform(recortar)
   @IsEmail()
+  @MaxLength(LARGO_MAXIMO_EMAIL)
   email?: string;
 
   /** `null` borra el teléfono; `@IsOptional()` deja pasar `null` y `undefined`. */
