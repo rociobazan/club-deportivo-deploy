@@ -37,7 +37,9 @@ jobs:
         image: postgres:17
         env:
           POSTGRES_USER: club
-          POSTGRES_PASSWORD: club
+          # La clave de la base del CI es un secreto del repo (Settings → Secrets
+          # and variables → Actions), no un literal: GitHub la enmascara en los logs.
+          POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
           POSTGRES_DB: club_reservas_test
         ports: ['5432:5432']
         options: >-
@@ -46,7 +48,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
-      DATABASE_URL: postgresql://club:club@localhost:5432/club_reservas_test
+      DATABASE_URL: postgresql://club:${{ secrets.CI_POSTGRES_PASSWORD }}@localhost:5432/club_reservas_test
       JWT_EXPIRES_IN: 1h
     steps:
       - uses: actions/checkout@v7
@@ -89,6 +91,10 @@ jobs:
       - run: npm ci
       - name: Lint
         run: npm run lint --workspace web
+      # Los helpers puros del front (`destinoSeguro`, los ids, la IP del
+      # visitante), con el runner nativo de Node: sin dependencias nuevas.
+      - name: Tests unitarios
+        run: npm run test --workspace web
       # El build corre TypeScript, así que también verifica los tipos que el
       # front genera desde el contrato.
       - name: Build
@@ -106,7 +112,8 @@ jobs:
         image: postgres:17
         env:
           POSTGRES_USER: club
-          POSTGRES_PASSWORD: club
+          # Igual que en el job `api`: sale del secreto del repo.
+          POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
           POSTGRES_DB: club_reservas_e2e
         ports: ['5432:5432']
         options: >-
@@ -115,10 +122,15 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
-      DATABASE_URL: postgresql://club:club@localhost:5432/club_reservas_e2e
+      DATABASE_URL: postgresql://club:${{ secrets.CI_POSTGRES_PASSWORD }}@localhost:5432/club_reservas_e2e
       JWT_EXPIRES_IN: 1h
       # El front habla con la API por acá, desde su proceso de servidor.
       API_URL: http://localhost:3000/api/v1
+      # Sin Caddy delante, todos los ingresos de la suite salen de 127.0.0.1 y
+      # son decenas por minuto: con los límites reales el check se pondría en
+      # rojo. Los límites se prueban en los e2e de la API, no acá.
+      LIMITE_LOGIN_POR_MINUTO: 1000
+      LIMITE_REGISTRO_POR_MINUTO: 1000
     steps:
       - uses: actions/checkout@v7
       # Igual que en el job `api`: se genera al azar y no se escribe en el repo.

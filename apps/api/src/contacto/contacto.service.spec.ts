@@ -32,7 +32,7 @@ describe('ContactoService', () => {
     expect(respuesta.mensaje).toContain('Recibimos tu consulta');
     expect(correo.enviados).toHaveLength(1);
     expect(correo.enviados[0]).toMatchObject({
-      para: 'hola@clubdeploy.com.ar',
+      para: 'hola@clubdeploy.online',
       asunto: 'Contacto desde el sitio · Ana Fernández',
       responderA: 'ana@example.com',
     });

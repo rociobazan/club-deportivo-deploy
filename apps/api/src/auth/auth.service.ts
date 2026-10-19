@@ -110,16 +110,20 @@ export class AuthService {
     // una columna nueva en `usuario` no sale por el login sin decidirlo acá.
     const encontrado = await this.prisma.usuario.findUnique({
       where: { email: normalizarEmail(datos.email) },
-      select: { ...SELECCION_PUBLICA, passwordHash: true },
+      select: { ...SELECCION_PUBLICA, passwordHash: true, activo: true },
     });
 
     const coincide = await bcrypt.compare(
       datos.password,
       encontrado?.passwordHash ?? AuthService.HASH_SENUELO,
     );
-    if (!encontrado || !coincide) throw credencialesInvalidas();
+    // Una cuenta inactiva responde lo mismo que una contraseña incorrecta, y
+    // después de comparar igual: no cuenta que existe ni tarda distinto. Nada
+    // en la API la pone en inactiva todavía; es una defensa por si se cambia
+    // en la base (ampliación de la nota del 2026-10-04 en la memoria).
+    if (!encontrado || !coincide || !encontrado.activo) throw credencialesInvalidas();
 
-    const { passwordHash: _hash, ...usuario } = encontrado;
+    const { passwordHash: _hash, activo: _activo, ...usuario } = encontrado;
     const accessToken = await this.jwt.signAsync({ sub: usuario.id, rol: usuario.rol });
     // La vigencia real sale del token firmado, no de parsear JWT_EXPIRES_IN (design.md, 6).
     const { exp, iat } = this.jwt.decode<{ exp: number; iat: number }>(accessToken);

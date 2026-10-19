@@ -97,7 +97,9 @@ npm run dev:web      # front en http://localhost:3001
 
 Los puertos 3000, 3001 y 5434 tienen que estar libres: si otra aplicación usa el 3000, la API no arranca (`EADDRINUSE`).
 
-**La API no arranca sin `JWT_SECRET` y `JWT_EXPIRES_IN`** en `apps/api/.env`: en desarrollo sirve cualquier texto largo como secreto y `1h` como vigencia. Si falta alguna, el arranque corta diciendo cuál.
+La base local usa el usuario `club` con la clave `club`, públicas a propósito para que nadie tenga que pedir una clave para levantar el proyecto. Por eso el contenedor escucha solo en `127.0.0.1:5434` y no se alcanza desde otra máquina de la red. Ninguna clave real está en el repo: la de la base del CI es el secreto `CI_POSTGRES_PASSWORD` de GitHub y las de producción viven solo en la instancia (ver [Despliegue](#despliegue)).
+
+**La API no arranca sin `JWT_SECRET` y `JWT_EXPIRES_IN`** en `apps/api/.env`: en desarrollo sirve cualquier texto largo como secreto y `1h` como vigencia. Si falta alguna, el arranque corta diciendo cuál. En producción el secreto tiene que tener al menos 32 caracteres (`openssl rand -hex 32`).
 
 ### Usuarios de prueba
 
@@ -123,7 +125,9 @@ Para probar el ingreso desde el sitio: <http://localhost:3001/ingresar> con cual
 
 Con sesión de socio, esas pantallas muestran un aviso de que son solo para administradores; la API, igual, responde 403.
 
-**Mail.** `MAIL_FROM` (`turnos@clubdeploy.com.ar`) es el remitente del sistema y `MAIL_CONTACTO` (`hola@clubdeploy.com.ar`) la casilla que recibe el formulario de contacto; las dos tienen valor por defecto. **Sin `RESEND_API_KEY` no se envía ningún mail**: el cliente de mail es un doble que deja en el log lo que se habría enviado, así se puede probar `/contacto` sin pedir una clave. Si la definís, los mails salen de verdad desde tu máquina a `MAIL_CONTACTO`. En producción la clave es obligatoria y el arranque corta si falta.
+**Mail.** `MAIL_FROM` (`turnos@clubdeploy.online`) es el remitente del sistema y `MAIL_CONTACTO` (`hola@clubdeploy.online`) la casilla que recibe el formulario de contacto; las dos tienen valor por defecto. **Sin `RESEND_API_KEY` no se envía ningún mail**: el cliente de mail es un doble que deja en el log lo que se habría enviado, así se puede probar `/contacto` sin pedir una clave. Si la definís, los mails salen de verdad desde tu máquina a `MAIL_CONTACTO`. En producción la clave y `MAIL_CONTACTO` son obligatorias y el arranque corta si falta alguna.
+
+**Límites por IP.** `POST /contacto` admite 5 envíos por minuto, `POST /auth/login` 10 intentos y `POST /auth/registro` 5; los dos últimos se ajustan con `LIMITE_LOGIN_POR_MINUTO` y `LIMITE_REGISTRO_POR_MINUTO`. La IP es la del visitante también cuando el pedido sale del servidor del sitio: las Server Actions la reenvían en `X-Forwarded-For` y la API confía en un salto de proxy.
 
 **Horario y zona del club.** `HORA_APERTURA` (`08:00`), `HORA_CIERRE` (`23:00`), `HORA_CIERRE_SABADO` (`18:00`), `DIAS_CERRADOS` (`0`, el domingo; de 0 a 6 separados por coma) y `ZONA_HORARIA_CLUB` (`America/Argentina/Cordoba`) tienen valor por defecto. Si las cambiás, van **en los dos** `.env`: la API calcula la grilla con ellas y el sitio la dibuja. Una trampa: `DIAS_CERRADOS` vacía no significa "por defecto" sino "abre todos los días", por eso el `.env.example` la trae en `0`.
 
@@ -141,6 +145,7 @@ Con sesión de socio, esas pantallas muestran un aviso de que son solo para admi
 | Comando | Qué hace |
 |---|---|
 | `npm run test:api` | Tests unitarios de la API |
+| `npm run test --workspace web` | Tests unitarios del front (`node --test`, sin dependencias): los helpers puros de `lib/` |
 | `npm run test:e2e --workspace api` | Tests e2e de la API, contra la base del contenedor |
 | `npm run test:e2e:web` | Tests de navegador con Playwright. Necesitan la pila entera: `npm run db:up`, `npm run db:seed`, `npm run dev:api` y `npm run dev:web` en marcha, y Chromium instalado una vez con `npm exec --workspace web -- playwright install chromium`. Si el 3001 está ocupado, `E2E_BASE_URL=http://localhost:3010` |
 | `npm run lint --workspace api` / `--workspace web` | Lint de cada aplicación, el mismo que corre el CI |
@@ -177,7 +182,7 @@ Cada funcionalidad empieza por su especificación:
 |---|---|
 | `specs` | Las specs de OpenSpec (`openspec validate --all --strict`) y el contrato OpenAPI |
 | `api` | Aplica las migraciones sobre un PostgreSQL 17 vacío y corre lint, build, tests unitarios y e2e de la API |
-| `web` | Lint y build del front; el build corre TypeScript, así que también verifica los tipos |
+| `web` | Lint, tests unitarios y build del front; el build corre TypeScript, así que también verifica los tipos |
 | `e2e` | Tests de navegador con Playwright contra la pila entera: Postgres, la API y el front en modo producción |
 
 La protección de `main` exige los cuatro checks en verde y una aprobación antes de mergear, sin excepciones para los administradores. El detalle está en [`docs/arquitectura.md`](docs/arquitectura.md), secciones 6 y 7.

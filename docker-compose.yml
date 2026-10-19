@@ -2,12 +2,16 @@ services:
   db:
     image: postgres:17
     container_name: club-db
+    # Base local de desarrollo: la clave `club` es pública a propósito, para que
+    # cualquiera levante el proyecto sin pedir nada. Por eso escucha solo en
+    # 127.0.0.1: con "5434:5432" quedaba abierta a toda la red (un wifi
+    # compartido, por ejemplo), y cualquiera podía entrar con club / club.
     environment:
       POSTGRES_USER: club
       POSTGRES_PASSWORD: club
       POSTGRES_DB: club_reservas
     ports:
-      - "5434:5432"
+      - "127.0.0.1:5434:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
