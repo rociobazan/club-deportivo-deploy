@@ -87,11 +87,19 @@ Las páginas del sitio institucional MUST poder usarse en pantallas de celular s
 - **THEN** se devuelve 202 y no se envía ningún mail
 
 ### Requirement: Límite de envíos de contacto por IP
-`POST /contacto` MUST aceptar como máximo 5 solicitudes por minuto desde una misma IP; las que excedan ese límite MUST rechazarse sin enviar mail.
+`POST /contacto` MUST aceptar como máximo 5 solicitudes por minuto desde una misma IP; las que excedan ese límite MUST rechazarse sin enviar mail. La IP MUST ser la del visitante también cuando la solicitud llega a través del servidor del sitio o de un proxy: el sitio MUST reenviarla en `X-Forwarded-For` y la API MUST tomarla de ese encabezado solo desde el salto inmediato de confianza.
 
 #### Scenario: Sexto envío en un minuto
 - **WHEN** desde una misma IP se envían 6 solicitudes válidas a `POST /contacto` dentro del mismo minuto
 - **THEN** las primeras 5 devuelven 202 y la sexta devuelve 429 con `tipo` `DEMASIADAS_SOLICITUDES`, sin enviar mail
+
+#### Scenario: Visitantes distintos detrás del mismo servidor
+- **WHEN** un visitante ya recibió 429 y otro visitante, con otra IP reenviada en `X-Forwarded-For`, envía una solicitud válida a `POST /contacto`
+- **THEN** la del segundo visitante devuelve 202
+
+#### Scenario: Sin IP reenviada
+- **WHEN** las solicitudes llegan sin `X-Forwarded-For`
+- **THEN** el límite se cuenta sobre la IP de quien se conectó, como en desarrollo local
 
 ### Requirement: Formulario de contacto en el sitio
 La página `/contacto` MUST ofrecer un formulario con nombre, mail, teléfono y mensaje, los cuatro obligatorios, que envía a `POST /contacto` desde el servidor del sitio. Tras un envío aceptado, la página MUST mostrar la confirmación que devolvió la API y vaciar el formulario. Ante datos inválidos, MUST mostrar el error junto al campo que corresponde y conservar lo escrito. El campo trampa `sitioWeb` MUST existir en el formulario pero MUST NOT ser visible ni alcanzable con el teclado para una persona. Si la API no responde o rechaza el envío por límite, la página MUST decirlo con un mensaje claro y MUST seguir mostrando la dirección, el teléfono, el mail y los horarios del club.

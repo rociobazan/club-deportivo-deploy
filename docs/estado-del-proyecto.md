@@ -7,7 +7,7 @@
 el historial viven en [`memoria-proyecto.md`](memoria-proyecto.md). Este documento no repite
 esas decisiones: las enlaza.
 
-**Última verificación:** 2026-10-05, después del #52, contra el código y la API de GitHub, no contra lo que
+**Última verificación:** 2026-10-19, después del #59, contra el código y la API de GitHub, no contra lo que
 dice la memoria. Los comandos que producen cada número están en la última sección, para que
 cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla. Los endpoints y las
 pantallas se contaron sobre `main` el 01/10. **Los tests se volvieron a medir el 2026-10-04,
@@ -48,6 +48,14 @@ La rama tenía `main` al día (hasta el #57). Cierra los hallazgos de seguridad 
 (363 + 16), **195 e2e de la API** (187 + 8), **37 de navegador** (36 + 1) y los **12 primeros
 unitarios del front**, que el job `web` ahora corre. Las 20 operaciones y las 16 pantallas no
 cambian. **Hay que volver a medir sobre `main` cuando entre.**
+
+**Remedido sobre `main` el 2026-10-19, apenas entró el #59**, en el mismo PR que lo archiva. Cubre
+también el #54, que había quedado sin volver a medir. Coinciden las 20 operaciones, las 16
+pantallas, los **379 unitarios**, los **195 e2e de la API** y los **12 unitarios del front**,
+corridos en local y en el CI del merge del #59. **No coincidió un número: los de navegador son 38,
+no 37.** El #59 sumó dos casos, el 429 por visitante en `contacto.spec.ts` y el id inválido en
+`mis-reservas.spec.ts`, y declaró uno solo. Se contaron con `playwright test --list` y los 38
+pasaron en local y en ese CI.
 
 > Todos los números de este documento están medidos sobre `main`, con los comandos de la última
 > sección. Si alguna vez se miden sobre la rama de un PR todavía abierto, hay que decirlo acá y
@@ -154,7 +162,7 @@ transversal que las features nuevas reutilizan sin volver a decidir nada:
 - Seed idempotente con disciplinas, canchas, equipamiento y usuarios de prueba.
 - Carga de producción aparte (`npm run carga:produccion`): catálogo, si la base no tiene, y un
   administrador desde el entorno ([ADR 0003](adr/0003-despliegue-en-ec2.md)).
-- Tests en verde (Node 24 con `--experimental-vm-modules`): 363 unitarios y 187 e2e en serie.
+- Tests en verde (Node 24 con `--experimental-vm-modules`): 379 unitarios y 195 e2e en serie.
 
 **Las 20 operaciones del contrato tienen endpoint**: las cinco de `auth` (registro,
 login, ver el perfil, editarlo y cambiar la contraseña), las de catálogo y disponibilidad,
@@ -203,8 +211,13 @@ administración de `catalogo` (nombre repetido, disciplina inactiva).
 `implementar-creacion-de-reserva` (1.3) **se archivó el 05/10**, con sus 31 tareas cerradas: sumó
 el requisito de pantalla de `/reservar` a `reservas` y **corrigió** RN-09, que no decía nada del
 horario por día (el cierre del sábado y `DIAS_CERRADOS`) aunque el código y sus tests ya lo
-cumplían. Con eso **no queda ningún cambio en curso en `openspec/changes/`**: el de 1.4 se había
-archivado con el PR #40 y el de 1.6 con el #49.
+cumplían. El de 1.4 se había archivado con el PR #40 y el de 1.6 con el #49.
+
+`endurecer-seguridad-antes-del-deploy` (#59) **se archivó el 19/10**, con sus 15 tareas cerradas.
+Sumó dos requisitos a `autenticacion` (límite de intentos de ingreso y registro por IP, y largo
+máximo de credenciales) y modificó dos (la cuenta inactiva en el inicio de sesión y el `volver`
+más estricto), además del límite de contacto por IP de `institucional`, que ahora cuenta la IP del
+visitante. Con eso **no queda ningún cambio en curso en `openspec/changes/`**.
 
 Los tres de Jeremías se archivaron el 28/09
 —`implementar-autenticacion` (1.1), `implementar-catalogo-y-disponibilidad` (1.2) e
@@ -232,8 +245,8 @@ del ruleset:
 |---|---|
 | `specs` | OpenSpec en modo estricto y lint del contrato |
 | `api` | Migraciones contra `postgres:17`, lint, build y tests de la API |
-| `web` | Lint y build del front, que además verifica los tipos |
-| `e2e` | 36 tests de navegador con Playwright contra la pila entera: Postgres, la API y el front servido en producción ([ADR 0002](adr/0002-tests-e2e-con-playwright.md)) |
+| `web` | Lint, los 12 unitarios del front (`node --test`) y el build, que además verifica los tipos |
+| `e2e` | 38 tests de navegador con Playwright contra la pila entera: Postgres, la API y el front servido en producción ([ADR 0002](adr/0002-tests-e2e-con-playwright.md)) |
 
 **`e2e` bloquea desde el 30/09.** Hasta esa fecha corría e informaba, así que un PR con los e2e en
 rojo se podía mergear igual. Lo sumó `rociobazan`, porque editar un *ruleset* pide permiso de admin
@@ -252,12 +265,12 @@ en push a `main`, después de `e2e`, y publican el sistema en `https://clubdeplo
 
 | Qué | Estado |
 |---|---|
-| Código del despliegue (Dockerfiles, compose, CI, carga) | En el #54 |
+| Código del despliegue (Dockerfiles, compose, CI, carga) | ✅ en `main` (#54, 06/10) |
 | Dominio `clubdeploy.online` | ✅ comprado en Porkbun, sin renovación automática |
 | Instancia EC2 e IP elástica | ✅ en la cuenta de Adrián, `54.87.65.63` |
 | Registro A del dominio | ✅ apunta a la IP elástica |
 | Resend | ✅ dominio verificado (DKIM, SPF y DMARC en Porkbun) |
-| Hallazgos de seguridad de la auditoría del 15/10 | En el #59 (`endurecer-seguridad-antes-del-deploy`, decisión 37): hay que mergearlo **antes** de activar `DEPLOY_HABILITADO` |
+| Hallazgos de seguridad de la auditoría del 15/10 | ✅ en `main` (#59, 19/10; `endurecer-seguridad-antes-del-deploy`, decisión 37). Ya no frena activar `DEPLOY_HABILITADO` |
 | Docker, `.env` y clave del CI en la instancia | ⏳ pendiente, a mano ([`despliegue.md`](despliegue.md)). El `.env` necesita `MAIL_CONTACTO` y un `JWT_SECRET` de 32 caracteres: la API no arranca sin ellos |
 | Secretos `EC2_*` y `DEPLOY_HABILITADO` | ⏳ pendiente: los carga Rocío, única admin del repo |
 
@@ -299,14 +312,14 @@ Cuenta para la evaluación: la lista de *Contributors* es parte de lo que se mir
 
 | Persona | Commits en `main` | PRs mergeados |
 |---|---|---|
-| Jeremías | 103 | 40 |
-| Adrián | 28 | 4 |
-| Rocío | 18 | 6 |
+| Jeremías | 114 | 43 |
+| Adrián | 30 | 5 |
+| Rocío | 22 | 8 |
 | Renzo | 17 | 3 |
 
-Medido sobre `main` el 2026-10-05, después del #52. Los 103 de Jeremías suman sus dos nombres de
-`git shortlog` (100 y 3), que salen del mismo email. El archivado de 1.3 suma un commit y un PR de
-Adrián que esta tabla no puede ver.
+Medido sobre `main` el 2026-10-19, después del #59. Los 114 de Jeremías suman sus dos nombres de
+`git shortlog` (111 y 3), que salen del mismo email. No incluye el #60 (`npm audit`), que estaba
+abierto, ni este PR.
 
 **Esta tabla nace desactualizada, y no hay forma de evitarlo: un PR no puede contar su propio
 merge.** El #49 la remidió bien sobre `main`, pero su propio merge sumó un commit y un PR que ya
@@ -320,7 +333,7 @@ Dos cosas que conviene mirar de frente:
   implementación (#48) y el archivado (#49) le dan 17 commits y 3 PRs. Se commiteó por paso, un
   commit por grupo de tareas, que es lo que recomienda el punto de abajo.
 - **El reparto quedó desbalanceado, y ya no hay nada pendiente que lo corrija.** Jeremías tiene
-  103 commits contra 28, 18 y 17 del resto. `requisitos.md` §8 desaconseja repartir por capas
+  114 commits contra 30, 22 y 17 del resto. `requisitos.md` §8 desaconseja repartir por capas
   justamente porque desbalancea los commits, y esto se evalúa. Con el hito 1 cerrado, lo que
   quedaba por entrar ya entró: 1.3 el 01/10 y 1.6 el 04/10. Dicho de otro modo, **la diferencia
   que se ve es la final**, y no el retrato de un trabajo a medio terminar.
