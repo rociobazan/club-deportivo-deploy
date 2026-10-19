@@ -97,6 +97,8 @@ npm run dev:web      # front en http://localhost:3001
 
 Los puertos 3000, 3001 y 5434 tienen que estar libres: si otra aplicación usa el 3000, la API no arranca (`EADDRINUSE`).
 
+La base local usa el usuario `club` con la clave `club`, públicas a propósito para que nadie tenga que pedir una clave para levantar el proyecto. Por eso el contenedor escucha solo en `127.0.0.1:5434` y no se alcanza desde otra máquina de la red. Ninguna clave real está en el repo: la de la base del CI es el secreto `CI_POSTGRES_PASSWORD` de GitHub y las de producción viven solo en la instancia (ver [Despliegue](#despliegue)).
+
 **La API no arranca sin `JWT_SECRET` y `JWT_EXPIRES_IN`** en `apps/api/.env`: en desarrollo sirve cualquier texto largo como secreto y `1h` como vigencia. Si falta alguna, el arranque corta diciendo cuál.
 
 ### Usuarios de prueba
