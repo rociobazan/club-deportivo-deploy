@@ -301,7 +301,10 @@ jobs:
           echo "IMAGE_TAG=$IMAGE_TAG" >> .env
           docker compose pull api web
           docker compose up -d --wait db
-          docker compose run --rm api npm exec -- prisma migrate deploy
+          # Sin -T ni </dev/null, `compose run` lee la entrada estándar, que acá
+          # es este mismo script: se comía las líneas que siguen y el deploy
+          # terminaba en verde sin levantar api, web ni caddy.
+          docker compose run --rm -T api npm exec -- prisma migrate deploy </dev/null
           docker compose up -d --wait --remove-orphans
           # -a: las imágenes de deploys anteriores tienen tag (su SHA), así que
           # no cuentan como colgadas. Sin esto, cada deploy suma unos 2 GB.
