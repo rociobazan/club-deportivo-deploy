@@ -121,6 +121,11 @@ test.describe("Límite de envíos por visitante", () => {
     for (let numero = 1; numero <= 5; numero += 1) {
       await completar(page, datosDePrueba());
       await page.getByRole("button", { name: "Enviar mensaje" }).click();
+      // Desde el segundo envío, la confirmación del anterior sigue a la vista
+      // mientras este viaja: esperarla sola dejaba completar el formulario antes
+      // de que se re-montara vacío, y el envío siguiente salía sin datos. Lo que
+      // prueba que este envío se aceptó es el formulario re-montado en blanco.
+      await expect(page.getByLabel("Mensaje")).toHaveValue("");
       await expect(
         page.locator("p:not(.sr-only)", { hasText: "Recibimos tu consulta" }),
       ).toBeVisible();
