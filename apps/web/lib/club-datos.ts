@@ -16,8 +16,8 @@ export const CLUB = {
   nombre: "Deploy Club",
   descripcion:
     "Club deportivo de barrio. Tenis, pádel y fútbol 5 en General Paz, Córdoba.",
-  direccion: "Rivadeo 1480",
-  barrio: "Barrio General Paz, Córdoba",
+  direccion: "San Martín 777",
+  barrio: "Villa Carlos Paz, Córdoba",
   telefono: "351 482 7719",
   /** Para el `href` del enlace: el mismo número en formato internacional. */
   telefonoLink: "tel:+543514827719",
