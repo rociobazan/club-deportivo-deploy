@@ -146,7 +146,7 @@ export function FormularioReserva({ turno, precioCancha, equipamiento }: Props) 
                         [item.id]: Number(evento.target.value),
                       }))
                     }
-                    className="h-11 rounded-xl border border-border-strong bg-surface-2 px-3 text-text disabled:opacity-50"
+                    className="h-11 rounded-xl border border-border-strong bg-surface-input px-3 text-text disabled:opacity-50"
                   >
                     {/* El tope es el stock del turno: no se puede pedir de más. */}
                     {Array.from({ length: item.disponible + 1 }, (_, cantidad) => (
