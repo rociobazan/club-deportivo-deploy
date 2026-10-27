@@ -93,7 +93,9 @@ nslookup clubdeploy.online
 
 ## 4. El `.env` de producción
 
-En la instancia, a partir de [`deploy/.env.example`](../deploy/.env.example):
+El job `deploy` copia a la instancia el compose y el `Caddyfile`, pero **no** [`deploy/.env.example`](../deploy/.env.example):
+el `.env` se arma a mano, una sola vez. Se abre `deploy/.env.example` en el repo, se pega su contenido en
+`/opt/club/.env` (con `nano`), se completan los valores y se deja con permisos `600`:
 
 ```bash
 nano /opt/club/.env
@@ -118,6 +120,16 @@ ssh-keygen -t ed25519 -f deploy_ci -N "" -C "github-actions-deploy"
 ssh-copy-id -i deploy_ci.pub -o IdentityFile=clave.pem ubuntu@<elastic-ip>
 ssh-keyscan -t ed25519 <elastic-ip>
 ```
+
+`ssh-keyscan` puede fallar con el cliente OpenSSH de Windows (`unsupported KEX method`). En ese caso
+se arma la línea a mano, leyendo la clave pública del host por SSH:
+
+```bash
+ssh -i clave.pem ubuntu@<IP> cat /etc/ssh/ssh_host_ed25519_key.pub
+```
+
+La línea para `EC2_KNOWN_HOSTS` es `<IP> ssh-ed25519 <clave-publica-del-host>`. Para comprobarla, guardarla en un
+archivo y correr `ssh-keygen -lf <archivo>`: la huella tiene que ser la misma que se vio en la primera conexión.
 
 Comparar la huella que imprime `ssh-keyscan` con la de la primera conexión por SSH. Después,
 **una administradora del repo** carga en *Settings → Secrets and variables → Actions*:
@@ -144,7 +156,10 @@ Borrar `deploy_ci` de la máquina local cuando quede cargado.
    `club-deploy-api` y `club-deploy-web` → *Package settings* → *Change visibility* →
    **Public**, y re-ejecutar el job. No tienen secretos: el `.dockerignore` deja afuera todos
    los `.env`.
-4. **Carga inicial**, una sola vez. `read -s` pide la contraseña sin mostrarla ni dejarla en
+4. **Carga inicial**, **a mano** y **una sola vez**, después del primer deploy exitoso. El deploy aplica las
+   migraciones pero **no carga datos**: sin este paso las tablas quedan vacías y `/disponibilidad` no muestra
+   turnos. Se corre por SSH en la instancia. `read` pide el mail y la contraseña del administrador, y `-s` no
+   muestra la contraseña ni la deja en
    el historial:
 
    ```bash
@@ -155,7 +170,8 @@ Borrar `deploy_ci` de la máquina local cuando quede cargado.
    unset ADMIN_PASSWORD
    ```
 
-   Carga el catálogo y crea el administrador. Correrla de nuevo **no cambia nada de lo que
+   Carga el catálogo y crea el administrador; después, `/disponibilidad` tiene que mostrar las 3
+   disciplinas, las 6 canchas y sus turnos. Correrla de nuevo **no cambia nada de lo que
    ya existe**: si la base tiene catálogo no lo toca, para no pisar precios, stock ni nombres
    que el admin haya cambiado desde el panel, y si el admin existe no le cambia la contraseña.
    **No sirve para actualizar el catálogo**: los cambios de canchas y equipamiento en
