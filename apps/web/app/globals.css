@@ -64,6 +64,18 @@ body {
   color: var(--text);
 }
 
+/*
+ * Las opciones heredan el color de texto claro del `<select>`, pero el fondo de
+ * la lista lo pone el navegador: si el `<select>` queda transparente, Chrome y
+ * Edge en Windows lo pintan blanco aunque haya `color-scheme: dark`, y los
+ * números se dejaban de ver. Se fija acá para que ningún `<select>` dependa de
+ * acordarse la clase de fondo.
+ */
+option {
+  background-color: var(--surface-input);
+  color: var(--text);
+}
+
 ::selection {
   background: var(--accent);
   color: var(--text-on-accent);
