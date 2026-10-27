@@ -271,8 +271,16 @@ en push a `main`, después de `e2e`, y publican el sistema en `https://clubdeplo
 | Registro A del dominio | ✅ apunta a la IP elástica |
 | Resend | ✅ dominio verificado (DKIM, SPF y DMARC en Porkbun) |
 | Hallazgos de seguridad de la auditoría del 15/10 | ✅ en `main` (#59, 19/10; `endurecer-seguridad-antes-del-deploy`, decisión 37). Ya no frena activar `DEPLOY_HABILITADO` |
-| Docker, `.env` y clave del CI en la instancia | ⏳ pendiente, a mano ([`despliegue.md`](despliegue.md)). El `.env` necesita `MAIL_CONTACTO` y un `JWT_SECRET` de 32 caracteres: la API no arranca sin ellos |
-| Secretos `EC2_*` y `DEPLOY_HABILITADO` | ⏳ pendiente: los carga Rocío, única admin del repo |
+| Docker, Compose, swap y `/opt/club` en la instancia | ✅ hecho a mano ([`despliegue.md`](despliegue.md)) |
+| `.env` de producción y clave SSH del CI | ✅ hechos a mano. El `.env` necesita `MAIL_CONTACTO` y un `JWT_SECRET` de 32 caracteres: la API no arranca sin ellos |
+| Secretos `EC2_*` y `DEPLOY_HABILITADO` | ✅ cargados por Rocío, única admin del repo |
+| Primer deploy | ✅ `imagenes` y `deploy` en verde desde el #63 |
+| Carga inicial (catálogo y administrador) | ✅ 26/10, a mano por SSH. El deploy aplica migraciones pero no carga datos (decisión 38); después de la carga, `/disponibilidad` muestra las 3 disciplinas, las 6 canchas y sus turnos |
+| Prueba completa de reserva con mail de confirmación | ⏳ pendiente |
+| Reinicio del servidor con los updates pendientes | ⏳ pendiente |
+| Instancia vieja de Ohio: terminarla y revisar volúmenes | ⏳ pendiente |
+| Alerta en AWS Budgets | ⏳ pendiente |
+| Qué pasa con el sitio después del 16/11 | ⏳ pendiente: vencen los créditos y hay que decidir si se mantiene o se da de baja |
 
 ### Protección de `main` — activa desde el 24/09
 
