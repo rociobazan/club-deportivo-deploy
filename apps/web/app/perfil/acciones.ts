@@ -156,11 +156,25 @@ export async function cambiarPassword(
       await guardarSesion(sesion.accessToken, sesion.expiraEn);
       return { guardado: "Cambiamos tu contraseña.", intentos };
     } catch (error) {
-      if (!(error instanceof ApiHttpError)) throw error;
+      /*
+       * Cualquier falla, no solo las de la API: la contraseña ya cambió y la
+       * cookie quedó con un token revocado, así que relanzar dejaría a la
+       * persona en la pantalla de error con una sesión que da 401 en la
+       * próxima navegación. Lo que no vino de la API va al log, sin datos.
+       */
+      if (!(error instanceof ApiHttpError)) {
+        console.error(`Falló el reingreso después de cambiar la contraseña (${nombreDeError(error)}).`);
+      }
     }
   }
 
-  // Sin reingreso la cookie ya no sirve: se borra y se avisa en el ingreso.
+  // Sin reingreso la cookie ya no sirve: se borra y se avisa en el ingreso,
+  // que después de entrar vuelve al perfil.
   await borrarSesion();
-  redirect("/ingresar?restablecida=1");
+  redirect("/ingresar?cambiada=1&volver=%2Fperfil");
+}
+
+/** Solo el nombre: el mensaje de un error puede traer datos de la solicitud. */
+function nombreDeError(error: unknown): string {
+  return error instanceof Error ? error.name : typeof error;
 }
