@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 import { CORREO } from '../common/correo/correo';
@@ -29,10 +30,12 @@ export function hashDeToken(token: string): string {
 }
 
 /**
- * Solo el nombre del error, nunca su mensaje: el de Prisma puede repetir los
- * argumentos de la consulta (el mail) y el de Resend trae direcciones.
+ * El nombre del error y, si es de Prisma, su código (`P2028`), nunca su
+ * mensaje: el de Prisma puede repetir los argumentos de la consulta (el mail)
+ * y el de Resend trae direcciones.
  */
 function nombreDelError(causa: unknown): string {
+  if (causa instanceof Prisma.PrismaClientKnownRequestError) return `${causa.name} ${causa.code}`;
   return causa instanceof Error ? causa.name : typeof causa;
 }
 

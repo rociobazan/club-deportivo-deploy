@@ -86,7 +86,13 @@ describe('recuperacion de contraseña (e2e)', () => {
       .compile();
     app = modulo.createNestApplication();
     await configurarApp(app);
-    await app.init();
+    /*
+     * Escuchando en un puerto propio y no solo `init()`: con el servidor sin
+     * escuchar, supertest abre y cierra un puerto efímero en cada pedido, y los
+     * pedidos en paralelo de "Solicitudes simultáneas" se pisan y cortan con
+     * ECONNRESET (pasó en el CI, no en local).
+     */
+    await app.listen(0, '127.0.0.1');
     prisma = app.get(PrismaService);
     recuperacion = app.get(RecuperacionService);
 
