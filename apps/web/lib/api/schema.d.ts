@@ -86,6 +86,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/recuperacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pedir un enlace para restablecer la contraseña
+         * @description Público. Responde 202 siempre, exista o no la cuenta, para no revelar
+         *     qué mails están registrados. Si el mail es de una cuenta activa, se le
+         *     envía un enlace de un solo uso que vence a los
+         *     `RECUPERACION_VIGENCIA_MINUTOS` minutos (60 por defecto). Cuando ese
+         *     mail sale, los enlaces anteriores dejan de servir; si el envío falla,
+         *     siguen sirviendo. Una cuenta recibe como máximo
+         *     `MAX_RECUPERACIONES_POR_HORA` mails (3 por defecto) por hora; los
+         *     pedidos que lo exceden responden el mismo 202 sin enviar nada.
+         */
+        post: operations["pedirRecuperacionPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/restablecimiento": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restablecer la contraseña con el enlace recibido por mail
+         * @description Público. Con un token vigente y sin usar, reemplaza la contraseña de la
+         *     cuenta e invalida todos sus enlaces de recuperación. No inicia sesión y
+         *     no revoca las sesiones ya emitidas, que siguen valiendo hasta que vencen.
+         */
+        post: operations["restablecerPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/disciplinas": {
         parameters: {
             query?: never;
@@ -466,6 +515,25 @@ export interface components {
              * @example otraClaveSegura456
              */
             nueva: string;
+        };
+        RecuperarPasswordRequest: {
+            /**
+             * Format: email
+             * @example socio@club.com
+             */
+            email: string;
+        };
+        RestablecerPasswordRequest: {
+            /**
+             * @description El token del enlace recibido por mail.
+             * @example 3q2-7wEXAMPLEexampleEXAMPLEexampleEXAMPLE0
+             */
+            token: string;
+            /**
+             * Format: password
+             * @example otraClaveSegura456
+             */
+            passwordNueva: string;
         };
         LoginRequest: {
             /**
@@ -945,6 +1013,24 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
+        /** @description Se superó el límite de solicitudes por minuto desde la misma IP */
+        DemasiadasSolicitudes: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "tipo": "DEMASIADAS_SOLICITUDES",
+                 *       "titulo": "Demasiados intentos seguidos",
+                 *       "estado": 429,
+                 *       "detalle": "Esperá un minuto y volvé a intentar.",
+                 *       "instancia": "/auth/recuperacion"
+                 *     }
+                 */
+                "application/json": components["schemas"]["Error"];
+            };
+        };
         /** @description Falta el token, está vencido o es inválido */
         NoAutenticado: {
             headers: {
@@ -1181,6 +1267,75 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
+        };
+    };
+    pedirRecuperacionPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecuperarPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Pedido recibido. No dice si se envió un mail. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["SolicitudInvalida"];
+            429: components["responses"]["DemasiadasSolicitudes"];
+        };
+    };
+    restablecerPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestablecerPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Contraseña restablecida */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /**
+             * @description Cuerpo mal formado (`SOLICITUD_INVALIDA`), o un token inexistente,
+             *     vencido o ya usado (`ENLACE_INVALIDO`). Los tres casos del token
+             *     responden igual.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "tipo": "ENLACE_INVALIDO",
+                     *       "titulo": "El enlace no es válido o ya venció",
+                     *       "estado": 400,
+                     *       "detalle": "Pedí uno nuevo desde \"¿Olvidaste tu contraseña?\".",
+                     *       "instancia": "/auth/restablecimiento"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            429: components["responses"]["DemasiadasSolicitudes"];
         };
     };
     listarDisciplinas: {

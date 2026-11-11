@@ -3,7 +3,9 @@ import { crearPipeDeValidacion } from '../../common/validacion';
 import { ActualizarPerfilDto } from './actualizar-perfil.dto';
 import { CambiarPasswordDto } from './cambiar-password.dto';
 import { LoginDto } from './login.dto';
+import { RecuperarPasswordDto } from './recuperar-password.dto';
 import { RegistroDto } from './registro.dto';
+import { RestablecerPasswordDto } from './restablecer-password.dto';
 
 // El mismo pipe que registra AppModule como APP_PIPE.
 const pipe = crearPipeDeValidacion();
@@ -221,5 +223,65 @@ describe('CambiarPasswordDto', () => {
     await expect(validar(CambiarPasswordDto, { nueva: 'claveNueva9' })).rejects.toBeInstanceOf(
       BadRequestException,
     );
+  });
+});
+
+describe('RecuperarPasswordDto', () => {
+  it('acepta un mail y lo recorta antes de validar', async () => {
+    const dto = (await validar(RecuperarPasswordDto, { email: ' socio@club.test ' })) as RecuperarPasswordDto;
+
+    expect(dto.email).toBe('socio@club.test');
+  });
+
+  it('rechaza un texto que no es un mail', async () => {
+    await expect(validar(RecuperarPasswordDto, { email: 'no-es-un-mail' })).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+  });
+
+  it('rechaza un mail de 121 caracteres', async () => {
+    const email = `${'a'.repeat(108)}@club.test.ar`;
+
+    await expect(validar(RecuperarPasswordDto, { email })).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rechaza un campo que el contrato no declara', async () => {
+    await expect(
+      validar(RecuperarPasswordDto, { email: 'socio@club.test', usuarioId: 1 }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+});
+
+describe('RestablecerPasswordDto', () => {
+  const valido = { token: 'un-token-del-mail', passwordNueva: 'claveNueva9' };
+
+  it('acepta un token y una contraseña de 8 caracteres', async () => {
+    await expect(
+      validar(RestablecerPasswordDto, { ...valido, passwordNueva: '12345678' }),
+    ).resolves.toBeInstanceOf(RestablecerPasswordDto);
+  });
+
+  it('Contraseña nueva demasiado corta: rechaza 7 caracteres', async () => {
+    await expect(
+      validar(RestablecerPasswordDto, { ...valido, passwordNueva: '1234567' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('Contraseña nueva demasiado larga al restablecer: rechaza 73 caracteres', async () => {
+    await expect(
+      validar(RestablecerPasswordDto, { ...valido, passwordNueva: 'x'.repeat(73) }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rechaza un token vacío', async () => {
+    await expect(validar(RestablecerPasswordDto, { ...valido, token: '' })).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+  });
+
+  it('rechaza un token de más de 128 caracteres', async () => {
+    await expect(
+      validar(RestablecerPasswordDto, { ...valido, token: 't'.repeat(129) }),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });

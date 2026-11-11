@@ -12,7 +12,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegistroDto } from './dto/registro.dto';
 
 /** El mismo costo que usa el seed, así los hashes son comparables. */
-const COSTO_BCRYPT = 10;
+export const COSTO_BCRYPT = 10;
 
 /** `Usuario` del contrato: nunca lleva la contraseña ni su hash. */
 export type UsuarioPublico = {
@@ -53,7 +53,7 @@ const emailYaRegistrado = () =>
   );
 
 /** `usuario.email` es UNIQUE: `Ana@club.test` y `ana@club.test` son la misma persona. */
-const normalizarEmail = (email: string) => email.trim().toLowerCase();
+export const normalizarEmail = (email: string) => email.trim().toLowerCase();
 
 @Injectable()
 export class AuthService {

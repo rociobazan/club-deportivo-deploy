@@ -7,12 +7,18 @@ import { AuthService } from './auth.service';
 import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
 import { CambiarPasswordDto } from './dto/cambiar-password.dto';
 import { LoginDto } from './dto/login.dto';
+import { RecuperarPasswordDto } from './dto/recuperar-password.dto';
 import { RegistroDto } from './dto/registro.dto';
+import { RestablecerPasswordDto } from './dto/restablecer-password.dto';
 import { GuardDeLimiteDeAuth } from './guard-de-limite';
+import { RecuperacionService } from './recuperacion.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(
+    private readonly auth: AuthService,
+    private readonly recuperacion: RecuperacionService,
+  ) {}
 
   /**
    * `POST /auth/registro` → 201 con el `Usuario` creado. Limitado por IP con
@@ -20,7 +26,7 @@ export class AuthController {
    */
   @Publico()
   @UseGuards(GuardDeLimiteDeAuth)
-  @SkipThrottle({ login: true })
+  @SkipThrottle({ login: true, recuperacion: true })
   @Post('registro')
   registrar(@Body() datos: RegistroDto) {
     return this.auth.registrar(datos);
@@ -32,11 +38,35 @@ export class AuthController {
    */
   @Publico()
   @UseGuards(GuardDeLimiteDeAuth)
-  @SkipThrottle({ registro: true })
+  @SkipThrottle({ registro: true, recuperacion: true })
   @HttpCode(200)
   @Post('login')
   ingresar(@Body() datos: LoginDto) {
     return this.auth.ingresar(datos);
+  }
+
+  /**
+   * `POST /auth/recuperacion` → 202 siempre, exista o no la cuenta. No espera
+   * el envío del mail (design.md de RF-16, decisión 3), así la respuesta tarda
+   * lo mismo en los dos casos. Limitado por IP con el throttler `recuperacion`.
+   */
+  @Publico()
+  @UseGuards(GuardDeLimiteDeAuth)
+  @SkipThrottle({ login: true, registro: true })
+  @HttpCode(202)
+  @Post('recuperacion')
+  pedirRecuperacion(@Body() datos: RecuperarPasswordDto): void {
+    this.recuperacion.solicitar(datos.email);
+  }
+
+  /** `POST /auth/restablecimiento` → 204. Su contador por IP es aparte del de la solicitud. */
+  @Publico()
+  @UseGuards(GuardDeLimiteDeAuth)
+  @SkipThrottle({ login: true, registro: true })
+  @HttpCode(204)
+  @Post('restablecimiento')
+  restablecer(@Body() datos: RestablecerPasswordDto) {
+    return this.recuperacion.restablecer(datos.token, datos.passwordNueva);
   }
 
   /** `GET /auth/perfil` → 200 con el usuario del token. */

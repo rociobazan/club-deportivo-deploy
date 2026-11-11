@@ -131,6 +131,7 @@ jobs:
       # rojo. Los límites se prueban en los e2e de la API, no acá.
       LIMITE_LOGIN_POR_MINUTO: 1000
       LIMITE_REGISTRO_POR_MINUTO: 1000
+      LIMITE_RECUPERACION_POR_MINUTO: 1000
     steps:
       - uses: actions/checkout@v7
       # Igual que en el job `api`: se genera al azar y no se escribe en el repo.
