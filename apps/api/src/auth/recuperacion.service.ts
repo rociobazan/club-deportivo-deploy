@@ -194,9 +194,10 @@ export class RecuperacionService {
         where: { usuarioId: encontrado.usuarioId, usadoEn: null },
         data: { usadoEn: ahora },
       });
+      // `passwordCambiadaEn` cierra las sesiones abiertas de la cuenta (decisión 10).
       await tx.usuario.update({
         where: { id: encontrado.usuarioId },
-        data: { passwordHash },
+        data: { passwordHash, passwordCambiadaEn: ahora },
       });
     });
   }

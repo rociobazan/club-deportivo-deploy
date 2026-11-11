@@ -9,7 +9,7 @@ Una persona que olvidó su contraseña MUST poder elegir una nueva sin tener ses
 
 `POST /auth/restablecimiento` recibe el `token` y una `passwordNueva`, que MUST cumplir el mismo mínimo de 8 caracteres que el registro. Con un token válido MUST reemplazar la contraseña de esa cuenta, guardada como hash bcrypt, invalidar todos los tokens de recuperación de la cuenta y responder 204. Un token inexistente, vencido o ya usado MUST rechazarse con 400 y `tipo` `ENLACE_INVALIDO`, con la misma respuesta en los tres casos, y la contraseña MUST NOT cambiar.
 
-Restablecer la contraseña MUST NOT iniciar sesión ni revocar los tokens de sesión ya emitidos, que siguen valiendo hasta que vencen: es el mismo límite conocido que el cambio de contraseña con sesión iniciada.
+Restablecer la contraseña MUST NOT iniciar sesión, y MUST cerrar las sesiones abiertas de la cuenta, como pide "Cierre de sesiones al cambiar la contraseña".
 
 #### Scenario: Solicitud para una cuenta activa
 - **WHEN** se envía `POST /auth/recuperacion` con el mail de una cuenta activa
@@ -110,6 +110,35 @@ En `/restablecer`, si las dos contraseñas no coinciden o la nueva tiene menos d
 #### Scenario: Enlace sin token
 - **WHEN** alguien abre `/restablecer` sin el parámetro `token`
 - **THEN** ve que el enlace no sirve y un acceso a `/recuperar`, sin formulario de contraseña
+
+### Requirement: Cierre de sesiones al cambiar la contraseña
+Cuando la contraseña de una cuenta cambia, sea con `PUT /auth/password` o con `POST /auth/restablecimiento`, todo token de sesión de esa cuenta emitido antes del cambio MUST dejar de servir. En un endpoint protegido, uno de esos tokens MUST rechazarse con 401 y `tipo` `NO_AUTENTICADO`, igual que un token vencido; en un endpoint público, la solicitud MUST tratarse como anónima. Los tokens emitidos después del cambio MUST seguir sirviendo. Un cambio de mail o de otros datos de la cuenta MUST NOT cerrar ninguna sesión.
+
+Quien cambia su contraseña desde `/perfil` MUST seguir con la sesión iniciada en ese navegador: el sitio MUST volver a ingresar con la contraseña nueva. Si ese reingreso falla, MUST cerrar la sesión del sitio y avisar que la contraseña se cambió y que hay que ingresar de nuevo.
+
+#### Scenario: Restablecer cierra las sesiones abiertas
+- **WHEN** alguien tiene una sesión abierta en una cuenta y el titular restablece la contraseña con un enlace de recuperación
+- **THEN** las solicitudes con el token de esa sesión reciben 401 `NO_AUTENTICADO`
+
+#### Scenario: Cambiar la contraseña cierra las otras sesiones
+- **WHEN** un socio tiene dos sesiones abiertas y cambia su contraseña desde una de ellas con `PUT /auth/password`
+- **THEN** las solicitudes con el token de la otra sesión reciben 401 `NO_AUTENTICADO`
+
+#### Scenario: Un ingreso posterior al cambio sirve
+- **WHEN** después de cambiar la contraseña se ingresa con la nueva
+- **THEN** el token nuevo es aceptado
+
+#### Scenario: Token anterior en un endpoint público
+- **WHEN** se llama a `GET /disponibilidad` con un token emitido antes del último cambio de contraseña
+- **THEN** la solicitud se procesa como anónima y no se devuelve 401
+
+#### Scenario: Cambiar el mail no cierra sesiones
+- **WHEN** un socio cambia su mail con `PATCH /auth/perfil`
+- **THEN** su token sigue siendo aceptado
+
+#### Scenario: La sesión del perfil sigue abierta
+- **WHEN** un socio cambia su contraseña en `/perfil`
+- **THEN** ve la confirmación y sigue con la sesión iniciada, sin que le pidan ingresar de nuevo
 
 ### Requirement: Acceso a la recuperación desde el ingreso
 La pantalla `/ingresar` MUST ofrecer un link "¿Olvidaste tu contraseña?" que lleve a `/recuperar`.

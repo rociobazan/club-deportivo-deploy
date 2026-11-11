@@ -332,6 +332,101 @@ describe('recuperacion de contraseña (e2e)', () => {
     });
   });
 
+  describe('Cierre de sesiones al cambiar la contraseña', () => {
+    const tokenDeIngreso = async (password = PASSWORD): Promise<string> => {
+      const { body } = await ingresar(password).expect(200);
+      return (body as { accessToken: string }).accessToken;
+    };
+    const perfilCon = (token: string) =>
+      api().get('/api/v1/auth/perfil').set('Authorization', `Bearer ${token}`);
+
+    /**
+     * El `iat` del token va en segundos enteros y un token del mismo segundo
+     * que el cambio sigue sirviendo (design.md, decisión 10): para probar el
+     * cierre, el cambio tiene que caer en un segundo posterior al ingreso.
+     */
+    const esperarAlSegundoSiguiente = async (token: string) => {
+      const { iat } = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString()) as {
+        iat: number;
+      };
+      await esperarHasta(() => Math.floor(Date.now() / 1000) > iat, 'el segundo siguiente al ingreso');
+    };
+
+    it('Restablecer cierra las sesiones abiertas: el token anterior da 401', async () => {
+      await registrar();
+      const abierta = await tokenDeIngreso();
+      await pedir(EMAIL).expect(202);
+      const enlace = await esperarMail();
+      await esperarAlSegundoSiguiente(abierta);
+
+      await restablecer(enlace).expect(204);
+
+      const { body } = await perfilCon(abierta).expect(401);
+      expect(body.tipo).toBe('NO_AUTENTICADO');
+    });
+
+    it('Cambiar la contraseña cierra las otras sesiones: la otra da 401', async () => {
+      await registrar();
+      const otra = await tokenDeIngreso();
+      const desdeLaQueSeCambia = await tokenDeIngreso();
+      await esperarAlSegundoSiguiente(otra);
+
+      await api()
+        .put('/api/v1/auth/password')
+        .set('Authorization', `Bearer ${desdeLaQueSeCambia}`)
+        .send({ actual: PASSWORD, nueva: NUEVA })
+        .expect(204);
+
+      const { body } = await perfilCon(otra).expect(401);
+      expect(body.tipo).toBe('NO_AUTENTICADO');
+    });
+
+    it('Un ingreso posterior al cambio sirve', async () => {
+      await registrar();
+      const abierta = await tokenDeIngreso();
+      await esperarAlSegundoSiguiente(abierta);
+      await api()
+        .put('/api/v1/auth/password')
+        .set('Authorization', `Bearer ${abierta}`)
+        .send({ actual: PASSWORD, nueva: NUEVA })
+        .expect(204);
+
+      const nueva = await tokenDeIngreso(NUEVA);
+
+      await perfilCon(nueva).expect(200);
+    });
+
+    it('Token anterior en un endpoint público: responde como a un anónimo, no 401', async () => {
+      await registrar();
+      const abierta = await tokenDeIngreso();
+      await pedir(EMAIL).expect(202);
+      const enlace = await esperarMail();
+      await esperarAlSegundoSiguiente(abierta);
+      await restablecer(enlace).expect(204);
+      const consulta = '/api/v1/disponibilidad?fecha=2030-01-15';
+      const anonima = await api().get(consulta);
+
+      const conTokenAnterior = await api().get(consulta).set('Authorization', `Bearer ${abierta}`);
+
+      expect(conTokenAnterior.status).not.toBe(401);
+      expect(conTokenAnterior.status).toBe(anonima.status);
+    });
+
+    it('Cambiar el mail no cierra sesiones', async () => {
+      await registrar();
+      const abierta = await tokenDeIngreso();
+      await esperarAlSegundoSiguiente(abierta);
+
+      await api()
+        .patch('/api/v1/auth/perfil')
+        .set('Authorization', `Bearer ${abierta}`)
+        .send({ email: `otro-recupera${DOMINIO}` })
+        .expect(200);
+
+      await perfilCon(abierta).expect(200);
+    });
+  });
+
   describe('Endpoints protegidos por token', () => {
     it('Recuperación sin token: se procesa normalmente y no da 401', async () => {
       await api().post('/api/v1/auth/recuperacion').send({ email: `nadie${DOMINIO}` }).expect(202);

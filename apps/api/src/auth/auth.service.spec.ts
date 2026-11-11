@@ -304,6 +304,19 @@ describe('AuthService', () => {
       await expect(bcrypt.compare('claveNueva9', escrito)).resolves.toBe(true);
     });
 
+    it('Cambiar la contraseña cierra las otras sesiones: marca la fecha del cambio junto con el hash', async () => {
+      prisma.usuario.findUnique.mockResolvedValue({ passwordHash: socio.passwordHash });
+      prisma.usuario.update.mockResolvedValue(publico);
+      const antes = Date.now();
+
+      await servicio.cambiarPassword(42, { actual: 'clave1234', nueva: 'claveNueva9' });
+
+      const { passwordCambiadaEn } = prisma.usuario.update.mock.calls[0][0].data as {
+        passwordCambiadaEn: Date;
+      };
+      expect(passwordCambiadaEn.getTime()).toBeGreaterThanOrEqual(antes);
+    });
+
     it('Contraseña actual incorrecta: 401 y no escribe', async () => {
       prisma.usuario.findUnique.mockResolvedValue({ passwordHash: socio.passwordHash });
 

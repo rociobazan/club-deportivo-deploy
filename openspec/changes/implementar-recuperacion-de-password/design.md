@@ -21,7 +21,7 @@ El motivo está en `proposal.md` y el comportamiento en `specs/autenticacion/spe
 
 - Una cola de trabajos persistente. El envío corre en segundo plano dentro del mismo proceso (decisión 3).
 - Limpiar los tokens vencidos de la tabla. Ver "Open Questions".
-- Revocar sesiones. Es el mismo límite que dejó el RF-15.
+- Un almacén de sesiones o una lista de tokens revocados. El cierre de sesiones de la decisión 10 alcanza con una columna.
 
 ## Decisions
 
@@ -107,19 +107,34 @@ El mail lleva `${frontendUrl}/restablecer?token=<token>`. El sitio lee el token 
 - **e2e de la API**: un `it` por escenario de la spec. Leen el enlace del `CorreoDoble`, así que prueban el camino completo, incluido el mail.
 - **Playwright**: el link desde `/ingresar`, el pedido en `/recuperar` (mismo mensaje con mail registrado y sin registrar), las contraseñas que no coinciden, un token inválido y `/restablecer` sin token. **El camino feliz de punta a punta no va en Playwright**: el navegador no tiene cómo leer el mail del doble, que vive en el proceso de la API, y abrirle un endpoint de test o darle acceso a la base sería sumar superficie solo para esto. Ese camino lo cubre el e2e de la API.
 
+### 10. Cerrar sesiones comparando el `iat` del token con `password_cambiada_en`
+
+Sumado durante la revisión del PR, a pedido del equipo. `usuario` suma `password_cambiada_en` (timestamp, nullable). `PUT /auth/password` y `POST /auth/restablecimiento` la ponen en "ahora" en la misma escritura que el hash nuevo. El guard global de JWT, después de verificar la firma, lee esa columna por clave primaria y **rechaza el token si su `iat` es anterior al cambio**.
+
+- **La comparación es en segundos enteros**, porque el `iat` del JWT no tiene más precisión: se acepta el token si `iat >= floor(password_cambiada_en / 1000)`. Así el token que emite el reingreso del perfil, en el mismo segundo que el cambio, sirve. El costo es que un token emitido en ese mismo segundo **antes** del cambio también sobrevive; para eso alguien tendría que haber ingresado con la contraseña vieja en ese segundo exacto.
+- **`null` es "nunca cambió"**: todo token sirve. Por eso el deploy no desloguea a nadie y la migración no necesita completar datos.
+- **Si el usuario del token no existe, el guard no decide**: deja pasar como hasta ahora y la operación responde lo que corresponda (`GET /auth/perfil` ya devuelve 401). Rechazarlo en el guard cambiaría el comportamiento de los endpoints de prueba de `base.e2e-spec.ts`, que firman tokens de usuarios inventados, sin ganar nada: no hay forma de borrar un usuario desde la API.
+- **En un endpoint público**, un token anterior al cambio se trata como anónimo, igual que uno vencido (decisión 24 del cambio de catálogo).
+- **Costo**: una consulta por clave primaria en cada solicitud con token. Es el punto donde conviene cachear si alguna vez pesa, por ejemplo con una caché en memoria de pocos segundos por usuario; hoy no hay un problema medido que lo justifique.
+- **Alternativa descartada: una versión de sesión dentro del token** (`ver` en el payload, comparada con un contador en `usuario`). Cierra igual las sesiones, pero cambia el payload del JWT: los tokens ya emitidos no la tienen, así que el deploy deslogueaba a todos, y había que reescribir el armado de tokens de cuatro suites e2e. La fecha no toca el payload.
+- **Alternativa descartada: una lista de tokens revocados.** Hay que guardar cada token emitido o un identificador por token, y limpiarla. Es un almacén de sesiones, que el proyecto evitó a propósito (decisión 23).
+- **El perfil no pierde la sesión**: la Server Function de `/perfil`, que tiene la contraseña nueva en la mano, vuelve a llamar a `POST /auth/login` después del 204 y reemplaza la cookie. No hace falta cambiar el contrato de `PUT /auth/password` para que devuelva un token. El mail para ese reingreso se lee del perfil **antes** del cambio, porque después el token viejo ya no sirve.
+
 ## Risks / Trade-offs
 
 - [El envío en segundo plano se pierde si el proceso se reinicia] → La persona lo vuelve a pedir. Se loguea el inicio y el fin de cada envío para poder diagnosticarlo.
 - [Un token interceptado sirve hasta que vence o se usa] → Vigencia de 60 minutos, uso único, y un enlace nuevo enviado invalida los anteriores.
 - [El throttler en memoria cuenta por réplica] → Igual que contacto, login y registro: hoy hay una sola instancia. El límite por cuenta vive en la base y no tiene este problema.
-- [Restablecer no cierra las sesiones abiertas] → Límite conocido y declarado en la spec. Si alguien entró con la contraseña vieja, sigue adentro hasta que vence su token. Cerrarlo exige versionar el token por usuario, que es un cambio de modelo.
+- [Una consulta más por cada solicitud autenticada] → Por clave primaria y de una sola columna. Ver decisión 10 sobre cuándo cachear.
+- [Relojes distintos entre réplicas] → `iat` y `password_cambiada_en` salen del reloj del proceso de la API. Con una sola instancia es el mismo reloj; con varias, un desfasaje de más de un segundo podría dejar pasar o rechazar un token en el borde.
 - [La tabla crece con tokens vencidos] → Con 3 por cuenta y por hora como máximo, crece despacio. Ver "Open Questions".
 
 ## Migration Plan
 
 1. Migración aditiva de Prisma: crea `token_recuperacion` con su FK y sus índices. No toca datos existentes, así que el deploy la aplica con el `prisma migrate deploy` de siempre (decisión 38).
-2. Las tres variables nuevas tienen valor por defecto: no hace falta tocar el `.env` de producción para desplegar. Se documentan en `apps/api/.env.example` y en `deploy/.env.example`.
-3. Rollback: revertir el PR. La tabla queda sin uso y se puede borrar con una migración posterior; no hay datos de negocio que migrar de vuelta.
+2. Otra migración aditiva suma `usuario.password_cambiada_en`, nullable y sin valor por defecto: las cuentas existentes quedan en `null` y ninguna sesión abierta se cierra al desplegar.
+3. Las tres variables nuevas tienen valor por defecto: no hace falta tocar el `.env` de producción para desplegar. Se documentan en `apps/api/.env.example` y en `deploy/.env.example`.
+4. Rollback: revertir el PR. La tabla y la columna quedan sin uso y se pueden borrar con una migración posterior; no hay datos de negocio que migrar de vuelta.
 
 ## Open Questions
 

@@ -50,3 +50,12 @@ Referencias: los requisitos nuevos y modificados de `specs/autenticacion/spec.md
 - [x] 8.1 `docs/requisitos.md`: sumar `RF-16 — Recuperación de contraseña` al final, sin renumerar, y sacar la recuperación de las líneas de alcance y de "Fuera del MVP" (la verificación de mail queda fuera). Verificar con `grep -n "Recuperación de contraseña" docs/requisitos.md`.
 - [x] 8.2 `docs/memoria-proyecto.md`: decisión nueva con lo que deja fijado este cambio y una línea en el historial; `docs/estado-del-proyecto.md`: el RF-16, los conteos de tests y la limpieza de tokens como pendiente. Verificar que los números salen de los comandos del propio documento.
 - [x] 8.3 Correr lint, build y tests de `api` y `web`, `npm run spec:validate` y `npm run contrato:lint`. Verificar todo en verde antes de abrir el PR.
+
+## 9. Cierre de sesiones al cambiar la contraseña (sumado en la revisión del PR)
+
+- [x] 9.1 Sumar `passwordCambiadaEn` (`password_cambiada_en`, nullable) a `Usuario` y generar la migración. Verificar que el SQL solo tiene un `ALTER TABLE ... ADD COLUMN` y ningún `DROP`.
+- [x] 9.2 Poner `passwordCambiadaEn` en "ahora" en `AuthService.cambiarPassword` y en `RecuperacionService.restablecer`, en la misma escritura que el hash. Verificar con unitarios de los dos servicios.
+- [x] 9.3 Que `JwtAuthGuard` rechace, después de verificar la firma, el token cuyo `iat` sea anterior a `passwordCambiadaEn` (`design.md` §10): 401 en endpoints protegidos y anónimo en los públicos; sin cambio si la columna es `null` o el usuario no existe. Verificar con los unitarios de `jwt-auth.guard.spec.ts`.
+- [x] 9.4 e2e de la API, uno por escenario de "Cierre de sesiones al cambiar la contraseña" de la API. Verificar `npm run test:e2e --workspace api` en verde.
+- [x] 9.5 `cambiarPassword` de `apps/web/app/perfil/acciones.ts`: leer el mail antes del cambio, volver a ingresar con la nueva después del 204 y reemplazar la cookie; si el reingreso falla, cerrar la sesión y avisar. Verificar con el escenario "La sesión del perfil sigue abierta" en `perfil.spec.ts`.
+- [x] 9.6 Contrato (`PUT /auth/password` y `POST /auth/restablecimiento` dejan de decir que las sesiones siguen valiendo), `requisitos.md`, memoria y estado. Verificar con `grep -rn "revoca" contratos docs/requisitos.md`.

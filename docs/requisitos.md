@@ -393,7 +393,7 @@ Reenvía el mail que corresponde al estado actual de la reserva: el de confirmac
 
 El titular modifica su nombre, apellido, teléfono y mail, y cambia su contraseña. El usuario afectado es siempre el de la sesión: no existe forma de modificar la cuenta de otra persona, y por eso las rutas cuelgan de `/auth` y no llevan un id. El `rol` y el estado de alta no se modifican acá; eso es de la administración (RF-11 a RF-14).
 
-**Límite conocido**: cambiar la contraseña **no** revoca las sesiones abiertas en otros dispositivos. El JWT es autocontenido y no hay almacén de sesiones, así que un token ya emitido sigue valiendo hasta que vence.
+**Sesiones** (desde el RF-16, 2026-11-10): cambiar la contraseña cierra las sesiones abiertas de la cuenta en todos los dispositivos. Quien la cambia desde `/perfil` sigue adentro, porque el sitio vuelve a ingresar con la nueva. Antes era un límite conocido: un token emitido seguía valiendo hasta vencer.
 
 **Criterios de aceptación**
 - DADO un socio con sesión, CUANDO modifica su nombre, apellido o teléfono, ENTONCES se devuelve 200 con el perfil actualizado.
@@ -404,6 +404,7 @@ El titular modifica su nombre, apellido, teléfono y mail, y cambia su contrase�
 - DADO una solicitud sin ningún campo, CUANDO se envía, ENTONCES 400, en lugar de responder como si hubiera guardado algo.
 - DADO la contraseña actual correcta y una nueva de al menos 8 caracteres, CUANDO se pide el cambio, ENTONCES 204, la anterior deja de servir para ingresar y la nueva sirve.
 - DADO una contraseña actual incorrecta, CUANDO se pide el cambio, ENTONCES 401 y la contraseña no cambia.
+- DADO un socio con dos sesiones abiertas, CUANDO cambia la contraseña desde una, ENTONCES la otra recibe 401, y la de `/perfil` sigue abierta.
 
 ---
 
@@ -413,7 +414,7 @@ El titular modifica su nombre, apellido, teléfono y mail, y cambia su contrase�
 
 Quien olvidó su contraseña pide un enlace con su mail y, con ese enlace, elige una nueva sin tener sesión iniciada. La solicitud responde 202 siempre, exista o no la cuenta, para no revelar qué mails están registrados. El enlace lleva un token aleatorio que la base guarda solo como hash, vence a los `RECUPERACION_VIGENCIA_MINUTOS` (60) y sirve una sola vez. Cuando sale el mail con un enlace nuevo, los anteriores dejan de servir; si el envío falla, siguen sirviendo y el intento no cuenta para el máximo. Una cuenta recibe como máximo `MAX_RECUPERACIONES_POR_HORA` (3) mails de recuperación por hora, y cada operación admite `LIMITE_RECUPERACION_POR_MINUTO` (5) pedidos por minuto desde una misma IP.
 
-**Límite conocido**: igual que en RF-15, restablecer la contraseña **no** revoca las sesiones ya abiertas.
+Restablecer la contraseña **cierra las sesiones abiertas** de la cuenta, igual que cambiarla en RF-15: si alguien había entrado con la contraseña vieja, queda afuera.
 
 **Criterios de aceptación**
 - DADO el mail de una cuenta activa, CUANDO se pide la recuperación, ENTONCES 202 y la cuenta recibe un mail con el enlace.
@@ -527,6 +528,7 @@ arriba, que se actualiza con el archivo; el PDF hay que regenerarlo a mano cuand
 | rol | enum | ADMIN, SOCIO. Default SOCIO |
 | activo | boolean | default true |
 | creado_en | timestamptz | |
+| password_cambiada_en | timestamp NULL | Último cambio o restablecimiento de la contraseña. Los tokens de sesión emitidos antes dejan de servir (RF-15, RF-16) |
 
 **disciplina**
 

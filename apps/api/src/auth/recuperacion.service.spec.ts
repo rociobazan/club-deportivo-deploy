@@ -265,6 +265,14 @@ describe('RecuperacionService', () => {
       await expect(bcrypt.compare('nuevaClave123', data.passwordHash)).resolves.toBe(true);
     });
 
+    it('Restablecer cierra las sesiones abiertas: marca la fecha del cambio con el Reloj', async () => {
+      prisma.tokenRecuperacion.findUnique.mockResolvedValue(vigente);
+
+      await servicio.restablecer('token-del-mail', 'nuevaClave123');
+
+      expect(prisma.usuario.update.mock.calls[0][0].data.passwordCambiadaEn).toEqual(AHORA);
+    });
+
     it('busca el token por su hash, no en claro', async () => {
       prisma.tokenRecuperacion.findUnique.mockResolvedValue(vigente);
 

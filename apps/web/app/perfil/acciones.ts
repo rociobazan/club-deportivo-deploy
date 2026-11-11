@@ -1,11 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
-import { apiFetch, ApiHttpError } from "@/lib/api/client";
-import type { Usuario } from "@/lib/api/types";
+import { apiFetch, ApiHttpError, encabezadosDelVisitante } from "@/lib/api/client";
+import type { LoginResponse, Usuario } from "@/lib/api/types";
 import { EMAIL, texto } from "@/lib/formularios";
-import { leerToken } from "@/lib/sesion";
+import { borrarSesion, guardarSesion, leerToken, obtenerUsuario } from "@/lib/sesion";
 
 /*
  * Las dos Server Functions del perfil, separadas a propósito: son dos
@@ -125,6 +126,8 @@ export async function cambiarPassword(
     return { error: "La contraseña nueva necesita al menos 8 caracteres.", intentos };
 
   const token = await leerToken();
+  // El mail para volver a ingresar se lee antes: después del cambio este token ya no sirve.
+  const usuario = await obtenerUsuario();
 
   try {
     await apiFetch<void>("/auth/password", {
@@ -137,5 +140,27 @@ export async function cambiarPassword(
     return { error: mensajeDe(error), intentos };
   }
 
-  return { guardado: "Cambiamos tu contraseña.", intentos };
+  /*
+   * El cambio cerró todas las sesiones de la cuenta, también esta
+   * (design.md de RF-16, decisión 10). Se vuelve a ingresar con la nueva para
+   * que quien la cambió siga adentro en este navegador.
+   */
+  if (usuario) {
+    try {
+      const sesion = await apiFetch<LoginResponse>("/auth/login", {
+        method: "POST",
+        headers: await encabezadosDelVisitante(),
+        timeoutMs: 2000,
+        body: { email: usuario.email, password: nueva },
+      });
+      await guardarSesion(sesion.accessToken, sesion.expiraEn);
+      return { guardado: "Cambiamos tu contraseña.", intentos };
+    } catch (error) {
+      if (!(error instanceof ApiHttpError)) throw error;
+    }
+  }
+
+  // Sin reingreso la cookie ya no sirve: se borra y se avisa en el ingreso.
+  await borrarSesion();
+  redirect("/ingresar?restablecida=1");
 }

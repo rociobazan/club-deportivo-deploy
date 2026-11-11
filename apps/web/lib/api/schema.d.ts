@@ -74,9 +74,10 @@ export interface paths {
         get?: never;
         /**
          * Cambiar la contraseña del usuario autenticado
-         * @description Exige la contraseña actual. Las sesiones ya emitidas siguen siendo
-         *     válidas hasta que vencen: el token es autocontenido y no hay forma de
-         *     revocarlo.
+         * @description Exige la contraseña actual. Todos los tokens de la cuenta emitidos antes
+         *     del cambio dejan de servir, también el de esta solicitud: los endpoints
+         *     protegidos los rechazan con 401 `NO_AUTENTICADO`. Para seguir con la
+         *     sesión hay que volver a ingresar con la contraseña nueva.
          */
         put: operations["cambiarPassword"];
         post?: never;
@@ -125,8 +126,8 @@ export interface paths {
         /**
          * Restablecer la contraseña con el enlace recibido por mail
          * @description Público. Con un token vigente y sin usar, reemplaza la contraseña de la
-         *     cuenta e invalida todos sus enlaces de recuperación. No inicia sesión y
-         *     no revoca las sesiones ya emitidas, que siguen valiendo hasta que vencen.
+         *     cuenta e invalida todos sus enlaces de recuperación. No inicia sesión, y
+         *     todos los tokens de la cuenta emitidos antes del cambio dejan de servir.
          */
         post: operations["restablecerPassword"];
         delete?: never;

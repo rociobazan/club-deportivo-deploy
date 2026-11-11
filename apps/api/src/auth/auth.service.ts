@@ -195,11 +195,9 @@ export class AuthService {
   }
 
   /**
-   * Cambia la contraseña previa verificación de la actual.
-   *
-   * No reemite ni revoca nada: el token es autocontenido, así que las sesiones
-   * abiertas en otros dispositivos siguen valiendo hasta que vencen. Está
-   * declarado en la spec como límite conocido.
+   * Cambia la contraseña previa verificación de la actual. No reemite el
+   * token: todas las sesiones de la cuenta, también la de quien llama, dejan
+   * de servir, y el sitio vuelve a ingresar con la nueva.
    */
   async cambiarPassword(id: number, datos: CambiarPasswordDto): Promise<void> {
     const encontrado = await this.prisma.usuario.findUnique({
@@ -212,6 +210,11 @@ export class AuthService {
     if (!coincide) throw credencialesInvalidas();
 
     const passwordHash = await bcrypt.hash(datos.nueva, COSTO_BCRYPT);
-    await this.prisma.usuario.update({ where: { id }, data: { passwordHash } });
+    // La fecha cierra las sesiones emitidas antes, también la de quien llama:
+    // el sitio vuelve a ingresar con la nueva (design.md de RF-16, decisión 10).
+    await this.prisma.usuario.update({
+      where: { id },
+      data: { passwordHash, passwordCambiadaEn: new Date() },
+    });
   }
 }

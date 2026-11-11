@@ -1,6 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
+import { PrismaService } from '../prisma/prisma.service';
 import { ES_PUBLICO, Rol } from './decoradores';
 import { noAutenticado, SolicitudConUsuario } from './usuario-actual';
 
@@ -21,6 +22,7 @@ export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly jwt: JwtService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async canActivate(contexto: ExecutionContext): Promise<boolean> {
@@ -36,15 +38,43 @@ export class JwtAuthGuard implements CanActivate {
       throw noAutenticado();
     }
 
+    let payload: PayloadJwt & { iat: number };
     try {
-      const payload = await this.jwt.verifyAsync<PayloadJwt>(token);
-      solicitud.usuario = { id: Number(payload.sub), rol: payload.rol };
-      return true;
+      payload = await this.jwt.verifyAsync<PayloadJwt & { iat: number }>(token);
     } catch {
       // Vencido, mal formado o con otra firma: para el cliente es lo mismo.
       if (esPublico) return true;
       throw noAutenticado();
     }
+
+    // Fuera del try: si la base falla, es un 500 y no un "no autenticado".
+    const id = Number(payload.sub);
+    if (await this.emitidoAntesDelCambioDePassword(id, payload.iat)) {
+      if (esPublico) return true;
+      throw noAutenticado();
+    }
+
+    solicitud.usuario = { id, rol: payload.rol };
+    return true;
+  }
+
+  /**
+   * Un token emitido antes del último cambio de contraseña ya no sirve
+   * (design.md de RF-16, decisión 10). En segundos enteros, porque `iat` no
+   * tiene más precisión: el token del reingreso, en el mismo segundo del
+   * cambio, sigue sirviendo. Sin usuario o sin cambio, no decide nada.
+   *
+   * Es una consulta por clave primaria en cada solicitud con token: el lugar
+   * para cachear si alguna vez pesa.
+   */
+  private async emitidoAntesDelCambioDePassword(id: number, iat: number): Promise<boolean> {
+    const usuario = await this.prisma.usuario.findUnique({
+      where: { id },
+      select: { passwordCambiadaEn: true },
+    });
+    const cambio = usuario?.passwordCambiadaEn;
+    if (!cambio) return false;
+    return iat < Math.floor(cambio.getTime() / 1000);
   }
 }
 

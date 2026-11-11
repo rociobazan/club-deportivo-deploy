@@ -20,11 +20,12 @@ Hoy, quien olvida su contraseña no tiene forma de volver a entrar: `/ingresar` 
   - Un link "¿Olvidaste tu contraseña?" en `/ingresar`.
   - `/recuperar`: pide el mail y muestra siempre la misma confirmación.
   - `/restablecer?token=…`: pide la contraseña nueva. Si el cambio se acepta, lleva a `/ingresar` con un aviso de que ya puede entrar con ella.
+- **Cambiar o restablecer la contraseña cierra las sesiones abiertas** (sumado durante la revisión del PR). Hasta ahora era un límite conocido del RF-15 (decisión 30): un token emitido seguía valiendo hasta vencer. Acá pesa más, porque restablecer es justo lo que hace quien sospecha que le robaron la cuenta, y el intruso no quedaba afuera. Una columna nueva en `usuario` marca cuándo cambió la contraseña, y el guard de JWT rechaza los tokens emitidos antes. Quien cambia la contraseña desde `/perfil` sigue adentro: el sitio vuelve a ingresar con la nueva.
 
 **Fuera de alcance:**
 
 - **Verificación de mail al registrarse**: sigue fuera del MVP.
-- **Revocar las sesiones abiertas al restablecer la contraseña.** Es el mismo límite conocido que dejó el RF-15 (decisión 30): el JWT es autocontenido y no hay almacén de sesiones. Se declara en la spec y en `design.md`.
+- **Cerrar sesiones por otros motivos**: dar de baja la cuenta, cambiar el rol o un botón "cerrar todas mis sesiones".
 - **Iniciar sesión automáticamente después de restablecer.** La persona vuelve a `/ingresar`, así la API sigue emitiendo tokens en un solo lugar.
 - **Que un administrador dispare la recuperación desde el panel**, o la limpieza periódica de tokens vencidos. Se anota como pendiente en `design.md`.
 
@@ -37,7 +38,7 @@ Ninguna. La recuperación es parte de identificar a quien usa el sistema, así q
 ### Modified Capabilities
 
 - `autenticacion`:
-  - Se **agregan** cuatro requisitos: la recuperación por mail en la API, el límite de solicitudes de recuperación, las pantallas `/recuperar` y `/restablecer`, y el link desde `/ingresar`.
+  - Se **agregan** cinco requisitos: la recuperación por mail en la API, el límite de solicitudes de recuperación, las pantallas `/recuperar` y `/restablecer`, el cierre de sesiones al cambiar la contraseña y el link desde `/ingresar`.
   - Se **modifica** "Endpoints protegidos por token", para sumar las dos operaciones nuevas a la lista de públicas.
   - Se **modifica** "Largo máximo de credenciales", para que el máximo de 120 y 72 caracteres alcance también al mail y a la contraseña nueva de estas operaciones.
 

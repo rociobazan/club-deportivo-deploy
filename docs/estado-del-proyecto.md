@@ -58,10 +58,10 @@ no 37.** El #59 sumó dos casos, el 429 por visitante en `contacto.spec.ts` y el
 pasaron en local y en ese CI.
 
 **Medido sobre la rama `feature/spec-recuperar-password` (RF-16) el 2026-11-10, no sobre `main`.**
-La rama sale de `main` después del #66. Suma la recuperación de contraseña (cambio
+La rama sale de `main` después del #66. Suma la recuperación de contraseña y el cierre de sesiones al cambiarla (cambio
 `implementar-recuperacion-de-password`, decisión 39 de la memoria): **22 operaciones** (20 + 2),
-**18 pantallas** (16 + `/recuperar` y `/restablecer`), **419 unitarios de la API** (379 + 40),
-**212 e2e de la API** (195 + 17) y **45 de navegador** (38 + 7). Los 12 unitarios del front no
+**18 pantallas** (16 + `/recuperar` y `/restablecer`), **427 unitarios de la API** (379 + 48),
+**217 e2e de la API** (195 + 22) y **46 de navegador** (38 + 8). Los 12 unitarios del front no
 cambian. Todo corrido en local contra la pila levantada. **Hay que volver a medir sobre `main`
 cuando entre.**
 

@@ -39,6 +39,9 @@ model Usuario {
   rol          Rol      @default(SOCIO)
   activo       Boolean  @default(true)
   creadoEn     DateTime @default(now()) @map("creado_en")
+  /// Último cambio o restablecimiento de la contraseña. Los tokens de sesión
+  /// emitidos antes dejan de servir; null es "nunca cambió".
+  passwordCambiadaEn DateTime? @map("password_cambiada_en")
 
   reservas      Reserva[] @relation("ReservasDelUsuario")
   cancelaciones Reserva[] @relation("CanceladasPor")
