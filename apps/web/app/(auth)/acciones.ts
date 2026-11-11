@@ -120,6 +120,91 @@ export async function registrarse(
   redirect(volver);
 }
 
+export type EstadoRecuperacion = {
+  /** La API aceptó el pedido. Se muestra lo mismo exista o no la cuenta. */
+  enviado?: boolean;
+  error?: string;
+  errorEmail?: string;
+  valores?: { email: string };
+};
+
+/** Pide el enlace de recuperación (RF-16). La API responde 202 exista o no la cuenta. */
+export async function pedirRecuperacion(
+  _anterior: EstadoRecuperacion,
+  formData: FormData,
+): Promise<EstadoRecuperacion> {
+  const email = texto(formData, "email");
+  const valores = { email };
+
+  if (!email) return { errorEmail: "Ingresá tu mail.", valores };
+  if (!EMAIL.test(email) || email.length > 120) {
+    return { errorEmail: "Ese mail no parece válido.", valores };
+  }
+
+  try {
+    await apiFetch<void>("/auth/recuperacion", {
+      method: "POST",
+      headers: await encabezadosDelVisitante(),
+      body: { email },
+    });
+  } catch (error) {
+    return { error: mensajeDe(error), valores };
+  }
+
+  return { enviado: true, valores };
+}
+
+export type CampoRestablecimiento = "password" | "repetir";
+
+export type EstadoRestablecimiento = {
+  /** El token no existe, venció o ya se usó: no tiene sentido reintentar con él. */
+  enlaceInvalido?: boolean;
+  error?: string;
+  errores?: Partial<Record<CampoRestablecimiento, string>>;
+};
+
+/**
+ * Cambia la contraseña con el token del enlace. Las dos contraseñas se comparan
+ * acá y no en la API, que recibe una sola: la repetición es una ayuda de la
+ * pantalla (design.md de RF-16, decisión 8).
+ */
+export async function restablecerPassword(
+  _anterior: EstadoRestablecimiento,
+  formData: FormData,
+): Promise<EstadoRestablecimiento> {
+  const token = String(formData.get("token") ?? "");
+  // Las contraseñas no se recortan: los espacios de los extremos son parte de ellas.
+  const password = String(formData.get("password") ?? "");
+  const repetir = String(formData.get("repetir") ?? "");
+
+  if (!token) return { enlaceInvalido: true };
+
+  if (password.length < 8) {
+    return { errores: { password: "La contraseña tiene que tener al menos 8 caracteres." } };
+  }
+  if (password.length > 72) {
+    return { errores: { password: "Como máximo 72 caracteres." } };
+  }
+  if (password !== repetir) {
+    return { errores: { repetir: "Las contraseñas no coinciden." } };
+  }
+
+  try {
+    await apiFetch<void>("/auth/restablecimiento", {
+      method: "POST",
+      headers: await encabezadosDelVisitante(),
+      body: { token, passwordNueva: password },
+    });
+  } catch (error) {
+    if (error instanceof ApiHttpError && error.tipo === "ENLACE_INVALIDO") {
+      return { enlaceInvalido: true };
+    }
+    return { error: mensajeDe(error) };
+  }
+
+  redirect("/ingresar?restablecida=1");
+}
+
 export async function cerrarSesion(): Promise<void> {
   await borrarSesion();
   redirect("/");

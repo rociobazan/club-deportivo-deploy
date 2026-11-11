@@ -20,7 +20,7 @@ info:
 
     Las reglas de negocio están documentadas en `docs/requisitos.md` y las
     especificaciones vigentes en `openspec/specs/`.
-  version: 2.3.0
+  version: 2.4.0
   contact:
     name: Equipo de desarrollo
   license:
@@ -156,9 +156,10 @@ paths:
       tags: [Autenticacion]
       summary: Cambiar la contraseña del usuario autenticado
       description: |
-        Exige la contraseña actual. Las sesiones ya emitidas siguen siendo
-        válidas hasta que vencen: el token es autocontenido y no hay forma de
-        revocarlo.
+        Exige la contraseña actual. Todos los tokens de la cuenta emitidos antes
+        del cambio dejan de servir, también el de esta solicitud: los endpoints
+        protegidos los rechazan con 401 `NO_AUTENTICADO`. Para seguir con la
+        sesión hay que volver a ingresar con la contraseña nueva.
       operationId: cambiarPassword
       requestBody:
         required: true
@@ -177,6 +178,72 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
+  /auth/recuperacion:
+    post:
+      tags: [Autenticacion]
+      summary: Pedir un enlace para restablecer la contraseña
+      description: |
+        Público. Responde 202 siempre, exista o no la cuenta, para no revelar
+        qué mails están registrados. Si el mail es de una cuenta activa, se le
+        envía un enlace de un solo uso que vence a los
+        `RECUPERACION_VIGENCIA_MINUTOS` minutos (60 por defecto). Cuando ese
+        mail sale, los enlaces anteriores dejan de servir; si el envío falla,
+        siguen sirviendo. Una cuenta recibe como máximo
+        `MAX_RECUPERACIONES_POR_HORA` mails (3 por defecto) por hora; los
+        pedidos que lo exceden responden el mismo 202 sin enviar nada.
+      operationId: pedirRecuperacionPassword
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecuperarPasswordRequest'
+      responses:
+        '202':
+          description: Pedido recibido. No dice si se envió un mail.
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '429':
+          $ref: '#/components/responses/DemasiadasSolicitudes'
+
+  /auth/restablecimiento:
+    post:
+      tags: [Autenticacion]
+      summary: Restablecer la contraseña con el enlace recibido por mail
+      description: |
+        Público. Con un token vigente y sin usar, reemplaza la contraseña de la
+        cuenta e invalida todos sus enlaces de recuperación. No inicia sesión, y
+        todos los tokens de la cuenta emitidos antes del cambio dejan de servir.
+      operationId: restablecerPassword
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestablecerPasswordRequest'
+      responses:
+        '204':
+          description: Contraseña restablecida
+        '400':
+          description: |
+            Cuerpo mal formado (`SOLICITUD_INVALIDA`), o un token inexistente,
+            vencido o ya usado (`ENLACE_INVALIDO`). Los tres casos del token
+            responden igual.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                tipo: ENLACE_INVALIDO
+                titulo: El enlace no es válido o ya venció
+                estado: 400
+                detalle: Pedí uno nuevo desde "¿Olvidaste tu contraseña?".
+                instancia: /auth/restablecimiento
+        '429':
+          $ref: '#/components/responses/DemasiadasSolicitudes'
 
   /disciplinas:
     get:
@@ -845,6 +912,19 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
 
+    DemasiadasSolicitudes:
+      description: Se superó el límite de solicitudes por minuto desde la misma IP
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            tipo: DEMASIADAS_SOLICITUDES
+            titulo: Demasiados intentos seguidos
+            estado: 429
+            detalle: Esperá un minuto y volvé a intentar.
+            instancia: /auth/recuperacion
+
     NoAutenticado:
       description: Falta el token, está vencido o es inválido
       content:
@@ -988,6 +1068,33 @@ components:
           type: string
           format: password
           minLength: 8
+          example: otraClaveSegura456
+
+    RecuperarPasswordRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 120
+          example: socio@club.com
+
+    RestablecerPasswordRequest:
+      type: object
+      required: [token, passwordNueva]
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: El token del enlace recibido por mail.
+          example: 3q2-7wEXAMPLEexampleEXAMPLEexampleEXAMPLE0
+        passwordNueva:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 72
           example: otraClaveSegura456
 
     LoginRequest:

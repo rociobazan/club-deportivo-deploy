@@ -12,7 +12,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegistroDto } from './dto/registro.dto';
 
 /** El mismo costo que usa el seed, así los hashes son comparables. */
-const COSTO_BCRYPT = 10;
+export const COSTO_BCRYPT = 10;
 
 /** `Usuario` del contrato: nunca lleva la contraseña ni su hash. */
 export type UsuarioPublico = {
@@ -53,7 +53,7 @@ const emailYaRegistrado = () =>
   );
 
 /** `usuario.email` es UNIQUE: `Ana@club.test` y `ana@club.test` son la misma persona. */
-const normalizarEmail = (email: string) => email.trim().toLowerCase();
+export const normalizarEmail = (email: string) => email.trim().toLowerCase();
 
 @Injectable()
 export class AuthService {
@@ -110,7 +110,7 @@ export class AuthService {
     // una columna nueva en `usuario` no sale por el login sin decidirlo acá.
     const encontrado = await this.prisma.usuario.findUnique({
       where: { email: normalizarEmail(datos.email) },
-      select: { ...SELECCION_PUBLICA, passwordHash: true, activo: true },
+      select: { ...SELECCION_PUBLICA, passwordHash: true, activo: true, passwordCambiadaEn: true },
     });
 
     const coincide = await bcrypt.compare(
@@ -123,8 +123,15 @@ export class AuthService {
     // en la base (ampliación de la nota del 2026-10-04 en la memoria).
     if (!encontrado || !coincide || !encontrado.activo) throw credencialesInvalidas();
 
-    const { passwordHash: _hash, activo: _activo, ...usuario } = encontrado;
-    const accessToken = await this.jwt.signAsync({ sub: usuario.id, rol: usuario.rol });
+    const { passwordHash: _hash, activo: _activo, passwordCambiadaEn, ...usuario } = encontrado;
+    // El cambio de contraseña que había cuando se comparó el hash va en el
+    // token: si la contraseña cambia después, aunque sea un instante, el guard
+    // lo rechaza (design.md de RF-16, decisión 10). Sin cambio, no se agrega.
+    const accessToken = await this.jwt.signAsync({
+      sub: usuario.id,
+      rol: usuario.rol,
+      ...(passwordCambiadaEn ? { cambioPassword: passwordCambiadaEn.getTime() } : {}),
+    });
     // La vigencia real sale del token firmado, no de parsear JWT_EXPIRES_IN (design.md, 6).
     const { exp, iat } = this.jwt.decode<{ exp: number; iat: number }>(accessToken);
 
@@ -195,11 +202,9 @@ export class AuthService {
   }
 
   /**
-   * Cambia la contraseña previa verificación de la actual.
-   *
-   * No reemite ni revoca nada: el token es autocontenido, así que las sesiones
-   * abiertas en otros dispositivos siguen valiendo hasta que vencen. Está
-   * declarado en la spec como límite conocido.
+   * Cambia la contraseña previa verificación de la actual. No reemite el
+   * token: todas las sesiones de la cuenta, también la de quien llama, dejan
+   * de servir, y el sitio vuelve a ingresar con la nueva.
    */
   async cambiarPassword(id: number, datos: CambiarPasswordDto): Promise<void> {
     const encontrado = await this.prisma.usuario.findUnique({
@@ -212,6 +217,11 @@ export class AuthService {
     if (!coincide) throw credencialesInvalidas();
 
     const passwordHash = await bcrypt.hash(datos.nueva, COSTO_BCRYPT);
-    await this.prisma.usuario.update({ where: { id }, data: { passwordHash } });
+    // La fecha cierra las sesiones emitidas antes, también la de quien llama:
+    // el sitio vuelve a ingresar con la nueva (design.md de RF-16, decisión 10).
+    await this.prisma.usuario.update({
+      where: { id },
+      data: { passwordHash, passwordCambiadaEn: new Date() },
+    });
   }
 }

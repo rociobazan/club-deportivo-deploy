@@ -21,6 +21,9 @@ describe('leerConfiguracion', () => {
       cancelacionMinutosMinimos: 120,
       limiteLoginPorMinuto: 10,
       limiteRegistroPorMinuto: 5,
+      limiteRecuperacionPorMinuto: 5,
+      recuperacionVigenciaMinutos: 60,
+      maxRecuperacionesPorHora: 3,
       resendApiKey: undefined,
     });
   });
@@ -42,6 +45,29 @@ describe('leerConfiguracion', () => {
     expect(() =>
       leerConfiguracion({ ...completo, LIMITE_REGISTRO_POR_MINUTO: 'muchos' }),
     ).toThrow('LIMITE_REGISTRO_POR_MINUTO');
+  });
+
+  it('toma del entorno el límite, la vigencia y el máximo por hora de la recuperación', () => {
+    const configuracion = leerConfiguracion({
+      ...completo,
+      LIMITE_RECUPERACION_POR_MINUTO: '1000',
+      RECUPERACION_VIGENCIA_MINUTOS: '15',
+      MAX_RECUPERACIONES_POR_HORA: '1',
+    });
+
+    expect(configuracion).toMatchObject({
+      limiteRecuperacionPorMinuto: 1000,
+      recuperacionVigenciaMinutos: 15,
+      maxRecuperacionesPorHora: 1,
+    });
+  });
+
+  it.each([
+    ['LIMITE_RECUPERACION_POR_MINUTO', '0'],
+    ['RECUPERACION_VIGENCIA_MINUTOS', '-5'],
+    ['MAX_RECUPERACIONES_POR_HORA', '2.5'],
+  ])('corta el arranque si %s no es un entero positivo', (variable, valor) => {
+    expect(() => leerConfiguracion({ ...completo, [variable]: valor })).toThrow(variable);
   });
 
   it('toma el horario de atención y la zona del entorno', () => {

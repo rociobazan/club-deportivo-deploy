@@ -4,6 +4,7 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
 
+import { CorreoModule } from '../common/correo/correo.module';
 import { ErrorDeApi } from '../common/error-de-api';
 import { ConfiguracionModule } from '../configuracion.module';
 import { configurarApp } from '../configurar-app';
@@ -47,6 +48,8 @@ describe('GuardDeLimiteDeAuth', () => {
           Promise.resolve({ id: 1, nombre: 'Ana', apellido: 'Nueva', email: data.email, telefono: null, rol: 'SOCIO' }),
         ),
       },
+      // Ningún token existe: el restablecimiento responde 400 hasta que el límite corta.
+      tokenRecuperacion: { findUnique: jest.fn().mockResolvedValue(null) },
     };
     const desde = (ip: string, ruta: string, cuerpo: object) =>
       request(app.getHttpServer()).post(`/api/v1/auth/${ruta}`).set('X-Forwarded-For', ip).send(cuerpo);
@@ -58,10 +61,12 @@ describe('GuardDeLimiteDeAuth', () => {
       process.env.JWT_EXPIRES_IN = '1h';
       delete process.env.LIMITE_LOGIN_POR_MINUTO;
       delete process.env.LIMITE_REGISTRO_POR_MINUTO;
+      delete process.env.LIMITE_RECUPERACION_POR_MINUTO;
 
       const modulo = await Test.createTestingModule({
         imports: [
           ConfiguracionModule,
+          CorreoModule,
           PrismaModule,
           JwtModule.register({ global: true, secret: 'secreto-de-prueba', signOptions: { expiresIn: '1h' } }),
           AuthModule,
@@ -102,6 +107,29 @@ describe('GuardDeLimiteDeAuth', () => {
 
       await desde('203.0.113.32', 'registro', registro).expect(429);
       expect(prisma.usuario.create).toHaveBeenCalledTimes(5);
+    });
+
+    it('Sexta solicitud en un minuto: la recuperación admite 5 por IP y rechaza la 6.ª con 429', async () => {
+      const pedido = { email: 'ana@club.test' };
+      for (let numero = 1; numero <= 5; numero += 1) {
+        await desde('203.0.113.40', 'recuperacion', pedido).expect(202);
+      }
+
+      await desde('203.0.113.40', 'recuperacion', pedido).expect(429);
+    });
+
+    it('el restablecimiento lleva su propio contador y los ingresos no gastan el de recuperación', async () => {
+      const restablecimiento = { token: 'inventado', passwordNueva: 'claveNueva9' };
+      for (let numero = 1; numero <= 5; numero += 1) {
+        await desde('203.0.113.41', 'recuperacion', { email: 'ana@club.test' }).expect(202);
+      }
+      await desde('203.0.113.41', 'login', login).expect(401);
+
+      // Con la solicitud agotada, el restablecimiento de la misma IP sigue libre.
+      for (let numero = 1; numero <= 5; numero += 1) {
+        await desde('203.0.113.41', 'restablecimiento', restablecimiento).expect(400);
+      }
+      await desde('203.0.113.41', 'restablecimiento', restablecimiento).expect(429);
     });
   });
 });

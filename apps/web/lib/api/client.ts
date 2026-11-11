@@ -3,6 +3,7 @@ import "server-only";
 import { headers } from "next/headers";
 
 import { ipDelVisitante } from "../ip-del-visitante";
+import { pedirTexto, SinRespuestaError } from "./pedir";
 import type { ApiError } from "./types";
 
 /**
@@ -98,8 +99,9 @@ export async function apiFetch<T>(
   }
 
   let respuesta: Response;
+  let texto: string;
   try {
-    respuesta = await fetch(`${getApiUrl()}${path}`, {
+    ({ respuesta, texto } = await pedirTexto(`${getApiUrl()}${path}`, {
       ...init,
       body: cuerpo,
       headers: cabeceras,
@@ -107,23 +109,22 @@ export async function apiFetch<T>(
       // Explícito a propósito: son datos por usuario y en vivo (disponibilidad,
       // reservas). Quien necesite cachear lo pide con `cache` o `next`.
       cache: init.cache ?? "no-store",
-    });
+    }));
   } catch (causa) {
-    // Si quien llama abortó su propio pedido, eso no es una falla de la API:
-    // se propaga tal cual. El vencimiento de `timeoutMs` llega como
-    // `TimeoutError` y sí cuenta como "no hubo respuesta".
-    if (causa instanceof DOMException && causa.name === "AbortError") throw causa;
+    // Un `AbortError` de quien llama se propaga tal cual (lo deja pasar
+    // `pedirTexto`). El vencimiento de `timeoutMs`, esperando la respuesta o
+    // leyendo el cuerpo, cuenta como "no hubo respuesta".
+    if (!(causa instanceof SinRespuestaError)) throw causa;
 
     throw new ApiHttpError({
       tipo: "SIN_CONEXION",
       titulo: "No se pudo conectar con la API. Intentá de nuevo en un momento.",
       estado: SIN_RESPUESTA,
-      detalle: causa instanceof Error ? causa.message : undefined,
+      detalle: causa.message,
       instancia: path,
     });
   }
 
-  const texto = await respuesta.text();
   let datos: unknown;
   if (texto) {
     try {

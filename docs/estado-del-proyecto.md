@@ -57,6 +57,14 @@ no 37.** El #59 sumó dos casos, el 429 por visitante en `contacto.spec.ts` y el
 `mis-reservas.spec.ts`, y declaró uno solo. Se contaron con `playwright test --list` y los 38
 pasaron en local y en ese CI.
 
+**Medido sobre la rama `feature/spec-recuperar-password` (RF-16) el 2026-11-10, no sobre `main`.**
+La rama sale de `main` después del #66. Suma la recuperación de contraseña y el cierre de sesiones al cambiarla (cambio
+`implementar-recuperacion-de-password`, decisión 39 de la memoria): **22 operaciones** (20 + 2),
+**18 pantallas** (16 + `/recuperar` y `/restablecer`), **431 unitarios de la API** (379 + 52),
+**217 e2e de la API** (195 + 22) y **46 de navegador** (38 + 8). También **17 unitarios del
+front** (12 + 5). Todo corrido en local contra la pila levantada. **Hay que volver a medir sobre `main`
+cuando entre.**
+
 > Todos los números de este documento están medidos sobre `main`, con los comandos de la última
 > sección. Si alguna vez se miden sobre la rama de un PR todavía abierto, hay que decirlo acá y
 > **volver a medirlos cuando entre**. La vez anterior quedaron medidos sobre la rama del #34 con
@@ -118,6 +126,7 @@ pantalla en Next que la consume.
 | 1.6 | Administración | RF-11 a RF-14 | **Renzo** | ✅ en `main` (propuesta en el PR #47 e implementación en el #48, 04/10); archivado |
 | 1.7 | README | — | Jeremías | ✅ hecho el 27/09: la captura de la protección se reemplazó por una tabla con el estado real del ruleset, leída de la API de GitHub y reproducible con un comando |
 | 1.8 | Mi perfil: datos de la cuenta | RF-15 | Jeremías | ✅ en `main` (PR #34, 30/09) |
+| 1.9 | Recuperación de contraseña por mail | RF-16 | Jeremías | 🟡 en revisión (rama `feature/spec-recuperar-password`, 10/11) |
 
 ### El reparto, ya cerrado
 
@@ -169,7 +178,8 @@ login, ver el perfil, editarlo y cambiar la contraseña), las de catálogo y dis
 `POST /contacto`, las cuatro que trajo 1.4 (listar reservas, ver una, cancelarla y reenviar el
 mail), **`POST /reservas`**, que trae 1.3, y las cinco de administración que trae 1.6: el alta y
 la edición de canchas y de equipamiento, y `GET /admin/panel`. El contrato pasa a **2.3.0**: las
-cuatro del ABM declaran el 409 `NOMBRE_DUPLICADO`.
+cuatro del ABM declaran el 409 `NOMBRE_DUPLICADO`. La rama del RF-16 suma dos públicas,
+`POST /auth/recuperacion` y `POST /auth/restablecimiento`, y lleva el contrato a **2.4.0**.
 
 El módulo `reservas` cubre el ciclo de vida completo en un solo servicio: la creación, con sus
 ocho reglas de negocio, más el listado, el detalle, la cancelación y el reenvío. Las cinco
@@ -364,6 +374,12 @@ Dos cosas que conviene mirar de frente:
 ## 7. Qué falta, por quién lo destraba
 
 ### Lo que quedó abierto
+
+1. **Cupo de recuperación compartido (RF-16), límite conocido aceptado para el MVP.** El máximo de 3 mails por hora es por cuenta, sin importar quién los pida: cualquiera puede gastárselo a otra persona y bloquearle la recuperación una hora. Si hace falta cerrarlo, contar por cuenta y por IP con un tope general más alto (`design.md` del cambio, "Risks / Trade-offs").
+1. **Limpiar los tokens de recuperación viejos (RF-16).** La tabla `token_recuperacion` no se
+   vacía sola: los tokens vencidos o usados quedan. Con un máximo de 3 por cuenta y por hora
+   crece despacio, así que no urge; cuando haga falta, un borrado periódico de los vencidos hace
+   más de un día. No cambia ningún comportamiento ni la spec (`design.md` del cambio, "Open Questions").
 
 1. ~~**Archivar `implementar-reservas-notificaciones`.**~~ **Resuelto el 30/09**: sus deltas
    pasaron a `openspec/specs/reservas`.

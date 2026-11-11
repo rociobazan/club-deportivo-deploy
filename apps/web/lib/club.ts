@@ -34,22 +34,35 @@ export const SABADO = 6;
  * un motivo que no es cierto. La API corta el arranque por lo mismo
  * (`apps/api/src/configuracion.ts`); acá el criterio es el mismo.
  */
-export const CANCELACION_MINUTOS_MINIMOS = (() => {
-  const crudo = process.env.CANCELACION_MINUTOS_MINIMOS?.trim();
-  if (!crudo) return 120;
+export const CANCELACION_MINUTOS_MINIMOS = enteroPositivo("CANCELACION_MINUTOS_MINIMOS", 120);
 
-  const minutos = Number(crudo);
-  // Mismo criterio que `entero()` en apps/api/src/configuracion.ts: solo
-  // dígitos y mayor que 0. La expresión regular deja afuera "120.0" o "1e2",
-  // que `Number` convierte a un entero pero la API rechaza al arrancar.
-  if (!/^\d+$/.test(crudo) || !Number.isInteger(minutos) || minutos <= 0) {
+/**
+ * Minutos que dura el enlace de recuperación de contraseña (RF-16), mismo
+ * nombre y default que la API. Solo se muestra en `/recuperar`; mal escrito
+ * corta por lo mismo que el anterior: la pantalla prometería una duración que
+ * el enlace no tiene.
+ */
+export const RECUPERACION_VIGENCIA_MINUTOS = enteroPositivo("RECUPERACION_VIGENCIA_MINUTOS", 60);
+
+/**
+ * Lee un entero mayor que 0 del entorno, con el mismo criterio que `entero()`
+ * en apps/api/src/configuracion.ts: solo dígitos. La expresión regular deja
+ * afuera "120.0" o "1e2", que `Number` convierte a un entero pero la API
+ * rechaza al arrancar. Vacía o ausente, da el valor por defecto.
+ */
+function enteroPositivo(nombre: string, porDefecto: number): number {
+  const crudo = process.env[nombre]?.trim();
+  if (!crudo) return porDefecto;
+
+  const valor = Number(crudo);
+  if (!/^\d+$/.test(crudo) || !Number.isInteger(valor) || valor <= 0) {
     throw new Error(
-      `CANCELACION_MINUTOS_MINIMOS tiene un valor inválido ("${crudo}"): usá un entero mayor que 0, ` +
+      `${nombre} tiene un valor inválido ("${crudo}"): usá un entero mayor que 0, ` +
         "el mismo que en apps/api/.env.",
     );
   }
-  return minutos;
-})();
+  return valor;
+}
 
 /** La ventana de atención de un día, o `null` si ese día el club no abre. */
 export type VentanaDelDia = { apertura: string; cierre: string } | null;

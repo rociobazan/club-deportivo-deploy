@@ -28,14 +28,15 @@ Especificación funcional y modelo de datos. Documento base para el contrato Ope
 - Administración de canchas y equipamiento: alta, edición y baja.
 - Sitio institucional público (Inicio, El club y Contacto) con la identidad del prototipo de Claude Design.
 - Formulario de contacto desde el sitio.
-- Edición de los datos de la propia cuenta y cambio de contraseña estando con sesión iniciada. **No** incluye recuperar una contraseña olvidada, que sigue fuera del MVP.
+- Edición de los datos de la propia cuenta y cambio de contraseña estando con sesión iniciada.
+- Recuperación de una contraseña olvidada con un enlace por mail (RF-16, sumado el 2026-11-10).
 
 ### Fuera del MVP (declarado explícitamente)
 
 - Pasarela de pagos real. La reserva registra un monto, no cobra.
 - Reservas recurrentes ("todos los martes a las 20").
 - Gestión de torneos, ligas o campeonatos.
-- Recuperación de contraseña y verificación de mail.
+- Verificación de mail al registrarse. (La recuperación de contraseña entró como RF-16.)
 - Notificaciones por WhatsApp o push.
 - Reprogramación de una reserva. Se cancela y se crea una nueva.
 
@@ -392,7 +393,7 @@ Reenvía el mail que corresponde al estado actual de la reserva: el de confirmac
 
 El titular modifica su nombre, apellido, teléfono y mail, y cambia su contraseña. El usuario afectado es siempre el de la sesión: no existe forma de modificar la cuenta de otra persona, y por eso las rutas cuelgan de `/auth` y no llevan un id. El `rol` y el estado de alta no se modifican acá; eso es de la administración (RF-11 a RF-14).
 
-**Límite conocido**: cambiar la contraseña **no** revoca las sesiones abiertas en otros dispositivos. El JWT es autocontenido y no hay almacén de sesiones, así que un token ya emitido sigue valiendo hasta que vence.
+**Sesiones** (desde el RF-16, 2026-11-10): cambiar la contraseña cierra las sesiones abiertas de la cuenta en todos los dispositivos. Quien la cambia desde `/perfil` sigue adentro, porque el sitio vuelve a ingresar con la nueva. Antes era un límite conocido: un token emitido seguía valiendo hasta vencer.
 
 **Criterios de aceptación**
 - DADO un socio con sesión, CUANDO modifica su nombre, apellido o teléfono, ENTONCES se devuelve 200 con el perfil actualizado.
@@ -403,6 +404,28 @@ El titular modifica su nombre, apellido, teléfono y mail, y cambia su contrase�
 - DADO una solicitud sin ningún campo, CUANDO se envía, ENTONCES 400, en lugar de responder como si hubiera guardado algo.
 - DADO la contraseña actual correcta y una nueva de al menos 8 caracteres, CUANDO se pide el cambio, ENTONCES 204, la anterior deja de servir para ingresar y la nueva sirve.
 - DADO una contraseña actual incorrecta, CUANDO se pide el cambio, ENTONCES 401 y la contraseña no cambia.
+- DADO un socio con dos sesiones abiertas, CUANDO cambia la contraseña desde una, ENTONCES la otra recibe 401, y la de `/perfil` sigue abierta.
+
+---
+
+### RF-16 — Recuperación de contraseña
+
+`POST /auth/recuperacion` y `POST /auth/restablecimiento`: públicos
+
+Quien olvidó su contraseña pide un enlace con su mail y, con ese enlace, elige una nueva sin tener sesión iniciada. La solicitud responde 202 siempre, exista o no la cuenta, para no revelar qué mails están registrados. El enlace lleva un token aleatorio que la base guarda solo como hash, vence a los `RECUPERACION_VIGENCIA_MINUTOS` (60) y sirve una sola vez. Cuando sale el mail con un enlace nuevo, los anteriores dejan de servir; si el envío falla, siguen sirviendo y el intento no cuenta para el máximo. Una cuenta recibe como máximo `MAX_RECUPERACIONES_POR_HORA` (3) mails de recuperación por hora, y cada operación admite `LIMITE_RECUPERACION_POR_MINUTO` (5) pedidos por minuto desde una misma IP.
+
+Restablecer la contraseña **cierra las sesiones abiertas** de la cuenta, igual que cambiarla en RF-15: si alguien había entrado con la contraseña vieja, queda afuera.
+
+**Límite conocido**: el máximo de mails por hora cuenta por cuenta, sin importar quién los pida. Cualquiera puede gastarle el cupo a otra persona y dejarla una hora sin poder recuperar su cuenta. No permite tomarla. Se aceptó así para el MVP.
+
+**Criterios de aceptación**
+- DADO el mail de una cuenta activa, CUANDO se pide la recuperación, ENTONCES 202 y la cuenta recibe un mail con el enlace.
+- DADO un mail que no existe o el de una cuenta inactiva, CUANDO se pide la recuperación, ENTONCES el mismo 202 y no se envía nada.
+- DADO que el proveedor de mail falla, CUANDO se pide la recuperación, ENTONCES igual se devuelve 202 y la falla queda en el log, sin el token.
+- DADO el token del mail y una contraseña de al menos 8 caracteres, CUANDO se restablece, ENTONCES 204, la anterior deja de servir y la nueva sirve.
+- DADO un token vencido, ya usado, reemplazado por uno más nuevo o inventado, CUANDO se restablece, ENTONCES 400 `ENLACE_INVALIDO`, con la misma respuesta en todos los casos, y la contraseña no cambia.
+- DADO 3 mails de recuperación de una cuenta en la última hora, CUANDO se pide otro, ENTONCES el mismo 202 y no se envía nada.
+- DADO 5 pedidos desde una IP en el último minuto, CUANDO llega el sexto, ENTONCES 429.
 
 ---
 
@@ -462,6 +485,12 @@ erDiagram
         enum tipo "CONFIRMACION o CANCELACION"
         enum estado "ENVIADA o FALLIDA"
     }
+    token_recuperacion {
+        serial id PK
+        int usuario_id FK
+        char token_hash UK
+        timestamp expira_en
+    }
 
     disciplina ||--o{ cancha : "agrupa"
     disciplina ||--o{ equipamiento : "agrupa"
@@ -471,6 +500,7 @@ erDiagram
     reserva ||--o{ reserva_equipamiento : "incluye"
     equipamiento ||--o{ reserva_equipamiento : "se alquila en"
     reserva ||--o{ notificacion : "dispara"
+    usuario ||--o{ token_recuperacion : "pide"
 ```
 
 Dos detalles que el diagrama no puede mostrar y conviene tener presentes:
@@ -500,6 +530,7 @@ arriba, que se actualiza con el archivo; el PDF hay que regenerarlo a mano cuand
 | rol | enum | ADMIN, SOCIO. Default SOCIO |
 | activo | boolean | default true |
 | creado_en | timestamptz | |
+| password_cambiada_en | timestamp NULL | Último cambio o restablecimiento de la contraseña. Los tokens de sesión emitidos antes dejan de servir (RF-15, RF-16) |
 
 **disciplina**
 
@@ -579,6 +610,19 @@ UNIQUE (reserva_id, equipamiento_id).
 | error | text NULL | |
 | reenvio | boolean | default false. Marca los reenvíos pedidos (RF-14, RN-16) |
 | enviada_en | timestamptz | |
+
+**token_recuperacion** (RF-16)
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| id | serial PK | |
+| usuario_id | int FK | → usuario, ON DELETE CASCADE |
+| token_hash | char(64) | UNIQUE. SHA-256 del token; el token en claro nunca se guarda |
+| expira_en | timestamp | |
+| usado_en | timestamp NULL | NULL mientras sirve. Se marca al usarlo o cuando sale el mail de uno nuevo. Si ese mail falla, el token nuevo se borra |
+| creado_en | timestamp | |
+
+INDEX (usuario_id, creado_en), para contar los mails de la última hora.
 
 ---
 

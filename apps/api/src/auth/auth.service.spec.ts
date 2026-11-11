@@ -120,6 +120,28 @@ describe('AuthService', () => {
       expect(respuesta.usuario).not.toHaveProperty('passwordHash');
     });
 
+    it('firma en el token el último cambio de contraseña leído junto con el hash', async () => {
+      const cambio = new Date('2026-11-10T15:00:00.123Z');
+      prisma.usuario.findUnique.mockResolvedValue({ ...socio, passwordCambiadaEn: cambio });
+
+      const respuesta = await servicio.ingresar({ email: 'socio@club.test', password: 'clave1234' });
+
+      const payload = new JwtService({ secret: 'secreto-de-prueba' }).verify<{ cambioPassword?: number }>(
+        respuesta.accessToken,
+      );
+      expect(payload.cambioPassword).toBe(cambio.getTime());
+      expect(respuesta.usuario).not.toHaveProperty('passwordCambiadaEn');
+    });
+
+    it('sin cambio de contraseña no agrega nada al token', async () => {
+      prisma.usuario.findUnique.mockResolvedValue({ ...socio, passwordCambiadaEn: null });
+
+      const respuesta = await servicio.ingresar({ email: 'socio@club.test', password: 'clave1234' });
+
+      const payload = new JwtService({ secret: 'secreto-de-prueba' }).verify<object>(respuesta.accessToken);
+      expect(payload).not.toHaveProperty('cambioPassword');
+    });
+
     it('Vigencia informada: con JWT_EXPIRES_IN de 1h, expiraEn vale 3600', async () => {
       prisma.usuario.findUnique.mockResolvedValue(socio);
 
@@ -302,6 +324,19 @@ describe('AuthService', () => {
       expect(escrito).not.toBe(socio.passwordHash);
       // Y el hash nuevo corresponde a la contraseña nueva, no a cualquier cosa.
       await expect(bcrypt.compare('claveNueva9', escrito)).resolves.toBe(true);
+    });
+
+    it('Cambiar la contraseña cierra las otras sesiones: marca la fecha del cambio junto con el hash', async () => {
+      prisma.usuario.findUnique.mockResolvedValue({ passwordHash: socio.passwordHash });
+      prisma.usuario.update.mockResolvedValue(publico);
+      const antes = Date.now();
+
+      await servicio.cambiarPassword(42, { actual: 'clave1234', nueva: 'claveNueva9' });
+
+      const { passwordCambiadaEn } = prisma.usuario.update.mock.calls[0][0].data as {
+        passwordCambiadaEn: Date;
+      };
+      expect(passwordCambiadaEn.getTime()).toBeGreaterThanOrEqual(antes);
     });
 
     it('Contraseña actual incorrecta: 401 y no escribe', async () => {

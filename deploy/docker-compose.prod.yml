@@ -55,6 +55,7 @@ services:
       DIAS_CERRADOS: ${DIAS_CERRADOS-0}
       ZONA_HORARIA_CLUB: ${ZONA_HORARIA_CLUB:-America/Argentina/Cordoba}
       CANCELACION_MINUTOS_MINIMOS: ${CANCELACION_MINUTOS_MINIMOS:-120}
+      RECUPERACION_VIGENCIA_MINUTOS: ${RECUPERACION_VIGENCIA_MINUTOS:-60}
     depends_on:
       api:
         condition: service_healthy

@@ -108,4 +108,25 @@ test.describe("Pantalla de perfil", () => {
     // Y la contraseña nunca se repone en pantalla, ni siquiera la rechazada.
     await expect(page.getByLabel("Contraseña actual")).toHaveValue("");
   });
+
+  /*
+   * Cambiar la contraseña cierra todas las sesiones de la cuenta, también la de
+   * este navegador; el sitio vuelve a ingresar con la nueva. Si no lo hiciera,
+   * la próxima navegación llevaría a ingresar.
+   */
+  test("La sesión del perfil sigue abierta después de cambiar la contraseña", async ({ page }) => {
+    const usuario = await registrarse(page);
+
+    await page.goto("/perfil");
+    await page.getByLabel("Contraseña actual").fill(usuario.password);
+    await page.getByLabel("Contraseña nueva").fill("otraClaveSegura456");
+    await page.getByLabel("Repetir la nueva").fill("otraClaveSegura456");
+    await page.getByRole("button", { name: "Cambiar contraseña" }).click();
+    await expect(page.getByText("Cambiamos tu contraseña.")).toBeVisible();
+
+    await page.goto("/perfil");
+
+    await expect(page).toHaveURL("/perfil");
+    await expect(page.getByLabel("Mail")).toHaveValue(usuario.email);
+  });
 });

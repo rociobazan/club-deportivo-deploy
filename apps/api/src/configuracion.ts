@@ -47,6 +47,12 @@ export type Configuracion = {
   limiteLoginPorMinuto: number;
   /** Lo mismo para `POST /auth/registro`. */
   limiteRegistroPorMinuto: number;
+  /** Lo mismo para `POST /auth/recuperacion` y `POST /auth/restablecimiento`, cada una (RF-16). */
+  limiteRecuperacionPorMinuto: number;
+  /** Minutos que dura un enlace de recuperación de contraseña. */
+  recuperacionVigenciaMinutos: number;
+  /** Mails de recuperación que puede recibir una misma cuenta por hora, vengan de la IP que vengan. */
+  maxRecuperacionesPorHora: number;
   /**
    * Clave de Resend. Sin ella el cliente de mail es un doble, así cualquiera
    * puede levantar la API sin pedir una clave (design.md, decisión 1). En
@@ -69,6 +75,9 @@ const PREFIJO_CODIGO_RESERVA_POR_DEFECTO = 'RES';
 const CANCELACION_MINUTOS_MINIMOS_POR_DEFECTO = 120;
 const LIMITE_LOGIN_POR_MINUTO_POR_DEFECTO = 10;
 const LIMITE_REGISTRO_POR_MINUTO_POR_DEFECTO = 5;
+const LIMITE_RECUPERACION_POR_MINUTO_POR_DEFECTO = 5;
+const RECUPERACION_VIGENCIA_MINUTOS_POR_DEFECTO = 60;
+const MAX_RECUPERACIONES_POR_HORA_POR_DEFECTO = 3;
 /** Lo que da `openssl rand -hex 16`; el ejemplo de producción pide `-hex 32`. */
 const LARGO_MINIMO_JWT_SECRET = 32;
 
@@ -276,6 +285,24 @@ export function leerConfiguracion(
       'LIMITE_REGISTRO_POR_MINUTO',
       entorno.LIMITE_REGISTRO_POR_MINUTO,
       LIMITE_REGISTRO_POR_MINUTO_POR_DEFECTO,
+      1,
+    ),
+    limiteRecuperacionPorMinuto: entero(
+      'LIMITE_RECUPERACION_POR_MINUTO',
+      entorno.LIMITE_RECUPERACION_POR_MINUTO,
+      LIMITE_RECUPERACION_POR_MINUTO_POR_DEFECTO,
+      1,
+    ),
+    recuperacionVigenciaMinutos: entero(
+      'RECUPERACION_VIGENCIA_MINUTOS',
+      entorno.RECUPERACION_VIGENCIA_MINUTOS,
+      RECUPERACION_VIGENCIA_MINUTOS_POR_DEFECTO,
+      1,
+    ),
+    maxRecuperacionesPorHora: entero(
+      'MAX_RECUPERACIONES_POR_HORA',
+      entorno.MAX_RECUPERACIONES_POR_HORA,
+      MAX_RECUPERACIONES_POR_HORA_POR_DEFECTO,
       1,
     ),
     resendApiKey: enProduccion
