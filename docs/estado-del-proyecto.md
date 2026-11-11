@@ -375,6 +375,7 @@ Dos cosas que conviene mirar de frente:
 
 ### Lo que quedó abierto
 
+1. **Cupo de recuperación compartido (RF-16), límite conocido aceptado para el MVP.** El máximo de 3 mails por hora es por cuenta, sin importar quién los pida: cualquiera puede gastárselo a otra persona y bloquearle la recuperación una hora. Si hace falta cerrarlo, contar por cuenta y por IP con un tope general más alto (`design.md` del cambio, "Risks / Trade-offs").
 1. **Limpiar los tokens de recuperación viejos (RF-16).** La tabla `token_recuperacion` no se
    vacía sola: los tokens vencidos o usados quedan. Con un máximo de 3 por cuenta y por hora
    crece despacio, así que no urge; cuando haga falta, un borrado periódico de los vencidos hace

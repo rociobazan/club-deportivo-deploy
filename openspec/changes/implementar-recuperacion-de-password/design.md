@@ -128,6 +128,7 @@ Sumado durante la revisión del PR, a pedido del equipo. `usuario` suma `passwor
 - [El throttler en memoria cuenta por réplica] → Igual que contacto, login y registro: hoy hay una sola instancia. El límite por cuenta vive en la base y no tiene este problema.
 - [Una consulta más por cada solicitud autenticada] → Por clave primaria y de una sola columna. Ver decisión 10 sobre cuándo cachear.
 - [Un token emitido con la contraseña nueva queda atado a ese cambio] → Es lo buscado: un cambio posterior lo cierra. La comparación es por igualdad de un valor guardado, no por relojes, así que varias réplicas con relojes distintos no la afectan.
+- [Cualquiera puede gastarle el cupo por hora a otra cuenta] → Límite conocido, aceptado para el MVP en la revisión del #67. El máximo por cuenta no distingue quién pide: con 3 pedidos desde IPs distintas, la persona real se queda una hora sin poder recuperar su cuenta, y se puede repetir cada hora. No permite tomar la cuenta, solo bloquear la recuperación. Si hace falta cerrarlo, la salida evaluada es contar el cupo por cuenta y por IP (con el hash de la IP en `token_recuperacion`) más un tope general por cuenta más alto que siga frenando el bombardeo de mails.
 - [La tabla crece con tokens vencidos] → Con 3 por cuenta y por hora como máximo, crece despacio. Ver "Open Questions".
 
 ## Migration Plan

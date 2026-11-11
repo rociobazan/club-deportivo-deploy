@@ -416,6 +416,8 @@ Quien olvidó su contraseña pide un enlace con su mail y, con ese enlace, elige
 
 Restablecer la contraseña **cierra las sesiones abiertas** de la cuenta, igual que cambiarla en RF-15: si alguien había entrado con la contraseña vieja, queda afuera.
 
+**Límite conocido**: el máximo de mails por hora cuenta por cuenta, sin importar quién los pida. Cualquiera puede gastarle el cupo a otra persona y dejarla una hora sin poder recuperar su cuenta. No permite tomarla. Se aceptó así para el MVP.
+
 **Criterios de aceptación**
 - DADO el mail de una cuenta activa, CUANDO se pide la recuperación, ENTONCES 202 y la cuenta recibe un mail con el enlace.
 - DADO un mail que no existe o el de una cuenta inactiva, CUANDO se pide la recuperación, ENTONCES el mismo 202 y no se envía nada.
