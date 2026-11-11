@@ -340,24 +340,11 @@ describe('recuperacion de contraseña (e2e)', () => {
     const perfilCon = (token: string) =>
       api().get('/api/v1/auth/perfil').set('Authorization', `Bearer ${token}`);
 
-    /**
-     * El `iat` del token va en segundos enteros y un token del mismo segundo
-     * que el cambio sigue sirviendo (design.md, decisión 10): para probar el
-     * cierre, el cambio tiene que caer en un segundo posterior al ingreso.
-     */
-    const esperarAlSegundoSiguiente = async (token: string) => {
-      const { iat } = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString()) as {
-        iat: number;
-      };
-      await esperarHasta(() => Math.floor(Date.now() / 1000) > iat, 'el segundo siguiente al ingreso');
-    };
-
     it('Restablecer cierra las sesiones abiertas: el token anterior da 401', async () => {
       await registrar();
       const abierta = await tokenDeIngreso();
       await pedir(EMAIL).expect(202);
       const enlace = await esperarMail();
-      await esperarAlSegundoSiguiente(abierta);
 
       await restablecer(enlace).expect(204);
 
@@ -369,7 +356,6 @@ describe('recuperacion de contraseña (e2e)', () => {
       await registrar();
       const otra = await tokenDeIngreso();
       const desdeLaQueSeCambia = await tokenDeIngreso();
-      await esperarAlSegundoSiguiente(otra);
 
       await api()
         .put('/api/v1/auth/password')
@@ -384,7 +370,6 @@ describe('recuperacion de contraseña (e2e)', () => {
     it('Un ingreso posterior al cambio sirve', async () => {
       await registrar();
       const abierta = await tokenDeIngreso();
-      await esperarAlSegundoSiguiente(abierta);
       await api()
         .put('/api/v1/auth/password')
         .set('Authorization', `Bearer ${abierta}`)
@@ -401,7 +386,6 @@ describe('recuperacion de contraseña (e2e)', () => {
       const abierta = await tokenDeIngreso();
       await pedir(EMAIL).expect(202);
       const enlace = await esperarMail();
-      await esperarAlSegundoSiguiente(abierta);
       await restablecer(enlace).expect(204);
       const consulta = '/api/v1/disponibilidad?fecha=2030-01-15';
       const anonima = await api().get(consulta);
@@ -415,7 +399,6 @@ describe('recuperacion de contraseña (e2e)', () => {
     it('Cambiar el mail no cierra sesiones', async () => {
       await registrar();
       const abierta = await tokenDeIngreso();
-      await esperarAlSegundoSiguiente(abierta);
 
       await api()
         .patch('/api/v1/auth/perfil')

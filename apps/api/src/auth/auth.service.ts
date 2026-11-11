@@ -110,7 +110,7 @@ export class AuthService {
     // una columna nueva en `usuario` no sale por el login sin decidirlo acá.
     const encontrado = await this.prisma.usuario.findUnique({
       where: { email: normalizarEmail(datos.email) },
-      select: { ...SELECCION_PUBLICA, passwordHash: true, activo: true },
+      select: { ...SELECCION_PUBLICA, passwordHash: true, activo: true, passwordCambiadaEn: true },
     });
 
     const coincide = await bcrypt.compare(
@@ -123,8 +123,15 @@ export class AuthService {
     // en la base (ampliación de la nota del 2026-10-04 en la memoria).
     if (!encontrado || !coincide || !encontrado.activo) throw credencialesInvalidas();
 
-    const { passwordHash: _hash, activo: _activo, ...usuario } = encontrado;
-    const accessToken = await this.jwt.signAsync({ sub: usuario.id, rol: usuario.rol });
+    const { passwordHash: _hash, activo: _activo, passwordCambiadaEn, ...usuario } = encontrado;
+    // El cambio de contraseña que había cuando se comparó el hash va en el
+    // token: si la contraseña cambia después, aunque sea un instante, el guard
+    // lo rechaza (design.md de RF-16, decisión 10). Sin cambio, no se agrega.
+    const accessToken = await this.jwt.signAsync({
+      sub: usuario.id,
+      rol: usuario.rol,
+      ...(passwordCambiadaEn ? { cambioPassword: passwordCambiadaEn.getTime() } : {}),
+    });
     // La vigencia real sale del token firmado, no de parsear JWT_EXPIRES_IN (design.md, 6).
     const { exp, iat } = this.jwt.decode<{ exp: number; iat: number }>(accessToken);
 

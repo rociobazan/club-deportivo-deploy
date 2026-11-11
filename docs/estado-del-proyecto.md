@@ -60,7 +60,7 @@ pasaron en local y en ese CI.
 **Medido sobre la rama `feature/spec-recuperar-password` (RF-16) el 2026-11-10, no sobre `main`.**
 La rama sale de `main` después del #66. Suma la recuperación de contraseña y el cierre de sesiones al cambiarla (cambio
 `implementar-recuperacion-de-password`, decisión 39 de la memoria): **22 operaciones** (20 + 2),
-**18 pantallas** (16 + `/recuperar` y `/restablecer`), **427 unitarios de la API** (379 + 48),
+**18 pantallas** (16 + `/recuperar` y `/restablecer`), **431 unitarios de la API** (379 + 52),
 **217 e2e de la API** (195 + 22) y **46 de navegador** (38 + 8). Los 12 unitarios del front no
 cambian. Todo corrido en local contra la pila levantada. **Hay que volver a medir sobre `main`
 cuando entre.**

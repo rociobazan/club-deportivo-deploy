@@ -118,30 +118,51 @@ describe('JwtAuthGuard', () => {
 
   describe('Cierre de sesiones al cambiar la contraseña', () => {
     const CAMBIO = new Date('2026-11-10T15:00:00.500Z');
-    /** Un token cuyo `iat` es el instante dado, sin vencimiento para que la fecha fija no lo venza. */
-    const tokenEmitidoEn = (instante: Date) =>
-      jwtSinVigencia.signAsync({ sub: 5, rol: 'SOCIO', iat: Math.floor(instante.getTime() / 1000) });
+    /** Un token como el que firma el login, con el cambio de contraseña que había al ingresar. */
+    const tokenConCambio = (cambioPassword?: Date) =>
+      jwt.signAsync({
+        sub: 5,
+        rol: 'SOCIO',
+        ...(cambioPassword ? { cambioPassword: cambioPassword.getTime() } : {}),
+      });
 
-    it('rechaza con 401 un token emitido antes del último cambio de contraseña', async () => {
+    it('rechaza con 401 un token de antes del primer cambio de contraseña', async () => {
       const guard = new JwtAuthGuard(reflector(false), jwt, prismaCon(CAMBIO));
-      const token = await tokenEmitidoEn(new Date('2026-11-10T14:59:59.000Z'));
+      const token = await tokenConCambio(undefined);
       const { contexto } = contextoCon(`Bearer ${token}`);
 
       await esperar401(guard, contexto);
     });
 
-    it('acepta un token emitido en el mismo segundo del cambio, como el del reingreso', async () => {
+    it('rechaza con 401 un token de antes de un cambio posterior', async () => {
       const guard = new JwtAuthGuard(reflector(false), jwt, prismaCon(CAMBIO));
-      const token = await tokenEmitidoEn(new Date('2026-11-10T15:00:00.000Z'));
+      const token = await tokenConCambio(new Date('2026-11-01T10:00:00.000Z'));
+      const { contexto } = contextoCon(`Bearer ${token}`);
+
+      await esperar401(guard, contexto);
+    });
+
+    it('rechaza un token firmado después del cambio pero con la contraseña vieja comprobada, aunque sea 1 ms antes', async () => {
+      const guard = new JwtAuthGuard(reflector(false), jwt, prismaCon(CAMBIO));
+      // El login comprobó el hash cuando el cambio vigente era otro: el token lo trae firmado.
+      const token = await tokenConCambio(new Date(CAMBIO.getTime() - 1));
+      const { contexto } = contextoCon(`Bearer ${token}`);
+
+      await esperar401(guard, contexto);
+    });
+
+    it('acepta el token del ingreso posterior al cambio, como el del reingreso del perfil', async () => {
+      const guard = new JwtAuthGuard(reflector(false), jwt, prismaCon(CAMBIO));
+      const token = await tokenConCambio(CAMBIO);
       const { contexto, solicitud } = contextoCon(`Bearer ${token}`);
 
       await expect(guard.canActivate(contexto)).resolves.toBe(true);
       expect(solicitud.usuario).toEqual({ id: 5, rol: 'SOCIO' });
     });
 
-    it('acepta cualquier token si la contraseña nunca cambió', async () => {
+    it('acepta un token sin cambio firmado si la contraseña nunca cambió, como los emitidos antes del deploy', async () => {
       const guard = new JwtAuthGuard(reflector(false), jwt, prismaCon(null));
-      const token = await tokenEmitidoEn(new Date('2020-01-01T00:00:00.000Z'));
+      const token = await tokenConCambio(undefined);
       const { contexto } = contextoCon(`Bearer ${token}`);
 
       await expect(guard.canActivate(contexto)).resolves.toBe(true);
@@ -149,7 +170,7 @@ describe('JwtAuthGuard', () => {
 
     it('no decide nada si el usuario del token no existe', async () => {
       const guard = new JwtAuthGuard(reflector(false), jwt, prismaCon(undefined));
-      const token = await tokenEmitidoEn(new Date('2026-11-10T14:00:00.000Z'));
+      const token = await tokenConCambio(new Date('2026-11-01T10:00:00.000Z'));
       const { contexto } = contextoCon(`Bearer ${token}`);
 
       await expect(guard.canActivate(contexto)).resolves.toBe(true);
@@ -157,7 +178,7 @@ describe('JwtAuthGuard', () => {
 
     it('Token anterior en un endpoint público: sigue como anónimo, sin 401', async () => {
       const guard = new JwtAuthGuard(reflector(true), jwt, prismaCon(CAMBIO));
-      const token = await tokenEmitidoEn(new Date('2026-11-10T14:59:59.000Z'));
+      const token = await tokenConCambio(undefined);
       const { contexto, solicitud } = contextoCon(`Bearer ${token}`);
 
       await expect(guard.canActivate(contexto)).resolves.toBe(true);

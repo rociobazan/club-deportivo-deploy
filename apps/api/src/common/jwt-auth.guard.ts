@@ -5,8 +5,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ES_PUBLICO, Rol } from './decoradores';
 import { noAutenticado, SolicitudConUsuario } from './usuario-actual';
 
-/** Lo que firma `AuthService` al ingresar: `sub` es el id del usuario. */
-export type PayloadJwt = { sub: number; rol: Rol };
+/**
+ * Lo que firma `AuthService` al ingresar: `sub` es el id del usuario y
+ * `cambioPassword`, el último cambio de contraseña en milisegundos, si hubo.
+ */
+export type PayloadJwt = { sub: number; rol: Rol; cambioPassword?: number };
 
 /**
  * Guard global: todo endpoint exige `Authorization: Bearer <jwt>` salvo que
@@ -38,9 +41,9 @@ export class JwtAuthGuard implements CanActivate {
       throw noAutenticado();
     }
 
-    let payload: PayloadJwt & { iat: number };
+    let payload: PayloadJwt;
     try {
-      payload = await this.jwt.verifyAsync<PayloadJwt & { iat: number }>(token);
+      payload = await this.jwt.verifyAsync<PayloadJwt>(token);
     } catch {
       // Vencido, mal formado o con otra firma: para el cliente es lo mismo.
       if (esPublico) return true;
@@ -49,7 +52,7 @@ export class JwtAuthGuard implements CanActivate {
 
     // Fuera del try: si la base falla, es un 500 y no un "no autenticado".
     const id = Number(payload.sub);
-    if (await this.emitidoAntesDelCambioDePassword(id, payload.iat)) {
+    if (await this.anteriorAlCambioDePassword(id, payload.cambioPassword)) {
       if (esPublico) return true;
       throw noAutenticado();
     }
@@ -59,22 +62,27 @@ export class JwtAuthGuard implements CanActivate {
   }
 
   /**
-   * Un token emitido antes del último cambio de contraseña ya no sirve
-   * (design.md de RF-16, decisión 10). En segundos enteros, porque `iat` no
-   * tiene más precisión: el token del reingreso, en el mismo segundo del
-   * cambio, sigue sirviendo. Sin usuario o sin cambio, no decide nada.
+   * Un token ya no sirve si la contraseña cambió después de emitirlo
+   * (design.md de RF-16, decisión 10). Se compara el cambio que el token trae
+   * firmado con el de la base, exacto al milisegundo, y no la fecha de
+   * emisión: así no hay ventana entre que el login comprueba la contraseña
+   * vieja y firma el token. Sin cambio en la base, sirve el token que no trae
+   * ninguno, como todos los emitidos antes de que existiera la columna. Sin
+   * usuario, no decide nada.
    *
    * Es una consulta por clave primaria en cada solicitud con token: el lugar
    * para cachear si alguna vez pesa.
    */
-  private async emitidoAntesDelCambioDePassword(id: number, iat: number): Promise<boolean> {
+  private async anteriorAlCambioDePassword(
+    id: number,
+    cambioFirmado: number | undefined,
+  ): Promise<boolean> {
     const usuario = await this.prisma.usuario.findUnique({
       where: { id },
       select: { passwordCambiadaEn: true },
     });
-    const cambio = usuario?.passwordCambiadaEn;
-    if (!cambio) return false;
-    return iat < Math.floor(cambio.getTime() / 1000);
+    if (!usuario) return false;
+    return (cambioFirmado ?? null) !== (usuario.passwordCambiadaEn?.getTime() ?? null);
   }
 }
 
