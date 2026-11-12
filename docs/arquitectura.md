@@ -20,7 +20,7 @@ club-deportivo-deploy/
 ├── apps/
 │   ├── api/                       # Nest
 │   │   ├── src/
-│   │   │   ├── auth/              # RF-00 y RF-15: registro, login, JWT, perfil; login y registro con límite por IP
+│   │   │   ├── auth/              # RF-00, RF-15 y RF-16: registro, login, JWT, perfil, recuperación; login y registro con límite por IP
 │   │   │   ├── catalogo/          # RF-01, RF-02, RF-07, RF-12, RF-13
 │   │   │   ├── disponibilidad/    # RF-03
 │   │   │   ├── reservas/          # RF-04, RF-05, RF-06, RF-14

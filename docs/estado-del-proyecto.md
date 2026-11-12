@@ -7,7 +7,7 @@
 el historial viven en [`memoria-proyecto.md`](memoria-proyecto.md). Este documento no repite
 esas decisiones: las enlaza.
 
-**Última verificación:** 2026-10-19, después del #59, contra el código y la API de GitHub, no contra lo que
+**Última verificación:** 2026-11-11, después del #67, contra el código y la API de GitHub, no contra lo que
 dice la memoria. Los comandos que producen cada número están en la última sección, para que
 cualquiera pueda rehacer la cuenta en vez de confiar en esta tabla. Los endpoints y las
 pantallas se contaron sobre `main` el 01/10. **Los tests se volvieron a medir el 2026-10-04,
@@ -65,6 +65,11 @@ La rama sale de `main` después del #66. Suma la recuperación de contraseña y 
 front** (12 + 5). Todo corrido en local contra la pila levantada. **Hay que volver a medir sobre `main`
 cuando entre.**
 
+**Remedido sobre `main` el 2026-11-11, apenas entró el #67**, en el mismo PR que archiva el
+cambio. Coinciden todos: las **22 operaciones**, los **431 unitarios** y los **217 e2e de la
+API** corriéndolos, los **46 de navegador** con `playwright test --list` y los **17 unitarios del
+front** corriéndolos.
+
 > Todos los números de este documento están medidos sobre `main`, con los comandos de la última
 > sección. Si alguna vez se miden sobre la rama de un PR todavía abierto, hay que decirlo acá y
 > **volver a medirlos cuando entre**. La vez anterior quedaron medidos sobre la rama del #34 con
@@ -80,9 +85,9 @@ cuando entre.**
 | Medida | Estado |
 |---|---|
 | Ítems del reparto cerrados | **12 de 12**: todo el hito 0 y todo el hito 1 |
-| Requisitos funcionales implementados | **16 de 16**: RF-00 a RF-15 |
-| Operaciones del contrato con endpoint | **20 de 20**: las cinco de administración entraron con el #48 |
-| Pantallas de producto | **16**: inicio, El club, contacto, canchas, disponibilidad, ingreso, registro, reservar, mis reservas con su detalle, mi perfil, y **las cinco de `/admin`**: panel, reservas con su detalle, canchas y equipamiento |
+| Requisitos funcionales implementados | **17 de 17**: RF-00 a RF-16 |
+| Operaciones del contrato con endpoint | **22 de 22**: las dos de recuperación de contraseña entraron con el #67 |
+| Pantallas de producto | **18**: inicio, El club, contacto, canchas, disponibilidad, ingreso, registro, recuperar y restablecer la contraseña, reservar, mis reservas con su detalle, mi perfil, y **las cinco de `/admin`**: panel, reservas con su detalle, canchas y equipamiento |
 | Protección de `main` | ✅ **activa**: 1 aprobación y los cuatro checks |
 
 **El recorrido principal está completo.** Un visitante ya puede entrar al sitio, ver el club y
@@ -171,14 +176,14 @@ transversal que las features nuevas reutilizan sin volver a decidir nada:
 - Seed idempotente con disciplinas, canchas, equipamiento y usuarios de prueba.
 - Carga de producción aparte (`npm run carga:produccion`): catálogo, si la base no tiene, y un
   administrador desde el entorno ([ADR 0003](adr/0003-despliegue-en-ec2.md)).
-- Tests en verde (Node 24 con `--experimental-vm-modules`): 379 unitarios y 195 e2e en serie.
+- Tests en verde (Node 24 con `--experimental-vm-modules`): 431 unitarios y 217 e2e en serie.
 
-**Las 20 operaciones del contrato tienen endpoint**: las cinco de `auth` (registro,
+**Las 22 operaciones del contrato tienen endpoint**: las cinco de `auth` (registro,
 login, ver el perfil, editarlo y cambiar la contraseña), las de catálogo y disponibilidad,
 `POST /contacto`, las cuatro que trajo 1.4 (listar reservas, ver una, cancelarla y reenviar el
 mail), **`POST /reservas`**, que trae 1.3, y las cinco de administración que trae 1.6: el alta y
 la edición de canchas y de equipamiento, y `GET /admin/panel`. El contrato pasa a **2.3.0**: las
-cuatro del ABM declaran el 409 `NOMBRE_DUPLICADO`. La rama del RF-16 suma dos públicas,
+cuatro del ABM declaran el 409 `NOMBRE_DUPLICADO`. El RF-16 (#67) suma dos públicas,
 `POST /auth/recuperacion` y `POST /auth/restablecimiento`, y lleva el contrato a **2.4.0**.
 
 El módulo `reservas` cubre el ciclo de vida completo en un solo servicio: la creación, con sus
@@ -227,7 +232,14 @@ cumplían. El de 1.4 se había archivado con el PR #40 y el de 1.6 con el #49.
 Sumó dos requisitos a `autenticacion` (límite de intentos de ingreso y registro por IP, y largo
 máximo de credenciales) y modificó dos (la cuenta inactiva en el inicio de sesión y el `volver`
 más estricto), además del límite de contacto por IP de `institucional`, que ahora cuenta la IP del
-visitante. Con eso **no queda ningún cambio en curso en `openspec/changes/`**.
+visitante.
+
+`implementar-recuperacion-de-password` (#67, RF-16) **se archivó el 11/11**, con todas sus tareas
+cerradas. Sumó cinco requisitos a `autenticacion` (la recuperación por mail, su límite de
+solicitudes, las pantallas `/recuperar` y `/restablecer`, el cierre de sesiones al cambiar la
+contraseña y el link desde el ingreso) y modificó dos (los endpoints públicos y el largo máximo
+de credenciales). Son **10 cambios archivados**, y **no queda ningún cambio en curso en
+`openspec/changes/`**.
 
 Los tres de Jeremías se archivaron el 28/09
 —`implementar-autenticacion` (1.1), `implementar-catalogo-y-disponibilidad` (1.2) e
@@ -255,8 +267,8 @@ del ruleset:
 |---|---|
 | `specs` | OpenSpec en modo estricto y lint del contrato |
 | `api` | Migraciones contra `postgres:17`, lint, build y tests de la API |
-| `web` | Lint, los 12 unitarios del front (`node --test`) y el build, que además verifica los tipos |
-| `e2e` | 38 tests de navegador con Playwright contra la pila entera: Postgres, la API y el front servido en producción ([ADR 0002](adr/0002-tests-e2e-con-playwright.md)) |
+| `web` | Lint, los 17 unitarios del front (`node --test`) y el build, que además verifica los tipos |
+| `e2e` | 46 tests de navegador con Playwright contra la pila entera: Postgres, la API y el front servido en producción ([ADR 0002](adr/0002-tests-e2e-con-playwright.md)) |
 
 **`e2e` bloquea desde el 30/09.** Hasta esa fecha corría e informaba, así que un PR con los e2e en
 rojo se podía mergear igual. Lo sumó `rociobazan`, porque editar un *ruleset* pide permiso de admin
